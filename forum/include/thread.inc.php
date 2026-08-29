@@ -31,6 +31,38 @@ require_once BH_INCLUDE_PATH . 'session.inc.php';
 require_once BH_INCLUDE_PATH . 'threads.inc.php';
 // End Required includes
 
+/**
+ * Find an existing (non-deleted) thread whose address matches $title.
+ *
+ * The lookup is forum-wide (across every folder) so a given address only ever
+ * refers to a single thread. Returns the matching TID or false.
+ *
+ * @param string $title
+ * @return mixed TID on success, false when no match exists
+ */
+function thread_get_tid_by_title($title)
+{
+    if (!$db = db::get()) return false;
+
+    if (!($table_prefix = get_table_prefix())) return false;
+
+    $title = $db->escape(thread_title_normalise($title));
+
+    if (strlen($title) == 0) return false;
+
+    $sql = "SELECT TID FROM `{$table_prefix}THREAD` ";
+    $sql .= "WHERE TITLE = '$title' AND DELETED = 'N' ";
+    $sql .= "ORDER BY TID ASC LIMIT 1";
+
+    if (!($result = $db->query($sql))) return false;
+
+    if ($result->num_rows == 0) return false;
+
+    list($tid) = $result->fetch_row();
+
+    return $tid;
+}
+
 function thread_get_title($tid)
 {
     if (!$db = db::get()) return false;
@@ -516,7 +548,7 @@ function thread_change_title($tid, $new_title)
 
     if (!is_numeric($tid)) return false;
 
-    $new_title = $db->escape($new_title);
+    $new_title = $db->escape(thread_title_normalise($new_title));
 
     $current_datetime = date(MYSQL_DATETIME, time());
 

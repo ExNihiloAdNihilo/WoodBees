@@ -872,13 +872,28 @@ foreach ($forum_prefix_array as $forum_fid => $table_data) {
     $sql = "ALTER TABLE `{$table_data['PREFIX']}THREAD` ";
     $sql .= "CHANGE FID FID MEDIUMINT(8) UNSIGNED NOT NULL AFTER TID, ";
     $sql .= "CHANGE BY_UID BY_UID MEDIUMINT(8) UNSIGNED NOT NULL AFTER FID, ";
-    $sql .= "CHANGE TITLE TITLE VARCHAR(64) COLLATE UTF8_GENERAL_CI NOT NULL AFTER BY_UID, ";
+    $sql .= "CHANGE TITLE TITLE VARCHAR(255) COLLATE UTF8_GENERAL_CI NOT NULL AFTER BY_UID, ";
     $sql .= "CHANGE LENGTH LENGTH MEDIUMINT(8) UNSIGNED NOT NULL AFTER TITLE, ";
     $sql .= "CHANGE POLL_FLAG POLL_FLAG CHAR(1) COLLATE UTF8_GENERAL_CI NULL DEFAULT 'N' AFTER UNREAD_PID, ";
     $sql .= "CHANGE CREATED CREATED DATETIME NOT NULL AFTER APPROVED_BY, ";
     $sql .= "CHANGE STICKY STICKY CHAR(1) COLLATE UTF8_GENERAL_CI NOT NULL DEFAULT 'N' AFTER CLOSED";
 
     $db->query($sql);
+
+    // Thread titles are free-form addresses: strip anything that isn't a
+    // displayable 7-bit ASCII character and lower-case what remains so that
+    // existing threads obey the same address rules as new ones.
+    $sql = "UPDATE `{$table_data['PREFIX']}THREAD` SET TITLE = LOWER(TRIM(TITLE)) WHERE TITLE <> LOWER(TRIM(TITLE))";
+
+    $db->query($sql);
+
+    // Index used to resolve a thread address to its TID when posting.
+    if (!install_index_exists($config['db_database'], "{$table_data['WEBTAG']}_THREAD", 'TITLE_LOOKUP')) {
+
+        $sql = "ALTER TABLE `{$table_data['PREFIX']}THREAD` ADD KEY TITLE_LOOKUP (TITLE(191), DELETED)";
+
+        $db->query($sql);
+    }
 
     $sql = "ALTER TABLE `{$table_data['PREFIX']}THREAD_STATS` ";
     $sql .= "CHANGE TID TID MEDIUMINT(8) UNSIGNED NOT NULL FIRST, ";

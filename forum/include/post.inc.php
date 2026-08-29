@@ -197,7 +197,7 @@ function post_create_thread($fid, $uid, $title, $poll = 'N', $sticky = 'N', $clo
 
     if (!($table_prefix = get_table_prefix())) return false;
 
-    $title = $db->escape($title);
+    $title = $db->escape(thread_title_normalise($title));
 
     $poll = ($poll == 'Y') ? 'Y' : 'N';
 

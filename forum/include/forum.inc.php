@@ -1231,7 +1231,7 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
         $sql .= "  TID MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT, ";
         $sql .= "  FID MEDIUMINT(8) UNSIGNED NOT NULL, ";
         $sql .= "  BY_UID MEDIUMINT(8) UNSIGNED NOT NULL, ";
-        $sql .= "  TITLE VARCHAR(64) NOT NULL, ";
+        $sql .= "  TITLE VARCHAR(255) NOT NULL, ";
         $sql .= "  LENGTH MEDIUMINT(8) UNSIGNED NOT NULL, ";
         $sql .= "  UNREAD_PID MEDIUMINT(8) UNSIGNED DEFAULT NULL, ";
         $sql .= "  POLL_FLAG CHAR(1) DEFAULT 'N', ";
@@ -1247,6 +1247,7 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
         $sql .= "  PRIMARY KEY (TID), ";
         $sql .= "  KEY STICKY (STICKY, MODIFIED, FID, LENGTH, DELETED), ";
         $sql .= "  KEY MODIFIED (MODIFIED, FID, LENGTH, DELETED), ";
+        $sql .= "  KEY TITLE_LOOKUP (TITLE(191), DELETED), ";
         $sql .= "  FULLTEXT KEY TITLE (TITLE) ";
         $sql .= ") ENGINE=MYISAM  DEFAULT CHARSET=UTF8";
 

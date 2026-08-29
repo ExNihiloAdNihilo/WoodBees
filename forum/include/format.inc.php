@@ -28,6 +28,39 @@ require_once BH_INCLUDE_PATH . 'timezone.inc.php';
 require_once BH_INCLUDE_PATH . 'user.inc.php';
 // End Required includes
 
+/**
+ * Normalise a thread title / "address".
+ *
+ * Thread titles act as free-form addresses (a URL, a word, any ASCII string).
+ * They are case-insensitive and must only contain displayable characters, so
+ * we strip anything outside printable 7-bit ASCII (0x20 - 0x7E), collapse runs
+ * of whitespace, trim the ends, lower-case the result and cap it at the width
+ * of the THREAD.TITLE column.
+ *
+ * @param string $title
+ * @return string
+ */
+function thread_title_normalise($title)
+{
+    if (!is_string($title)) $title = strval($title);
+
+    // Drop control characters, NULs and any non-ASCII bytes.
+    $title = preg_replace('/[^\x20-\x7E]/', '', $title);
+
+    // Collapse whitespace runs to a single space and trim the ends.
+    $title = trim(preg_replace('/\s+/', ' ', $title));
+
+    // Addresses are case-insensitive; store them lower case.
+    $title = strtolower($title);
+
+    // Keep within the THREAD.TITLE column width.
+    if (strlen($title) > 255) {
+        $title = rtrim(substr($title, 0, 255));
+    }
+
+    return $title;
+}
+
 function format_user_name($logon, $nickname)
 {
     if (strlen(trim($nickname)) > 0) {
