@@ -58,30 +58,18 @@ function tag_enabled()
 /**
  * Normalise a user-supplied tag string.
  *
- * Tags are lower-case, may only contain letters, digits and single spaces
- * (no run of more than one space), are trimmed and are capped at
- * TAG_MAX_LENGTH characters. Returns '' when nothing usable remains.
+ * Tags are lower-case (Unicode-aware); may contain letters, marks and digits
+ * of any script (Arabic, Japanese, Cyrillic, ...) plus single spaces; are
+ * trimmed; and are capped at TAG_MAX_LENGTH characters. Control, format and
+ * punctuation characters are stripped. Returns '' when nothing usable remains.
  *
  * @param string $tag
  * @return string
  */
 function tag_normalise($tag)
 {
-    if (!is_string($tag)) $tag = strval($tag);
-
-    $tag = mb_strtolower($tag, 'UTF-8');
-
-    // Keep ASCII letters, digits and spaces only.
-    $tag = preg_replace('/[^a-z0-9 ]/', '', $tag);
-
-    // Collapse whitespace runs to a single space and trim the ends.
-    $tag = trim(preg_replace('/\s+/', ' ', $tag));
-
-    if (strlen($tag) > TAG_MAX_LENGTH) {
-        $tag = rtrim(substr($tag, 0, TAG_MAX_LENGTH));
-    }
-
-    return $tag;
+    // Tags: letters, marks and digits of any script plus single spaces.
+    return text_address_normalise($tag, TAG_MAX_LENGTH, true);
 }
 
 /**

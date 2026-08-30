@@ -605,7 +605,7 @@ if ($new_thread) {
     echo "<h3>", gettext("Create new thread"), "</h3>\n";
     echo "<div class=\"post_inner\">\n";
     echo "<div class=\"post_folder\">", gettext("Select folder"), ":", light_folder_draw_dropdown($fid, "fid"), "</div>";
-    echo "<div class=\"post_thread_title\">", gettext("Thread title"), ":", light_form_input_text("threadtitle", htmlentities_array($threadtitle), 30, 255), "</div>";
+    echo "<div class=\"post_thread_title\">", gettext("Thread title"), ":", light_form_input_text("threadtitle", htmlentities_array($threadtitle), 30, 250), "</div>";
 } else {
 
     if (!($reply_message = messages_get($tid, $reply_to_pid))) {

@@ -30,6 +30,8 @@ $db_username = "beehiveforum"; // Your MySQL username
 $db_password = "password"; // Your MySQL password
 $db_database = "beehiveforum"; // The name of your MySQL database
 
+$db_charset = "utf8"; // MySQL connection character set (see docs/utf8mb4-migration.md)
+
 // ---------------------------------------------------------------------
 
 // MySQL Big Selects ---------------------------------------------------

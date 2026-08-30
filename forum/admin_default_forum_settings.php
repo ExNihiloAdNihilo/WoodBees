@@ -699,6 +699,10 @@ echo "                        <td align=\"left\" width=\"220\">", gettext("Forum
 echo "                        <td align=\"left\">", form_input_text("forum_keywords", (isset($forum_global_settings['forum_keywords']) ? htmlentities_array($forum_global_settings['forum_keywords']) : ''), 52, 80), "&nbsp;</td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
+echo "                        <td align=\"left\" width=\"220\" valign=\"top\">", gettext("Forum Instance Identifier"), ":</td>\n";
+echo "                        <td align=\"left\">", (strlen(instance_identifier_get()) > 0 ? htmlentities_array(instance_identifier_get()) : "<span class=\"smallertext\">" . gettext("(not set)") . "</span>"), "<br /><span class=\"smallertext\">", gettext("Identifies this forum instance to other installations. It can only be changed by running an upgrade."), "</span></td>\n";
+echo "                      </tr>\n";
+echo "                      <tr>\n";
 echo "                        <td align=\"left\" colspan=\"2\">&nbsp;</td>\n";
 echo "                      </tr>\n";
 echo "                    </table>\n";

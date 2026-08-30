@@ -115,7 +115,7 @@ if (isset($_POST['add_tag']) || isset($_POST['tag'])) {
 
     if (strlen($t_tag_normalised) == 0) {
 
-        $error_msg_array[] = gettext("Enter a tag using lower-case letters, digits and single spaces (30 characters maximum).");
+        $error_msg_array[] = gettext("Enter a tag using letters or digits of any language, plus single spaces (30 characters maximum).");
 
     } else {
 
@@ -256,7 +256,7 @@ echo "                </tr>\n";
 echo "                <tr>\n";
 echo "                  <td align=\"left\" style=\"white-space: nowrap\" width=\"120\" valign=\"top\">", gettext("New tag"), ":</td>\n";
 echo "                  <td align=\"left\">", form_input_text('tag', '', 34, TAG_MAX_LENGTH), " ", form_submit('add_tag', gettext("Add")), "<br />\n";
-echo "                    <span class=\"smallertext\">", gettext("Lower-case letters, digits and single spaces only, 30 characters maximum. New tags are shown once a moderator approves them."), "</span></td>\n";
+echo "                    <span class=\"smallertext\">", gettext("Letters and digits of any language plus single spaces, 30 characters maximum. It is lower-cased automatically. New tags are shown once a moderator approves them."), "</span></td>\n";
 echo "                </tr>\n";
 
 if (isset($approved_tags['tag_array']) && sizeof($approved_tags['tag_array']) > 0) {

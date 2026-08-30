@@ -586,7 +586,7 @@ if ($thread_data['DELETED'] == 'N') {
             echo "                    <table class=\"posthead\" width=\"95%\">\n";
             echo "                      <tr>\n";
             echo "                        <td align=\"left\" width=\"260\" class=\"posthead\">", gettext("Rename thread"), ":</td>\n";
-            echo "                        <td align=\"left\">", form_input_text("rename", htmlentities_array($thread_data['TITLE']), 37, 255), "</td>\n";
+            echo "                        <td align=\"left\">", form_input_text("rename", htmlentities_array($thread_data['TITLE']), 37, 250), "</td>\n";
             echo "                      </tr>\n";
             echo "                      <tr>\n";
             echo "                        <td align=\"left\" class=\"posthead\">", gettext("Move thread"), ":</td>\n";

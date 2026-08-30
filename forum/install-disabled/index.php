@@ -188,6 +188,28 @@ if (isset($_POST['install_method'])) {
         }
     }
 
+    // Forum instance identifier: required for new installs / reinstalls,
+    // optional (leave blank to keep the current value) for upgrades.
+    if (isset($_POST['instance_identifier']) && strlen(trim($_POST['instance_identifier'])) > 0) {
+
+        $instance_identifier = trim(preg_replace('/[\x00-\x1F\x7F]+/u', ' ', $_POST['instance_identifier']));
+        $instance_identifier = trim(preg_replace('/ +/', ' ', $instance_identifier));
+
+        if (mb_strlen($instance_identifier, 'UTF-8') > 64) {
+            $instance_identifier = rtrim(mb_substr($instance_identifier, 0, 64, 'UTF-8'));
+        }
+
+        if (strlen($instance_identifier) < 1) {
+            $error_array[] = "The forum instance identifier must contain at least one visible character.\n";
+            $valid = false;
+        }
+
+    } else if (isset($install_method) && ($install_method < 2)) {
+
+        $error_array[] = "You must supply a forum instance identifier.\n";
+        $valid = false;
+    }
+
     if (isset($_POST['remove_conflicts']) && $_POST['remove_conflicts'] == 'Y') {
         $remove_conflicts = true;
     } else {
@@ -699,6 +721,15 @@ echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td colspan=\"2\">\n";
 echo "                          <p>", gettext("The credentials of the user you want to have initial Admin access. This information is only required for new installations. Upgrades will leave the existing user accounts intact."), "</p>\n";
+echo "                        </td>\n";
+echo "                      </tr>\n";
+echo "                      <tr>\n";
+echo "                        <td align=\"left\" width=\"220\" class=\"postbody\">Forum Instance Identifier:</td>\n";
+echo "                        <td align=\"left\" class=\"postbody\"><input type=\"text\" name=\"instance_identifier\" class=\"install_input\" value=\"", (isset($instance_identifier) && strlen($instance_identifier) > 0 ? htmlentities_array($instance_identifier) : ''), "\" size=\"45\" maxlength=\"64\" tabindex=\"12\" /></td>\n";
+echo "                      </tr>\n";
+echo "                      <tr>\n";
+echo "                        <td colspan=\"2\">\n";
+echo "                          <p>", gettext("A short name that identifies this forum instance to other installations (1-64 characters, any language, visible characters and spaces). It is stamped on threads, comments and tags this forum exports, so other admins can trace and, if needed, redact content that came from you. Choose something unique - your domain works well. <b>New installs:</b> required. <b>Upgrades:</b> leave blank to keep the current identifier, or enter a new value to change it (the only time it can be changed)."), "</p>\n";
 echo "                        </td>\n";
 echo "                      </tr>\n";
 echo "                    </table>\n";

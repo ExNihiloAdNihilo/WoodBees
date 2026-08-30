@@ -771,7 +771,7 @@ if ($new_thread) {
     echo "                        <td align=\"left\"><h2>", gettext("Thread title"), "</h2></td>\n";
     echo "                      </tr>\n";
     echo "                      <tr>\n";
-    echo "                        <td align=\"left\">", form_input_text("threadtitle", htmlentities_array($threadtitle), null, 255, null, "thread_title"), form_input_hidden("newthread", "Y"), "</td>\n";
+    echo "                        <td align=\"left\">", form_input_text("threadtitle", htmlentities_array($threadtitle), null, 250, null, "thread_title"), form_input_hidden("newthread", "Y"), "</td>\n";
     echo "                      </tr>\n";
 
 } else {

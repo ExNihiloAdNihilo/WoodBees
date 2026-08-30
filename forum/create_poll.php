@@ -847,7 +847,7 @@ echo "                      <tr>\n";
 echo "                        <td align=\"left\"><h2>", gettext("Thread title"), "</h2></td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
-echo "                        <td align=\"left\">", form_input_text("thread_title", isset($thread_title) ? htmlentities_array($thread_title) : null, 30, 255, null, "thread_title"), "</td>\n";
+echo "                        <td align=\"left\">", form_input_text("thread_title", isset($thread_title) ? htmlentities_array($thread_title) : null, 30, 250, null, "thread_title"), "</td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td align=\"left\">&nbsp;</td>\n";

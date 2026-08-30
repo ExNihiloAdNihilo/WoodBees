@@ -30,6 +30,13 @@ $db_username = "{db_username}"; // Your MySQL username
 $db_password = "{db_password}"; // Your MySQL password
 $db_database = "{db_database}"; // The name of your MySQL database
 
+$db_charset = "utf8"; // MySQL connection character set
+
+// The connection character set. "utf8" (3-byte) stores every living
+// script and is the default. To store emoji or rare supplementary-plane
+// characters, migrate the database to "utf8mb4" (see
+// docs/utf8mb4-migration.md) and then set this to "utf8mb4".
+
 // ---------------------------------------------------------------------
 
 // MySQL Big Selects ---------------------------------------------------
