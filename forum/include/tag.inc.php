@@ -208,7 +208,50 @@ function tag_link_post($tagid, $tid, $pid)
 
     if (!$db->query($sql)) return false;
 
-    return ($db->affected_rows > 0);
+    if ($db->affected_rows > 0) {
+
+        tag_touch_threads($tagid, $tid);
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Bump MODIFIED on threads carrying a tag so the messages-page client cache
+ * re-validates and a tag approval / de-approval / removal becomes visible to
+ * everyone straight away.
+ *
+ * Follows thread_change_title()'s pattern of only advancing MODIFIED on
+ * threads recent enough to still matter, so a tag change never resurfaces a
+ * long-dead thread in the thread list.
+ *
+ * @param int $tagid
+ * @param int $only_tid  restrict to this one thread (used when a tag is added)
+ * @return bool
+ */
+function tag_touch_threads($tagid, $only_tid = null)
+{
+    if (!is_numeric($tagid)) return false;
+
+    if (!$db = db::get()) return false;
+
+    if (!($table_prefix = get_table_prefix())) return false;
+
+    $cutoff_datetime = forum_get_unread_cutoff_datetime();
+    $current_datetime = date(MYSQL_DATETIME, time());
+
+    $sql = "UPDATE LOW_PRIORITY `{$table_prefix}THREAD` THREAD ";
+    $sql .= "INNER JOIN `{$table_prefix}POST_TAG` POST_TAG ON (POST_TAG.TID = THREAD.TID) ";
+    $sql .= "SET THREAD.MODIFIED = IF(THREAD.MODIFIED < CAST('$cutoff_datetime' AS DATETIME), ";
+    $sql .= "THREAD.MODIFIED, CAST('$current_datetime' AS DATETIME)) ";
+    $sql .= "WHERE POST_TAG.TAG = '" . intval($tagid) . "' AND THREAD.DELETED = 'N'";
+
+    if (is_numeric($only_tid)) {
+        $sql .= " AND THREAD.TID = '" . intval($only_tid) . "'";
+    }
+
+    return (bool) $db->query($sql);
 }
 
 /**
@@ -268,7 +311,11 @@ function tag_approve($tagid, $uid)
     $sql = "UPDATE `{$table_prefix}TAG` SET APPROVED = NOW(), APPROVED_BY = '" . intval($uid) . "' ";
     $sql .= "WHERE TID = '$tagid'";
 
-    return (bool) $db->query($sql);
+    if (!$db->query($sql)) return false;
+
+    tag_touch_threads($tagid);
+
+    return true;
 }
 
 /**
@@ -285,6 +332,8 @@ function tag_deapprove($tagid, $uid)
     if (!$db = db::get()) return false;
 
     if (!($table_prefix = get_table_prefix())) return false;
+
+    tag_touch_threads($tagid);
 
     $sql = "UPDATE `{$table_prefix}TAG` SET APPROVED = NULL, APPROVED_BY = NULL ";
     $sql .= "WHERE TID = '$tagid'";
@@ -305,6 +354,8 @@ function tag_delete($tagid)
     if (!$db = db::get()) return false;
 
     if (!($table_prefix = get_table_prefix())) return false;
+
+    tag_touch_threads($tagid);
 
     if (!$db->query("DELETE FROM `{$table_prefix}POST_TAG` WHERE TAG = '$tagid'")) return false;
 
