@@ -934,7 +934,7 @@ echo "          <tr>\n";
 echo "            <td align=\"left\" class=\"posthead\">\n";
 echo "              <table class=\"posthead\" width=\"100%\">\n";
 echo "                <tr>\n";
-echo "                  <td align=\"left\" class=\"subhead\" colspan=\"3\">", gettext("Sphinx Search Integration"), "</td>\n";
+echo "                  <td align=\"left\" class=\"subhead\" colspan=\"3\">", gettext("Manticore / Sphinx Search Integration"), "</td>\n";
 echo "                </tr>\n";
 echo "                <tr>\n";
 echo "                  <td align=\"center\">\n";
@@ -946,22 +946,22 @@ if (isset($forum_global_settings['sphinx_search_enabled']) && $forum_global_sett
 
     if (!sphinx_search_connect()) {
 
-        html_display_error_msg(gettext("Cannot connect to a Sphinx Search server using the settings you have specified."), '95%', 'center');
+        html_display_error_msg(gettext("Cannot connect to a Manticore / Sphinx search server using the settings you have specified."), '95%', 'center');
     }
 }
 
 echo "                        </td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
-echo "                        <td align=\"left\" width=\"250\">", gettext("Enable Sphinx Search integration"), ":</td>\n";
+echo "                        <td align=\"left\" width=\"250\">", gettext("Enable Manticore / Sphinx search integration"), ":</td>\n";
 echo "                        <td align=\"left\">", form_radio("sphinx_search_enabled", "Y", gettext("Yes"), (isset($forum_global_settings['sphinx_search_enabled']) && $forum_global_settings['sphinx_search_enabled'] == 'Y')), "&nbsp;", form_radio("sphinx_search_enabled", "N", gettext("No"), (isset($forum_global_settings['sphinx_search_enabled']) && $forum_global_settings['sphinx_search_enabled'] == 'N') || !isset($forum_global_settings['sphinx_search_enabled'])), "</td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
-echo "                        <td align=\"left\">", gettext("Sphinx Search Hostname"), ":</td>\n";
+echo "                        <td align=\"left\">", gettext("Search server hostname"), ":</td>\n";
 echo "                        <td align=\"left\">", form_input_text("sphinx_search_host", (isset($forum_global_settings['sphinx_search_host'])) ? htmlentities_array($forum_global_settings['sphinx_search_host']) : '', 35), "&nbsp;</td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
-echo "                        <td align=\"left\">", gettext("Sphinx Search Port"), ":</td>\n";
+echo "                        <td align=\"left\">", gettext("Search server port"), ":</td>\n";
 echo "                        <td align=\"left\">", form_input_text("sphinx_search_port", (isset($forum_global_settings['sphinx_search_port'])) ? htmlentities_array($forum_global_settings['sphinx_search_port']) : '', 5), "&nbsp;</td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
@@ -969,7 +969,7 @@ echo "                        <td align=\"left\" colspan=\"2\">&nbsp;</td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td align=\"left\" colspan=\"2\">\n";
-echo "                          <p>", gettext("These settings allow you to integrate Sphinx Search into your Beehive Forum. Sphinx Search provides an alternative to MySQL's full-text searching and can help provide better search results and can help reduce server load. Spinx Search must be installed on your server and configured before it will work with your Beehive Forum. For instructions please see the Beehive Forum docs."), "</p>\n";
+echo "                          <p>", gettext("These settings route full-text search through a Manticore (or Sphinx) search server instead of MySQL's built-in full-text index. This gives better results, lower database load, and proper tokenisation of scripts without spaces (Chinese, Japanese, Thai). The bundled docker-compose.yml already runs a Manticore container - set the hostname to \"manticore\" and the port to 9306. For a manual setup see docs/manticore/manticore_setup.md."), "</p>\n";
 echo "                        </td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";

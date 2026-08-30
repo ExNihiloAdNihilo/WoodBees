@@ -1,0 +1,5 @@
+# Shell scripts and container config templates run inside Linux containers and
+# must keep LF line endings regardless of the checkout platform.
+*.sh                                        text eol=lf
+docker/manticore/manticore.conf.template    text eol=lf
+docker/manticore/entrypoint.sh              text eol=lf
