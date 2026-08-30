@@ -111,9 +111,22 @@ function search_execute($search_arguments, &$error)
 
     if (!$db->query($sql)) return false;
 
-    // Execute search via Swiftsearch, unless we're searching for a tag.
+    // Route through the Manticore / Sphinx search server, unless we're
+    // searching for a tag (tag search is always done in MySQL).
     if (!isset($search_arguments['search_tag']) && forum_get_setting('sphinx_search_enabled', 'Y')) {
-        return sphinx_search_execute($search_arguments, $error);
+
+        if (sphinx_search_execute($search_arguments, $error) !== false) {
+            return true;
+        }
+
+        // If the search server is unreachable or misconfigured, fall back to
+        // MySQL full-text rather than failing the search outright. Any other
+        // outcome (e.g. no matches) is returned as-is.
+        if ($error !== SEARCH_SPHINX_UNAVAILABLE) {
+            return false;
+        }
+
+        $error = null;
     }
 
     // Execute the search with MySQL Fulltext

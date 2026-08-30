@@ -59,8 +59,17 @@ function sphinx_search_execute($search_arguments, &$error)
         return false;
     }
 
-    // Sphinx Search index name is the forum's webtag.
+    // The search-server index is named after the forum's webtag. get_webtag()
+    // only returns a value when a valid webtag is present in the request, so
+    // fall back to the current forum's stored webtag otherwise.
     if (!($sphinx_search_index = get_webtag())) {
+
+        $forum_data = get_forum_data();
+
+        $sphinx_search_index = (isset($forum_data['WEBTAG']) && strlen($forum_data['WEBTAG']) > 0) ? $forum_data['WEBTAG'] : false;
+    }
+
+    if (!$sphinx_search_index) {
 
         $error = SEARCH_SPHINX_UNAVAILABLE;
         return false;

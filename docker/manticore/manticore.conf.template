@@ -1,0 +1,129 @@
+# WoodBees / Beehive Forum - Manticore Search configuration.
+#
+# This file is a template. docker/manticore/entrypoint.sh substitutes the
+# @@TOKENS@@ from environment variables at container start and writes the
+# result to /etc/manticoresearch/manticore.conf.
+#
+# The source and index names must match the forum WEBTAG (stored uppercase),
+# because forum/include/sphinx.inc.php queries indexes named after the webtag
+# and "<webtag>_DELTA".
+
+source @@WEBTAG@@
+{
+    type = mysql
+
+    sql_host = @@DB_HOST@@
+    sql_user = @@DB_USER@@
+    sql_pass = @@DB_PASS@@
+    sql_db   = @@DB_NAME@@
+    sql_port = @@DB_PORT@@
+
+    sql_query_pre = SET NAMES utf8mb4
+    sql_query_pre = SET SESSION time_zone = '+0:00'
+    sql_query_pre = UPDATE @@PREFIX@@POST SET INDEXED = UTC_TIMESTAMP() WHERE INDEXED IS NULL
+
+    sql_query = \
+        SELECT @@PREFIX@@POST_SEARCH_ID.SID AS id, \
+               COALESCE(@@PREFIX@@THREAD.TITLE, '') AS title, \
+               COALESCE(@@PREFIX@@POST_CONTENT.CONTENT, '') AS content, \
+               1 AS forum, \
+               COALESCE(@@PREFIX@@THREAD.FID, 0) AS fid, \
+               COALESCE(@@PREFIX@@THREAD.TID, 0) AS tid, \
+               COALESCE(@@PREFIX@@POST.PID, 0) AS pid, \
+               COALESCE(@@PREFIX@@THREAD.BY_UID, 0) AS by_uid, \
+               COALESCE(@@PREFIX@@POST.FROM_UID, 0) AS from_uid, \
+               UNIX_TIMESTAMP(@@PREFIX@@POST.CREATED) AS created \
+          FROM @@PREFIX@@POST \
+    INNER JOIN @@PREFIX@@POST_SEARCH_ID ON (@@PREFIX@@POST_SEARCH_ID.TID = @@PREFIX@@POST.TID AND @@PREFIX@@POST_SEARCH_ID.PID = @@PREFIX@@POST.PID) \
+    INNER JOIN @@PREFIX@@POST_CONTENT   ON (@@PREFIX@@POST_CONTENT.TID = @@PREFIX@@POST.TID AND @@PREFIX@@POST_CONTENT.PID = @@PREFIX@@POST.PID) \
+    INNER JOIN @@PREFIX@@THREAD         ON (@@PREFIX@@THREAD.TID = @@PREFIX@@POST.TID) \
+    INNER JOIN @@PREFIX@@FOLDER         ON (@@PREFIX@@FOLDER.FID = @@PREFIX@@THREAD.FID) \
+         WHERE @@PREFIX@@POST_CONTENT.CONTENT IS NOT NULL
+
+    sql_attr_uint      = forum
+    sql_attr_uint      = fid
+    sql_attr_uint      = tid
+    sql_attr_uint      = pid
+    sql_attr_uint      = by_uid
+    sql_attr_uint      = from_uid
+    sql_attr_timestamp = created
+
+    sql_query_killlist = \
+        SELECT @@PREFIX@@POST_SEARCH_ID.SID AS id \
+          FROM @@PREFIX@@POST \
+    INNER JOIN @@PREFIX@@POST_SEARCH_ID ON (@@PREFIX@@POST_SEARCH_ID.TID = @@PREFIX@@POST.TID AND @@PREFIX@@POST_SEARCH_ID.PID = @@PREFIX@@POST.PID) \
+    INNER JOIN @@PREFIX@@POST_CONTENT   ON (@@PREFIX@@POST_CONTENT.TID = @@PREFIX@@POST.TID AND @@PREFIX@@POST_CONTENT.PID = @@PREFIX@@POST.PID) \
+         WHERE @@PREFIX@@POST_CONTENT.CONTENT IS NULL
+}
+
+source @@WEBTAG@@_DELTA : @@WEBTAG@@
+{
+    sql_query_pre = SET NAMES utf8mb4
+    sql_query_pre = SET SESSION time_zone = '+0:00'
+
+    sql_query = \
+        SELECT @@PREFIX@@POST_SEARCH_ID.SID AS id, \
+               COALESCE(@@PREFIX@@THREAD.TITLE, '') AS title, \
+               COALESCE(@@PREFIX@@POST_CONTENT.CONTENT, '') AS content, \
+               1 AS forum, \
+               COALESCE(@@PREFIX@@THREAD.FID, 0) AS fid, \
+               COALESCE(@@PREFIX@@THREAD.TID, 0) AS tid, \
+               COALESCE(@@PREFIX@@POST.PID, 0) AS pid, \
+               COALESCE(@@PREFIX@@THREAD.BY_UID, 0) AS by_uid, \
+               COALESCE(@@PREFIX@@POST.FROM_UID, 0) AS from_uid, \
+               UNIX_TIMESTAMP(@@PREFIX@@POST.CREATED) AS created \
+          FROM @@PREFIX@@POST \
+    INNER JOIN @@PREFIX@@POST_SEARCH_ID ON (@@PREFIX@@POST_SEARCH_ID.TID = @@PREFIX@@POST.TID AND @@PREFIX@@POST_SEARCH_ID.PID = @@PREFIX@@POST.PID) \
+    INNER JOIN @@PREFIX@@POST_CONTENT   ON (@@PREFIX@@POST_CONTENT.TID = @@PREFIX@@POST.TID AND @@PREFIX@@POST_CONTENT.PID = @@PREFIX@@POST.PID) \
+    INNER JOIN @@PREFIX@@THREAD         ON (@@PREFIX@@THREAD.TID = @@PREFIX@@POST.TID) \
+    INNER JOIN @@PREFIX@@FOLDER         ON (@@PREFIX@@FOLDER.FID = @@PREFIX@@THREAD.FID) \
+         WHERE @@PREFIX@@POST_CONTENT.CONTENT IS NOT NULL \
+           AND @@PREFIX@@POST.INDEXED IS NULL
+
+    sql_query_post_index = UPDATE @@PREFIX@@POST SET INDEXED = UTC_TIMESTAMP() WHERE INDEXED IS NULL
+}
+
+index @@WEBTAG@@
+{
+    type   = plain
+    source = @@WEBTAG@@
+    path   = /var/lib/manticore/data/@@WEBTAG@@
+
+    html_strip  = 1
+    morphology  = libstemmer_en
+    min_word_len = 1
+
+    # CJK / scripts without spaces: index each character as its own token so
+    # they remain searchable. The "cjk" alias covers Hiragana, Katakana,
+    # CJK Unified + extensions and Hangul; "non_cjk" is the normal
+    # letters-and-digits table with those ranges removed.
+    charset_table = non_cjk
+    ngram_len     = 1
+    ngram_chars   = cjk
+}
+
+index @@WEBTAG@@_DELTA : @@WEBTAG@@
+{
+    source = @@WEBTAG@@_DELTA
+    path   = /var/lib/manticore/data/@@WEBTAG@@_DELTA
+}
+
+indexer
+{
+    mem_limit = 128M
+}
+
+searchd
+{
+    listen = 0.0.0.0:9306:mysql41
+    listen = 0.0.0.0:9308:http
+    listen = 0.0.0.0:9312
+
+    log       = /var/lib/manticore/searchd.log
+    query_log = /var/lib/manticore/query.log
+    pid_file  = /var/lib/manticore/searchd.pid
+
+    binlog_path = /var/lib/manticore/binlog
+
+    network_timeout = 5
+}
