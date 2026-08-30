@@ -246,7 +246,7 @@ function search_mysql_execute($search_arguments, &$error)
             $select_sql .= "POST.TID, POST.PID, 1.0 AS RELEVANCE ";
         }
 
-        $where_sql .= "AND TAG.TAG = '$search_tag' ";
+        $where_sql .= "AND TAG.TAG = '$search_tag' AND TAG.APPROVED IS NOT NULL ";
 
     } else {
 

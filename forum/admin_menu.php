@@ -30,6 +30,7 @@ require_once BH_INCLUDE_PATH . 'constants.inc.php';
 require_once BH_INCLUDE_PATH . 'forum.inc.php';
 require_once BH_INCLUDE_PATH . 'html.inc.php';
 require_once BH_INCLUDE_PATH . 'session.inc.php';
+require_once BH_INCLUDE_PATH . 'tag.inc.php';
 // End Required includes
 
 // Check we're logged in correctly
@@ -113,6 +114,13 @@ if (forum_check_webtag_available($webtag, false)) {
             echo "  </tr>\n";
         }
 
+        if (tag_enabled() && session::get_folders_by_perm(USER_PERM_FOLDER_MODERATE)) {
+
+            echo "  <tr>\n";
+            echo "    <td align=\"left\" class=\"postbody\">", html_style_image('bullet'), "&nbsp;<a href=\"admin_tag_approve.php?webtag=$webtag\" target=\"", html_get_frame_name('right'), "\">", gettext("Tag Approval Queue"), "</a></td>\n";
+            echo "  </tr>\n";
+        }
+
         echo "  <tr>\n";
         echo "    <td align=\"left\" class=\"postbody\">", html_style_image('bullet'), "&nbsp;<a href=\"admin_visitor_log.php?webtag=$webtag\" target=\"", html_get_frame_name('right'), "\">", gettext("Visitor Log"), "</a></td>\n";
         echo "  </tr>\n";
@@ -130,6 +138,14 @@ if (forum_check_webtag_available($webtag, false)) {
         echo "  <tr>\n";
         echo "    <td align=\"left\" class=\"postbody\">", html_style_image('bullet'), "&nbsp;<a href=\"admin_post_approve.php?webtag=$webtag\" target=\"", html_get_frame_name('right'), "\">", gettext("Post Approval Queue"), "</a></td>\n";
         echo "  </tr>\n";
+
+        if (tag_enabled()) {
+
+            echo "  <tr>\n";
+            echo "    <td align=\"left\" class=\"postbody\">", html_style_image('bullet'), "&nbsp;<a href=\"admin_tag_approve.php?webtag=$webtag\" target=\"", html_get_frame_name('right'), "\">", gettext("Tag Approval Queue"), "</a></td>\n";
+            echo "  </tr>\n";
+        }
+
         echo "  <tr>\n";
         echo "    <td align=\"left\" class=\"postbody\">&nbsp;</td>\n";
         echo "  </tr>\n";
