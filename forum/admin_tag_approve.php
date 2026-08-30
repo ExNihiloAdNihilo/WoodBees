@@ -149,7 +149,7 @@ if (isset($_POST['approve_tags'])) {
 
 } else if (isset($_POST['sync_access'])) {
 
-    tag_sync_moderator_folder_access();
+    $_SESSION['TAG_SYNC_RESULT'] = tag_sync_moderator_folder_access();
     header_redirect("admin_tag_approve.php?webtag=$webtag&sync_success=true");
     exit;
 }
@@ -171,7 +171,16 @@ if (isset($_GET['approve_success'])) {
 } else if (isset($_GET['deapprove_success'])) {
     html_display_success_msg(gettext("Tag de-approved"), '86%', 'center');
 } else if (isset($_GET['sync_success'])) {
-    html_display_success_msg(gettext("Moderator folder access has been synchronised"), '86%', 'center');
+
+    $sync_result = (isset($_SESSION['TAG_SYNC_RESULT']) && is_array($_SESSION['TAG_SYNC_RESULT'])) ? $_SESSION['TAG_SYNC_RESULT'] : array();
+    unset($_SESSION['TAG_SYNC_RESULT']);
+
+    if (sizeof($sync_result) > 0) {
+        html_display_success_msg(sprintf(gettext("The private Moderators folder is now accessible to: %s"), htmlentities_array(implode(', ', $sync_result))), '86%', 'center');
+    } else {
+        html_display_success_msg(gettext("Nothing to synchronise - no moderators or admins found."), '86%', 'center');
+    }
+
 } else if (sizeof($error_msg_array) > 0) {
     html_display_error_array($error_msg_array, '86%', 'center');
 }

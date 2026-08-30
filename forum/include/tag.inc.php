@@ -44,9 +44,8 @@ define('TAG_REQUEST_ALREADY', 4);   // this comment already carries this tag
 define('TAG_MAX_LENGTH', 30);
 
 /**
- * True unless tagging has been explicitly switched off in the forum
- * settings. Unlike the legacy inline #hashtag behaviour, the moderated
- * tag flow is on by default.
+ * True unless tagging has been explicitly switched off (enable_tags = N) in
+ * the forum settings. On by default.
  *
  * @return bool
  */
@@ -135,12 +134,13 @@ function tag_get_by_name($tag)
 /**
  * Find or create a tag row for the given name.
  *
- * When the tag does not yet exist it is created; $approved controls whether
- * it starts life publicly visible (inline #hashtags) or pending a moderator
- * (the "add tag" flow).
+ * When the tag does not yet exist it is created. $approved controls whether a
+ * newly created tag starts life visible or pending a moderator; both the
+ * "Add tag" button and inline #hashtags create pending tags, so callers
+ * normally pass false.
  *
  * @param string $tag        tag name (will be normalised)
- * @param bool   $approved   create pre-approved when new
+ * @param bool   $approved   create pre-approved when new (rarely used)
  * @param int    $uid        requesting user
  * @param int    $source_tid comment thread the request came from (0 for none)
  * @param int    $source_pid comment the request came from (0 for none)
@@ -460,7 +460,7 @@ function tag_get_moderator_folder_fid()
  * moderator and admin. Safe to re-run; only ever adds permission bits.
  *
  * @param int $fid folder id (defaults to the configured moderator folder)
- * @return bool
+ * @return mixed array of logon names that now have access, or false on failure
  */
 function tag_sync_moderator_folder_access($fid = null)
 {
@@ -517,7 +517,23 @@ function tag_sync_moderator_folder_access($fid = null)
         $db->query($sql);
     }
 
-    return true;
+    $granted = array();
+
+    $uid_in = implode(',', array_map('intval', array_filter($uid_list, 'is_numeric')));
+
+    if (strlen($uid_in) > 0) {
+
+        $sql = "SELECT LOGON FROM USER WHERE UID IN ($uid_in) ORDER BY LOGON";
+
+        if (($result = $db->query($sql))) {
+
+            while (($row = $result->fetch_row()) !== null) {
+                $granted[] = $row[0];
+            }
+        }
+    }
+
+    return $granted;
 }
 
 /**

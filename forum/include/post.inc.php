@@ -726,12 +726,10 @@ function post_add_tags($tid, $pid, array $tags)
 
     foreach ($tags as $tag) {
 
-        // Inline #hashtags keep their long-standing behaviour: they are
-        // created pre-approved and become live links as soon as the post
-        // is saved. The moderated flow is the "Add tag" button on a comment.
-        if (($tagid = tag_get_or_create($tag, true, $uid, $tid, $pid)) !== false) {
-            tag_link_post($tagid, $tid, $pid);
-        }
+        // Inline #hashtags go through the same moderation flow as tags added
+        // with the "Add tag" button: an existing tag is linked, a new one is
+        // created pending and queued for a moderator.
+        tag_request($tag, $tid, $pid, $uid);
     }
 
     return true;

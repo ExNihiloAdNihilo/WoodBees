@@ -407,23 +407,58 @@ function message_apply_formatting($message, $ignore_sig = false)
         $message = implode('', $message_parts);
     }
 
-    if ($enable_tags) {
+    if ($enable_tags && preg_match_all('/(^|\s)#([A-Z0-9]{1,255})/iu', $message, $hashtag_matches)) {
 
-        $message_parts = preg_split('/([<|>])/u', $message, -1, PREG_SPLIT_DELIM_CAPTURE);
+        // Only turn a #hashtag into a link once its tag has been approved by a
+        // moderator; unapproved ones stay as plain text.
+        $approved_hashtags = array();
 
-        for ($i = 0; $i < sizeof($message_parts); $i++) {
+        if (($tag_table_prefix = get_table_prefix()) && ($tag_db = db::get())) {
 
-            if (!($i % 4) && (!isset($message_parts[$i - 2]) || !strstr($message_parts[$i - 2], "href"))) {
+            $candidate_tags = array_unique(array_map('mb_strtolower', $hashtag_matches[2]));
+            $candidate_in = implode("','", array_map(array($tag_db, 'escape'), $candidate_tags));
 
-                $message_parts[$i] = preg_replace(
-                    '/(^|\s)#([A-Z0-9]{1,255})/iu',
-                    "$1<a href=\"search.php?webtag=$webtag&amp;tag=$2\" class=\"tag\" target=\"" . html_get_frame_name('right') . "\">#$2</a>",
-                    $message_parts[$i]
-                );
+            $tag_sql = "SELECT LOWER(TAG) FROM `{$tag_table_prefix}TAG` ";
+            $tag_sql .= "WHERE APPROVED IS NOT NULL AND TAG IN ('$candidate_in')";
+
+            if (($tag_result = $tag_db->query($tag_sql))) {
+
+                while (($tag_row = $tag_result->fetch_row()) !== null) {
+                    $approved_hashtags[$tag_row[0]] = true;
+                }
             }
         }
 
-        $message = implode('', $message_parts);
+        if (sizeof($approved_hashtags) > 0) {
+
+            $tag_frame_target = html_get_frame_name('right');
+
+            $message_parts = preg_split('/([<|>])/u', $message, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+            for ($i = 0; $i < sizeof($message_parts); $i++) {
+
+                if (!($i % 4) && (!isset($message_parts[$i - 2]) || !strstr($message_parts[$i - 2], "href"))) {
+
+                    $message_parts[$i] = preg_replace_callback(
+                        '/(^|\s)#([A-Z0-9]{1,255})/iu',
+                        function ($m) use ($webtag, $approved_hashtags, $tag_frame_target) {
+
+                            $tag_name = mb_strtolower($m[2]);
+
+                            if (!isset($approved_hashtags[$tag_name])) {
+                                return $m[0];
+                            }
+
+                            return $m[1] . "<a href=\"search.php?webtag=$webtag&amp;tag=" . rawurlencode($tag_name)
+                                 . "\" class=\"tag\" target=\"$tag_frame_target\">#" . htmlentities_array($m[2]) . "</a>";
+                        },
+                        $message_parts[$i]
+                    );
+                }
+            }
+
+            $message = implode('', $message_parts);
+        }
     }
 
     $message = emoticons_apply($message);
