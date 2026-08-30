@@ -34,14 +34,21 @@ function sphinx_search_connect()
 
     if (!($sphinx_search_port = forum_get_setting('sphinx_search_port', 'is_numeric', false))) return false;
 
-    try {
+    // The '@' is deliberate: a failed connection raises an mysqli_connect()
+    // warning which the forum's error handler would otherwise promote to a
+    // fatal, defeating the "fall back to MySQL full-text" path. A short
+    // connect timeout stops a dead/firewalled host from stalling the request.
+    if (!($sphinx = @mysqli_init())) return false;
 
-        return mysqli_connect($sphinx_search_host, null, null, null, $sphinx_search_port);
+    @mysqli_options($sphinx, MYSQLI_OPT_CONNECT_TIMEOUT, 3);
 
-    } catch (Exception $e) {
+    if (!@mysqli_real_connect($sphinx, $sphinx_search_host, null, null, null, $sphinx_search_port)) {
 
+        @mysqli_close($sphinx);
         return false;
     }
+
+    return $sphinx;
 }
 
 function sphinx_search_execute($search_arguments, &$error)
