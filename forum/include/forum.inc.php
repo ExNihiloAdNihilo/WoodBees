@@ -626,6 +626,8 @@ function forum_check_setting_name($setting_name)
         'show_stats',
         'start_page',
         'start_page_css',
+        'tag_moderator_fid',
+        'tag_request_tid',
         'wiki_integration_uri',
     );
 
@@ -1127,9 +1129,16 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
 
         $sql = "CREATE TABLE `{$forum_table_prefix}TAG` (";
         $sql .= "  TID MEDIUMINT(11) UNSIGNED NOT NULL AUTO_INCREMENT,";
-        $sql .= "  TAG VARCHAR(255) DEFAULT NULL,";
+        $sql .= "  TAG VARCHAR(30) DEFAULT NULL,";
+        $sql .= "  CREATED DATETIME DEFAULT NULL,";
+        $sql .= "  CREATED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
+        $sql .= "  APPROVED DATETIME DEFAULT NULL,";
+        $sql .= "  APPROVED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
+        $sql .= "  SOURCE_TID MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
+        $sql .= "  SOURCE_PID MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
         $sql .= "  PRIMARY KEY (TID),";
-        $sql .= "  UNIQUE KEY TAG (TAG)";
+        $sql .= "  UNIQUE KEY TAG (TAG),";
+        $sql .= "  KEY APPROVED (APPROVED)";
         $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
 
         $db->query($sql);

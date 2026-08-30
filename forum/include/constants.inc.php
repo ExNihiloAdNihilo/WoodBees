@@ -371,6 +371,9 @@ define('BAN_HIT_TYPE_SFS', 77);
 define('APPROVED_LINK', 78);
 define('DELETE_LINK', 79);
 define('EDIT_LINK', 80);
+define('APPROVED_TAG', 81);
+define('DEAPPROVED_TAG', 82);
+define('DELETED_TAG', 83);
 
 // Admin log grouping
 define('ADMIN_LOG_GROUP_NONE', 0);

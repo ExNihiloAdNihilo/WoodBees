@@ -32,6 +32,7 @@ require_once BH_INCLUDE_PATH . 'ip.inc.php';
 require_once BH_INCLUDE_PATH . 'perm.inc.php';
 require_once BH_INCLUDE_PATH . 'poll.inc.php';
 require_once BH_INCLUDE_PATH . 'session.inc.php';
+require_once BH_INCLUDE_PATH . 'tag.inc.php';
 require_once BH_INCLUDE_PATH . 'user.inc.php';
 require_once BH_INCLUDE_PATH . 'word_filter.inc.php';
 // End Required includes
@@ -721,25 +722,17 @@ function post_add_tags($tid, $pid, array $tags)
     if (!is_numeric($tid)) return false;
     if (!is_numeric($pid)) return false;
 
-    if (!($table_prefix = get_table_prefix())) return false;
-
-    if (!$db = db::get()) return false;
-
-    $tags = $db->escape($tags);
+    $uid = (isset($_SESSION['UID']) && is_numeric($_SESSION['UID'])) ? intval($_SESSION['UID']) : 0;
 
     foreach ($tags as $tag) {
 
-        $sql = "INSERT IGNORE INTO `{$table_prefix}TAG` (TAG) VALUES ('$tag')";
-        if (!$db->query($sql)) return false;
+        // Inline #hashtags keep their long-standing behaviour: they are
+        // created pre-approved and become live links as soon as the post
+        // is saved. The moderated flow is the "Add tag" button on a comment.
+        if (($tagid = tag_get_or_create($tag, true, $uid, $tid, $pid)) !== false) {
+            tag_link_post($tagid, $tid, $pid);
+        }
     }
-
-    $tags = implode("','", $tags);
-
-    $sql = "INSERT IGNORE INTO `{$table_prefix}POST_TAG` (TID, PID, TAG) ";
-    $sql .= "SELECT '$tid', '$pid', TAG.TID FROM `{$table_prefix}TAG` TAG ";
-    $sql .= "WHERE TAG.TAG IN ('$tags')";
-
-    if (!$db->query($sql)) return false;
 
     return true;
 }

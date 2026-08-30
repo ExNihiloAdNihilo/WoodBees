@@ -528,12 +528,46 @@ foreach ($forum_prefix_array as $forum_fid => $table_data) {
 
         $sql = "CREATE TABLE `{$table_data['PREFIX']}TAG` (";
         $sql .= "  TID MEDIUMINT(11) UNSIGNED NOT NULL AUTO_INCREMENT,";
-        $sql .= "  TAG VARCHAR(255) DEFAULT NULL,";
+        $sql .= "  TAG VARCHAR(30) DEFAULT NULL,";
+        $sql .= "  CREATED DATETIME DEFAULT NULL,";
+        $sql .= "  CREATED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
+        $sql .= "  APPROVED DATETIME DEFAULT NULL,";
+        $sql .= "  APPROVED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
+        $sql .= "  SOURCE_TID MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
+        $sql .= "  SOURCE_PID MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
         $sql .= "  PRIMARY KEY (TID),";
-        $sql .= "  UNIQUE KEY TAG (TAG)";
+        $sql .= "  UNIQUE KEY TAG (TAG),";
+        $sql .= "  KEY APPROVED (APPROVED)";
         $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
 
         $db->query($sql);
+    }
+
+    // Tag moderation columns (added after the original TAG table shipped).
+    if (install_table_exists($config['db_database'], "{$table_data['WEBTAG']}_TAG")) {
+
+        foreach (array('CREATED DATETIME DEFAULT NULL',
+                       'CREATED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL',
+                       'APPROVED DATETIME DEFAULT NULL',
+                       'APPROVED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL',
+                       'SOURCE_TID MEDIUMINT(8) UNSIGNED DEFAULT NULL',
+                       'SOURCE_PID MEDIUMINT(8) UNSIGNED DEFAULT NULL') as $column_def) {
+
+            list($column_name) = explode(' ', $column_def);
+
+            if (!install_column_exists($config['db_database'], "{$table_data['WEBTAG']}_TAG", $column_name)) {
+                $db->query("ALTER TABLE `{$table_data['PREFIX']}TAG` ADD COLUMN $column_def");
+            }
+        }
+
+        // Pre-existing tags (from inline #hashtags) keep working: mark them approved.
+        $db->query("UPDATE `{$table_data['PREFIX']}TAG` SET APPROVED = NOW() WHERE APPROVED IS NULL AND CREATED IS NULL");
+
+        $db->query("ALTER TABLE `{$table_data['PREFIX']}TAG` CHANGE TAG TAG VARCHAR(30) DEFAULT NULL");
+
+        if (!install_index_exists($config['db_database'], "{$table_data['WEBTAG']}_TAG", 'APPROVED')) {
+            $db->query("ALTER TABLE `{$table_data['PREFIX']}TAG` ADD KEY APPROVED (APPROVED)");
+        }
     }
 
     if (!install_column_exists($config['db_database'], "{$table_data['WEBTAG']}_USER_TRACK", 'USER_KEY')) {
