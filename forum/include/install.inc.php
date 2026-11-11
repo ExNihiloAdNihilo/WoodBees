@@ -811,7 +811,7 @@ function install_draw_top()
     echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n";
     echo "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en-gb\" lang=\"en-gb\" dir=\"ltr\">\n";
     echo "<head>\n";
-    echo "<title>Beehive Forum ", BEEHIVE_VERSION, " Installation</title>\n";
+    echo "<title>WoodBees ", WOODBEES_VERSION, " Installation</title>\n";
     echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n";
     echo "<link rel=\"icon\" href=\"../styles/default/images/favicon.ico\" type=\"image/ico\" />\n";
     echo "<link rel=\"stylesheet\" href=\"../styles/default/style.css\" type=\"text/css\" />\n";
@@ -824,7 +824,7 @@ function install_draw_top()
 
     echo "</head>\n";
     echo "<body>\n";
-    echo "<h1>Beehive Forum ", BEEHIVE_VERSION, " Installation</h1>\n";
+    echo "<h1>WoodBees ", WOODBEES_VERSION, " Installation</h1>\n";
     echo "<div align=\"center\">\n";
     echo "<br />\n";
 }

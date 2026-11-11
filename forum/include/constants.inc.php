@@ -21,7 +21,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
 USA
 ======================================================================*/
 
-// Beehive Version
+// WoodBees Version
+define('WOODBEES_VERSION', "Alpha 0.1");
+
+// Beehive Version (the underlying engine WoodBees is built on)
 define('BEEHIVE_VERSION', "1.5.2");
 
 // Version supported for upgrades

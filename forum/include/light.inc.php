@@ -169,7 +169,7 @@ function light_html_draw_top(array $options = array())
 
     $forum_content_rating = html_get_forum_content_rating();
 
-    echo "<meta name=\"generator\" content=\"Beehive Forum ", BEEHIVE_VERSION, "\" />\n";
+    echo "<meta name=\"generator\" content=\"WoodBees ", WOODBEES_VERSION, "\" />\n";
     echo "<meta name=\"keywords\" content=\"", word_filter_add_ob_tags($meta_keywords, true), "\" />\n";
     echo "<meta name=\"description\" content=\"", word_filter_add_ob_tags($meta_description, true), "\" />\n";
     echo "<meta name=\"rating\" content=\"$forum_content_rating\" />\n";
@@ -409,7 +409,7 @@ function light_html_draw_bottom()
         echo "  </div>\n";
     }
 
-    echo "  <h6><a href=\"http://www.beehiveforum.co.uk/\" target=\"_blank\">Beehive Forum ", BEEHIVE_VERSION, "<br />&copy; ", strftime('%Y'), " Project Beehive Forum</a></h6>\n";
+    echo "  <h6><a href=\"http://www.beehiveforum.co.uk/\" target=\"_blank\">WoodBees ", WOODBEES_VERSION, " (built on Beehive Forum ", BEEHIVE_VERSION, ")<br />&copy; ", strftime('%Y'), " Project Beehive Forum</a></h6>\n";
     echo "</div>\n";
     echo "</body>\n";
     echo "</html>\n";

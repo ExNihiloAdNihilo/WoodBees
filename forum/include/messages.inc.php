@@ -1871,7 +1871,7 @@ function messages_beehive_bar()
     echo "<table width=\"98%\">\n";
     echo "  <tr>\n";
     echo "    <td width=\"60%\" align=\"left\">\n";
-    echo "      Beehive Forum ", BEEHIVE_VERSION, "&nbsp;|&nbsp;\n";
+    echo "      WoodBees ", WOODBEES_VERSION, " (built on Beehive Forum ", BEEHIVE_VERSION, ")&nbsp;|&nbsp;\n";
     echo "      <a href=\"http://www.beehiveforum.co.uk/faq/\" target=\"_blank\">", gettext("FAQ"), "</a>&nbsp;|&nbsp;\n";
     echo "      <a href=\"http://www.beehiveforum.co.uk/docs/\" target=\"_blank\">", gettext("Docs"), "</a>&nbsp;|&nbsp;\n";
     echo "      <a href=\"http://www.beehiveforum.co.uk/support/\" target=\"_blank\">", gettext("Support"), "</a>&nbsp;|&nbsp;\n";
