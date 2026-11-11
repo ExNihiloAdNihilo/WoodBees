@@ -45,7 +45,7 @@ $mysql_big_selects = false;
 
 // Depending on the configuration of the MySQL server you may run into
 // errors along the lines of: "The SELECT would examine too many records
-// and probably take a very long time" when using Beehive. To attempt to
+// and probably take a very long time" when using WoodBees. To attempt to
 // prevent this from happening you can try turning this option on.
 
 // ---------------------------------------------------------------------
@@ -54,7 +54,7 @@ $mysql_big_selects = false;
 
 $error_report_verbose = false;
 
-// The Beehive Forum Error Handler can be configured to display verbose
+// The WoodBees Error Handler can be configured to display verbose
 // details about any errors that occur to the end user.
 //
 // WARNING: This setting is NOT recommended in production environments.
@@ -68,22 +68,22 @@ $error_report_verbose = false;
 // Error Reporting Email -----------------------------------------------
 
 $error_report_email_addr_to = '{error_report_email_addr_to}';
-$error_report_email_addr_from = 'no-reply@beehiveforum.co.uk';
+$error_report_email_addr_from = 'no-reply@woodbees.example';
 
-// In addition to the error message displayed to end users Beehive can
+// In addition to the error message displayed to end users WoodBees can
 // also send error reports to an email address. To enable this
 // functionality simply change the value above to a valid email address.
 //
 // For example:
 //
-// $error_report_email_addr_to = 'support@beehiveforum.co.uk'
+// $error_report_email_addr_to = 'support@woodbees.example'
 //
-// By default emails will be sent from 'no-reply@beehiveforum.co.uk'.
+// By default emails will be sent from 'no-reply@woodbees.example'.
 // To change this you can also edit the $error_report_email_addr_from
 // variable.
 
 // Note: The no-reply email saved in the database is not used by the
-//       Beehive Forum error handler in order to avoid logging another
+//       WoodBees error handler in order to avoid logging another
 //       error message trying to connect to a database server that is
 //       not available.
 //
@@ -93,17 +93,17 @@ $error_report_email_addr_from = 'no-reply@beehiveforum.co.uk';
 
 $frame_top_target = "_top";
 
-// This option allows you to specify the "top" frame for Beehive to use
-// when navigating between frames. If you intend to use your Beehive
-// Forum embedded into another site (for example within an iframe)
+// This option allows you to specify the "top" frame for WoodBees to use
+// when navigating between frames. If you intend to use your WoodBees
+// forum embedded into another site (for example within an iframe)
 // then you could change the value of this variable to match the name
-// attribute of your iframe and prevent Beehive from breaking out of
+// attribute of your iframe and prevent WoodBees from breaking out of
 // the frameset.
 //
-// Note: That when using Beehive within a iframe you should ensure that
+// Note: That when using WoodBees within a iframe you should ensure that
 //       it is running from the same domain as it's parent page
 //       otherwise browsers may refuse the session cookies required
-//       by Beehive and your users will not be able to login.
+//       by WoodBees and your users will not be able to login.
 
 // ---------------------------------------------------------------------
 

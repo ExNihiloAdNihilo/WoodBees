@@ -60,7 +60,7 @@ function install_check()
         echo "                  <td align=\"center\">\n";
         echo "                    <table class=\"posthead\" width=\"95%\">\n";
         echo "                      <tr>\n";
-        echo "                        <td align=\"left\">Your Beehive Forum would appear to be already installed, but you have not removed the installation files. You must delete the 'install' directory before your Beehive Forum can be used.</td>\n";
+        echo "                        <td align=\"left\">Your WoodBees forum would appear to be already installed, but you have not removed the installation files. You must delete the 'install' directory before your WoodBees forum can be used.</td>\n";
         echo "                      </tr>\n";
         echo "                    </table>\n";
         echo "                  </td>\n";
@@ -113,7 +113,7 @@ function install_check_mysql_version()
         echo "                  <td align=\"center\">\n";
         echo "                    <table class=\"posthead\" width=\"95%\">\n";
         echo "                      <tr>\n";
-        echo "                        <td align=\"left\">MySQL Server Version ", BEEHIVE_MYSQL_MIN_VERSION, " or newer is required to run Beehive Forum. Please upgrade your MySQL installtion.</td>\n";
+        echo "                        <td align=\"left\">MySQL Server Version ", BEEHIVE_MYSQL_MIN_VERSION, " or newer is required to run WoodBees. Please upgrade your MySQL installtion.</td>\n";
         echo "                      </tr>\n";
         echo "                      <tr>\n";
         echo "                        <td align=\"left\">&nbsp;</td>\n";
@@ -168,7 +168,7 @@ function install_check_php_extensions()
         echo "                  <td align=\"center\">\n";
         echo "                    <table class=\"posthead\" width=\"95%\">\n";
         echo "                      <tr>\n";
-        echo "                        <td align=\"left\">Some PHP extensions required to run Beehive Forum are not installed. Please check your PHP installation.</td>\n";
+        echo "                        <td align=\"left\">Some PHP extensions required to run WoodBees are not installed. Please check your PHP installation.</td>\n";
         echo "                      </tr>\n";
         echo "                      <tr>\n";
         echo "                        <td align=\"left\">&nbsp;</td>\n";
@@ -239,7 +239,7 @@ function install_check_php_version()
         echo "                  <td align=\"center\">\n";
         echo "                    <table class=\"posthead\" width=\"95%\">\n";
         echo "                      <tr>\n";
-        echo "                        <td align=\"left\">PHP Version ", BEEHIVE_PHP_MIN_VERSION, " or newer is required to run Beehive Forum. Please upgrade your PHP installation.</td>\n";
+        echo "                        <td align=\"left\">PHP Version ", BEEHIVE_PHP_MIN_VERSION, " or newer is required to run WoodBees. Please upgrade your PHP installation.</td>\n";
         echo "                      </tr>\n";
         echo "                      <tr>\n";
         echo "                        <td align=\"left\">&nbsp;</td>\n";
@@ -550,11 +550,11 @@ function install_set_default_forum_settings()
     if (!$db = db::get()) return false;
 
     $global_settings = array(
-        'forum_keywords' => 'A Beehive Forum, Beehive Forum, Project Beehive Forum',
-        'forum_desc' => 'A Beehive Forum',
-        'forum_email' => 'admin@beehiveforum.co.uk',
-        'forum_noreply_email' => 'noreply@beehiveforum.co.uk',
-        'forum_name' => 'A Beehive Forum',
+        'forum_keywords' => 'WoodBees, A WoodBees Forum',
+        'forum_desc' => 'A WoodBees Forum',
+        'forum_email' => 'admin@woodbees.example',
+        'forum_noreply_email' => 'noreply@woodbees.example',
+        'forum_name' => 'A WoodBees Forum',
         'allow_search_spidering' => 'Y',
         'pm_allow_attachments' => 'Y',
         'pm_auto_prune' => '-60',

@@ -1,4 +1,14 @@
-# Beehive Forum Readme
+# WoodBees Readme
+
+WoodBees Alpha 0.1 — a fork of Beehive Forum, maintained at
+<https://github.com/ExNihiloAdNihilo/WoodBees>. See [release.md](release.md)
+for what's changed in WoodBees.
+
+Below is the inherited Beehive Forum manual. It still accurately describes
+installing, configuring and customising a WoodBees installation, since
+WoodBees is built directly on this codebase. References to specific
+historical Beehive Forum version numbers (e.g. "as of Beehive Forum 1.0")
+describe the underlying engine's own release history and are left as-is.
 
 <http://www.beehiveforum.co.uk/>
 
@@ -20,13 +30,13 @@ in release.txt.
             4. Upload
             5. Installing the forum
         2. Installation with Softaculous
-    3. Using your Beehive Forum
+    3. Using your WoodBees forum
         1. First use
         2. Adminning
         3. What to do if it doesn't work
         4. Add your forum to our list
         5. Enabling email notifications
-    4. Customising your Beehive Forum
+    4. Customising your WoodBees forum
         1. Start Page
         2. Stylesheet
         3. Images
@@ -48,14 +58,14 @@ in release.txt.
         5. Upgrading from 0.2 to 0.3
         6. Upgrading from 0.1 / 0.1.1 to 0.2
         7. Upgrading from 0.1 or 0.2 to 0.4
-    6. Beehive Forum Error Reporter
+    6. WoodBees Error Reporter
         1. Enabling Error Reporter after upgrading
 2. Known Issues
 3. Support
     1. Requests / Bug reporting
     2. General questions and help
-    3. Beehive Forums in foreign languages
-        1. Translating Beehive Forums into my native language
+    3. WoodBees in foreign languages
+        1. Translating WoodBees into my native language
         2. Completed Translations
         3. Incomplete / Partial Translations
 4. Credits
@@ -234,13 +244,16 @@ hosting provider if you're not running your own server.
 
 ##### 1.2.2 Installation with Softaculous
 
-Beehive Forum can also be installed using Softaculous auto-install.
-If your hosting supports Softaculous, please visit the Softaculous
-Beehive Forum page here:
+Vanilla Beehive Forum can also be installed using Softaculous
+auto-install, if your hosting supports it:
 
 https://www.softaculous.com/apps/forums/Beehive
 
-##### 1.3 Using your Beehive Forum
+This does not apply to WoodBees — Softaculous does not carry a
+WoodBees listing, so a WoodBees install always goes through the
+manual steps above.
+
+##### 1.3 Using your WoodBees forum
 
 ###### 1.3.1 First use
 
@@ -259,7 +272,7 @@ and set them up.
 
 You may also wish to change the access permissions of your forum. In
 the admin section you will find options for restricting access to
-your Beehive Forum. The two main options are restricted, where each
+your WoodBees forum. The two main options are restricted, where each
 user account needs to be given permission to access the forum and
 password protected, where your forum uses a common password that can
 be given to users to allow them access.
@@ -273,27 +286,18 @@ there.
 
 ###### 1.3.3 What to do if it doesn't work
 
-Don't panic. Pop over to <http://www.tehforum.co.uk/forum/> and ask us
-for help, but remember, we don't get paid for this, so be nice.
+Don't panic. Open an issue at
+<https://github.com/ExNihiloAdNihilo/WoodBees/issues> and ask for help.
 
 It's helpful if you can tell us your setup when you've got a problem,
 such as the type of server (e.g. Linux/Apache, Windows/Apache or
 Windows/IIS, etc) and the version of PHP and MySQL that you're using.
-If your Beehive Forum threw up an error message, paste that in as
+If your WoodBees forum threw up an error message, paste that in as
 well.
-
-###### 1.3.4 Add your forum to our list (optional)
-
-If you like, you can add your shiny new forum to our list of live
-copies by going to <http://beehiveforum.co.uk/forums.php>
-
-It could be a bit of publicity for your site, and it helps us to be
-able to say "Look, all these people are using it!", but if you don't
-want to, you don't have to.
 
 ###### 1.3.5 Enabling email notifications
 
-By default Beehive Forum uses PHP's built-in mail function to send
+By default WoodBees uses PHP's built-in mail function to send
 email notifications to users. On *nix, PHP is set up to use sendmail.
 In order to send email from your forum you will need to install
 sendmail or a clone such as postfix. On Windows platforms PHP is set
@@ -309,15 +313,13 @@ Admin on your forum. Please note that Beehive does not support POP
 before SMTP (sometimes called SMTP after POP). The settings you need
 to enter will vary depending on your hosting provider or ISP. If you
 do not know this information, you must ask for help from your host.
-Unless the information is public knowledge, we cannot help you with
-it.
 
 More information on configuring the mail function can be found in
 the PHP manual here: <http://www.php.net/manual/en/book.mail.php>
 
-#### 1.3 Customising your Beehive Forum
+#### 1.3 Customising your WoodBees forum
 
-Beehive Forum has user-selectable styles. Basically these are like
+WoodBees has user-selectable styles. Basically these are like
 themes (or skins for WinAmp users) for your forum. There are several
 supplied styles, and it's easy to create your own.
 
@@ -393,7 +395,7 @@ fit in just fine.
 
 ##### 1.3.5 Emoticons
 
-Beehive Forum uses CSS-styled emoticons. This allows the end-user to
+WoodBees uses CSS-styled emoticons. This allows the end-user to
 have great control, being able to choose from options such as
 completely invisible, text-only, and the range of graphic sets which
 can be installed.
@@ -433,12 +435,12 @@ also have the .e\_NAME span { ... } class.
 
 ##### 1.3.6 GeSHi
 
-Beehive Forum uses several 'custom' HTML tags, including the
+WoodBees uses several 'custom' HTML tags, including the
 &lt;code&gt; tag. This tag now accepts a 'language' attribute which
 will highlight your code, thanks to the open-source software GeSHi
 1.0.6 or later from <http://qbnz.com/highlighter/>
 
-To include GeSHi syntax highlighting with your Beehive Forum
+To include GeSHi syntax highlighting with your WoodBees
 install simply download the latest version of GeSHi and upload
 it to a subdirectory 'geshi' in your main forum folder. For example
 if your forum was at www.site.com/forum/ you would upload GeSHi to
@@ -447,11 +449,11 @@ www.site.com/forum/geshi/.
 To change any GeSHi settings edit the file include/geshi.inc.php.
 
 Note: GeSHi is not created nor supported by the Beehive Forum
-developers.
+developers (nor by the WoodBees project).
 
 ##### 1.3.7 WYSIWYG Editor
 
-Since release 1.3.0, Beehive Forum uses CKEditor to provide it's
+Since release 1.3.0, Beehive Forum (and so WoodBees) uses CKEditor to provide it's
 HTML WYSIWYG editor. This replaces the built-in HTML editor and
 TinyMCE that was used in older releases.
 
@@ -461,23 +463,23 @@ for it to work.
 
 Note: Neither CKEditor nor TinyMCE are created by the Beehive
 Forum developers. Although we will provide support while integrating
-and using the software with your Beehive Forum, please note that
+and using the software with your WoodBees forum, please note that
 we are unable to fix bugs or help with the software generally.
 
 #### 1.4 Upgrading from previous versions of Beehive Forum
 
 If you're reading this you're looking for instructions on upgrading
-your Beehive Forum to the latest and greatest available version.
+your WoodBees forum to the latest and greatest available version.
 Below you will find instructions pertaining to each individual
 release. Please read them fully before starting the upgrade process.
 
 As with all software installations or upgrades it is highly
 recommended that you perform a backup of your existing web space
-and database before upgrading your Beehive Forum. Failure to do
+and database before upgrading your WoodBees forum. Failure to do
 so could result in lost data. You have been warned. Don't make us
 say we told you so.
 
-##### 1.4.1 Upgrading your Beehive Forum installation
+##### 1.4.1 Upgrading your WoodBees installation
 
 Beehive Forum's install script should be used to perform any upgrade
 from 0.4 or newer. Previously .sql scripts were provided but due to
@@ -513,7 +515,7 @@ restore the backup using phpMyAdmin.
 
 ###### 1.4.1.2 Back up your files
 
-The easiest way to back up your Beehive Forum files is to take a
+The easiest way to back up your WoodBees forum files is to take a
 copy of the forum directory and it's contents. Restoring this back
 up incase of upgrade failure is then simply a case of uploading the
 files and overwriting the changes.
@@ -524,15 +526,15 @@ This step is similar to 1.2.4, but you will need to overwrite your
 existing files with the newer ones provided in the Beehive Forum
 archive you have downloaded.
 
-Note: If you have made any customisations to your existing Beehive
-Forum installation, including styles and emoticons packs and any
+Note: If you have made any customisations to your existing WoodBees
+installation, including styles and emoticons packs and any
 code modifications, you might wish to rename your existing forum
 directory to something else so that you can easily compare the old
 and news files in order to reapply any of the customisations you
 want to keep.
 
 If you do not have any customised styles, emoticon packs or code
-modifications made to your existing Beehive Forum installation you
+modifications made to your existing WoodBees installation you
 can simply overwrite all of the files with the new ones.
 
 ###### 1.4.1.4 Run the upgrade script
@@ -608,7 +610,7 @@ Beehive to bring you bang up to date.
 
 ##### 1.5 Beehive Forum Error Reporter
 
-Beehive Forum includes a comprehensive error reporter which can be
+WoodBees includes a comprehensive error reporter which can be
 used to help diagnose faults and find bugs in the software. This
 error reporter is indispensable in helping to develop the project
 and should be used at all times when reporting problems you have
@@ -625,11 +627,11 @@ sensitive data being released to end users.
 Because not everyone has access to their server's error log
 (shared hosting, etc.) we have also implement error reporting by
 email. With this option you can continue to receive detailed error
-messages from your Beehive Forum installation with none of the
+messages from your WoodBees installation with none of the
 associated risks. It also means you can continue to report bugs
 back to the development team and get help diagnosing faults.
 
-Due to the nature of the Beehive Forum the error reporter can
+Due to the nature of the software the error reporter can
 only be enabled automatically if you're performing a new
 installation. To do this you simply tick the relevant box under
 Advanced Options in the installer. The changes will be
@@ -647,7 +649,7 @@ reporter enabled by default.
 
 To enable error reporting after upgrading you will need to
 manually edit the config.inc.php file generated during the
-installation process of your Beehive Forum. You will find this file
+installation process of your WoodBees forum. You will find this file
 within the include folder on your web space. Please do not use the
 config.inc.php file from the distribution archive. This is a
 template file used by the installer and will not work without
@@ -678,14 +680,14 @@ the file as UTF-8 encoded with PC / Windows line endings. This will
 make the file more portable and easier to edit later.
 
 Finally upload the modified config.inc.php making sure to replace
-the existing copy and check that your Beehive Forum continues to
+the existing copy and check that your WoodBees forum continues to
 function. If it does, sit back and wait to see if you receive any
 error reports. If you don't it's quite possible you're not actually
 getting any errors which is a good thing, but if you suspect you
 should be check that the email address is correct.
 
 If you can't get the error reporting to function or if you break
-your Beehive Forum you can simply restore the copy of config.inc.php
+your WoodBees forum you can simply restore the copy of config.inc.php
 you made earlier or try again. If you continue to have problems
 please seek assistance at Teh Forum, a link for which you find below
 in the Support section.
@@ -699,27 +701,18 @@ release.
 
 ### 3.1 Requests / Bug reporting
 
-Please report bugs on Teh Forum <http://www.tehforum.co.uk>. Here
-you'll find most of the developers of Beehive Forum hanging out.
-Feel free to post any questions or queries you have and we'll do our
-best to answer them.
+Please report WoodBees bugs at
+<https://github.com/ExNihiloAdNihilo/WoodBees/issues>.
 
 ### 3.2 General questions and help
 
-As above, you can try visiting <http://www.tehforum.co.uk/forum/>,
-where you can ask for help or check on the progress of the next
-version and see and test previews of the new features. If you need
-help don't think twice about posting, although please keep
-Beehive-related enquires to the 'Project Beehive Forum' folder.
+For general questions about WoodBees, open an issue at
+<https://github.com/ExNihiloAdNihilo/WoodBees/issues>. For questions
+about the underlying Beehive Forum engine, Teh Forum
+<http://www.tehforum.co.uk/forum/> is where most of the original
+Beehive Forum developers hang out.
 
-We've also added a wiki to help us document Beehive. Check it out
-here: <http://beehiveforum.xencollab.com/>
-
-You can also follow us on Facebook, by visiting:
-
-<http://www.facebook.com/pages/Project-Beehive-Forum/100468551205>
-
-### 3.3 Beehive Forums in foreign languages
+### 3.3 WoodBees in foreign languages
 
 Since the release of Beehive Forum 0.4 multiple languages have been
 supported, but because we're all very busy doing other things the
@@ -728,7 +721,7 @@ and far between. We hope to rectify this over time, but in order
 to do so we require volunteers. If you would like to help translate
 Beehive Forum into your native tongue please see below.
 
-#### 3.3.1 Translating Beehive Forums into my native language
+#### 3.3.1 Translating WoodBees into my native language
 
 Unfortunately the Beehive Forum coding team consists primarily of
 born and bred English men who have enough trouble speaking our own
@@ -751,6 +744,10 @@ English British.
 None currently.
 
 ## 4 Credits
+
+WoodBees is maintained as a separate fork by ExNihiloAdNihilo
+<https://github.com/ExNihiloAdNihilo/WoodBees>. Everyone credited
+below built the original Beehive Forum that WoodBees is built on.
 
 ### 4.1 Coding
 

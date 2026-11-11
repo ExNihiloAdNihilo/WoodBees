@@ -1,4 +1,8 @@
-# Beehive Forum Release Notes
+# WoodBees Release Notes
+
+Everything below "What's new in 1.5.2" and older is the inherited
+Beehive Forum changelog, kept as the historical record of the engine
+WoodBees is built on.
 
 ## What's new in WoodBees Alpha 0.1 (Released 10th November 2026)
 

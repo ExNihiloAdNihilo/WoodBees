@@ -109,7 +109,7 @@ function bh_exception_handler($exception)
         echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n";
         echo "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en-gb\" lang=\"en-gb\" dir=\"ltr\">\n";
         echo "<head>\n";
-        echo "<title>Beehive Forum - Error Handler</title>\n";
+        echo "<title>WoodBees - Error Handler</title>\n";
         echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n";
         echo "<link rel=\"icon\" href=\"styles/default/images/favicon.ico\" type=\"image/ico\" />\n";
         echo "<link rel=\"stylesheet\" href=\"styles/default/style.css?", md5(uniqid(rand())), "\" type=\"text/css\" />\n";
@@ -126,7 +126,7 @@ function bh_exception_handler($exception)
 
             if (isset($error_report_verbose) && $error_report_verbose == true) {
 
-                echo '<p>When reporting a bug in Project Beehive or when requesting support please include the details below.</p>';
+                echo '<p>When reporting a bug in WoodBees or when requesting support please include the details below.</p>';
 
                 echo "<table cellpadding=\"0\" cellspacing=\"0\" class=\"warning_msg\">\n";
                 echo "  <tr>\n";
@@ -193,7 +193,7 @@ function bh_exception_handler($exception)
                 echo "                            <table cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" class=\"warning_msg\">\n";
                 echo "                              <tr>\n";
                 echo "                                <td valign=\"top\" width=\"25\" class=\"warning_msg_icon\"><span class=\"image warning\"></span></td>\n";
-                echo "                                <td valign=\"top\" class=\"warning_msg_text\">When reporting a bug in Project Beehive or when requesting support please include the details below.</td>\n";
+                echo "                                <td valign=\"top\" class=\"warning_msg_text\">When reporting a bug in WoodBees or when requesting support please include the details below.</td>\n";
                 echo "                              </tr>\n";
                 echo "                            </table>\n";
                 echo "                          </div>\n";
@@ -295,7 +295,7 @@ function bh_error_process($exception)
     }
 
     if (defined('BEEHIVE_VERSION')) {
-        $version_strings[] = sprintf('Beehive Forum %s', BEEHIVE_VERSION);
+        $version_strings[] = sprintf('WoodBees %s (Beehive Forum %s)', WOODBEES_VERSION, BEEHIVE_VERSION);
     }
 
     if (($php_version = phpversion()) !== false) {
@@ -393,7 +393,7 @@ function bh_error_send_email($exception)
     if (isset($config['error_report_email_addr_from']) && strlen(trim($config['error_report_email_addr_from'])) > 0) {
         $error_report_email_addr_from = trim($config['error_report_email_addr_from']);
     } else {
-        $error_report_email_addr_from = 'no-reply@beehiveforum.co.uk';
+        $error_report_email_addr_from = 'no-reply@woodbees.example';
     }
 
     if (strlen($error_report_email_addr_to) > 0 && !defined('BEEHIVE_DEVELOPER_MODE')) {
@@ -403,12 +403,12 @@ function bh_error_send_email($exception)
         $error_log_email_message = implode("\n\n", $error_msg_array);
 
         $headers = "Return-path: $error_report_email_addr_from\n";
-        $headers .= "From: \"Beehive Forum Error Report\" <$error_report_email_addr_from>\n";
-        $headers .= "Reply-To: \"Beehive Forum Error Report\" <$error_report_email_addr_from>\n";
+        $headers .= "From: \"WoodBees Error Report\" <$error_report_email_addr_from>\n";
+        $headers .= "Reply-To: \"WoodBees Error Report\" <$error_report_email_addr_from>\n";
         $headers .= "Content-type: text/plain; charset=UTF-8\n";
         $headers .= "X-Mailer: PHP/" . phpversion() . "\n";
-        $headers .= "X-Beehive-Forum: Beehive Forum " . BEEHIVE_VERSION;
+        $headers .= "X-WoodBees: WoodBees " . WOODBEES_VERSION;
 
-        @mail($error_report_email_addr_to, "Beehive Forum Error Report", $error_log_email_message, $headers);
+        @mail($error_report_email_addr_to, "WoodBees Error Report", $error_log_email_message, $headers);
     }
 }

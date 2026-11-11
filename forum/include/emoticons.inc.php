@@ -34,7 +34,7 @@ function emoticons_initialise()
     if (!is_array($emoticons_array) || sizeof($emoticons_array) < 1) {
 
         // Get the user's emoticon set from their sesion.
-        // Fall back to using the forum default or Beehive default.
+        // Fall back to using the forum default or WoodBees default.
         if (isset($_SESSION['EMOTICONS']) && strlen(trim($_SESSION['EMOTICONS'])) > 0) {
             $user_emoticon_pack = $_SESSION['EMOTICONS'];
         } else {

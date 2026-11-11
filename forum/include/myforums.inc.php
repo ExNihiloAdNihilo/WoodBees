@@ -62,7 +62,7 @@ function get_forum_list($page = 1)
     while (($forum_data = $result->fetch_assoc()) !== null) {
 
         if (!isset($forum_data['FORUM_NAME']) || strlen(trim($forum_data['FORUM_NAME'])) < 1) {
-            $forum_data['FORUM_NAME'] = "A Beehive Forum";
+            $forum_data['FORUM_NAME'] = "A WoodBees Forum";
         }
 
         if (!isset($forum_data['FORUM_DESC']) || strlen(trim($forum_data['FORUM_DESC'])) < 1) {
@@ -174,7 +174,7 @@ function get_my_forums($view_type, $page = 1, $sort_by = 'LAST_VISIT', $sort_dir
         $forum_fid = $forum_data['FID'];
 
         if (!isset($forum_data['FORUM_NAME']) || strlen(trim($forum_data['FORUM_NAME'])) < 1) {
-            $forum_data['FORUM_NAME'] = gettext("A Beehive Forum");
+            $forum_data['FORUM_NAME'] = gettext("A WoodBees Forum");
         }
 
         if (!isset($forum_data['FORUM_DESC']) || strlen(trim($forum_data['FORUM_DESC'])) < 1) {

@@ -964,7 +964,7 @@ function search_output_opensearch_xml()
 
     forum_check_webtag_available($webtag);
 
-    $forum_title = forum_get_setting('forum_name', null, 'A Beehive Forum');
+    $forum_title = forum_get_setting('forum_name', null, 'A WoodBees Forum');
 
     $forum_description = html_get_forum_description();
 

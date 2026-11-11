@@ -83,7 +83,7 @@ function email_send_notification($tid, $pid)
 
         if (!email_address_valid($email_data['EMAIL'])) continue;
 
-        $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A Beehive Forum'), $email_data['UID'], true);
+        $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A WoodBees Forum'), $email_data['UID'], true);
 
         $subject = word_filter_apply(sprintf(gettext("Message Notification from %1\$s"), $forum_name), $email_data['UID'], true);
 
@@ -188,7 +188,7 @@ function email_send_thread_subscription($tid, $pid)
 
         if (!email_address_valid($email_data['EMAIL'])) continue;
 
-        $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A Beehive Forum'), $email_data['UID'], true);
+        $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A WoodBees Forum'), $email_data['UID'], true);
 
         $subject = word_filter_apply(sprintf(gettext("Thread Subscription Notification from %1\$s"), $forum_name), $email_data['UID'], true);
 
@@ -292,7 +292,7 @@ function email_send_folder_subscription($tid, $pid)
 
         if (!email_address_valid($email_data['EMAIL'])) continue;
 
-        $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A Beehive Forum'), $email_data['UID'], true);
+        $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A WoodBees Forum'), $email_data['UID'], true);
 
         $subject = word_filter_apply(sprintf(gettext("Folder Subscription Notification from %1\$s"), $forum_name), $email_data['UID'], true);
 
@@ -380,7 +380,7 @@ function email_send_pm_notification($mid)
 
         if (!email_address_valid($email_data['EMAIL'])) continue;
 
-        $forum_name = forum_get_setting('forum_name', null, 'A Beehive Forum');
+        $forum_name = forum_get_setting('forum_name', null, 'A WoodBees Forum');
 
         $subject = sprintf(gettext("PM Notification from %1\$s"), $forum_name);
 
@@ -453,7 +453,7 @@ function email_send_pw_reminder($logon)
 
     if (!email_address_valid($to_user['EMAIL'])) return false;
 
-    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A Beehive Forum'), $to_user['UID'], true);
+    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A WoodBees Forum'), $to_user['UID'], true);
 
     $subject = word_filter_apply(sprintf(gettext("Your password reset request from %1\$s"), $forum_name), $to_user['UID'], true);
 
@@ -513,7 +513,7 @@ function email_send_new_pw_notification($to_uid, $from_uid, $new_password)
 
     if (!email_address_valid($to_user['EMAIL'])) return false;
 
-    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A Beehive Forum'), $to_uid, true);
+    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A WoodBees Forum'), $to_uid, true);
 
     $subject = word_filter_apply(sprintf(gettext("Password change notification from %1\$s"), $forum_name), $to_uid, true);
 
@@ -573,9 +573,9 @@ function email_send_user_confirmation($to_uid)
 
     if (!email_address_valid($to_user['EMAIL'])) return false;
 
-    $forum_email = forum_get_setting('forum_email', null, 'admin@beehiveforum.co.uk');
+    $forum_email = forum_get_setting('forum_email', null, 'admin@woodbees.example');
 
-    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A Beehive Forum'), $to_uid, true);
+    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A WoodBees Forum'), $to_uid, true);
 
     $subject = word_filter_apply(sprintf(gettext("Email confirmation required for %1\$s"), $forum_name), $to_uid, true);
 
@@ -635,9 +635,9 @@ function email_send_changed_email_confirmation($to_uid)
 
     if (!email_address_valid($to_user['EMAIL'])) return false;
 
-    $forum_email = forum_get_setting('forum_email', null, 'admin@beehiveforum.co.uk');
+    $forum_email = forum_get_setting('forum_email', null, 'admin@woodbees.example');
 
-    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A Beehive Forum'), $to_uid, true);
+    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A WoodBees Forum'), $to_uid, true);
 
     $subject = word_filter_apply(sprintf(gettext("Email confirmation required for %1\$s"), $forum_name), $to_uid, true);
 
@@ -699,7 +699,7 @@ function email_send_user_approval_notification($to_uid, $new_user_uid)
 
     if (!email_address_valid($to_user['EMAIL'])) return false;
 
-    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A Beehive Forum'), $to_uid, true);
+    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A WoodBees Forum'), $to_uid, true);
 
     $subject = word_filter_apply(sprintf(gettext("New User Approval Notification for %1\$s"), $forum_name), $to_uid, true);
 
@@ -765,7 +765,7 @@ function email_send_new_user_notification($to_uid, $new_user_uid)
 
     if (!email_address_valid($to_user['EMAIL'])) return false;
 
-    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A Beehive Forum'), $to_uid, true);
+    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A WoodBees Forum'), $to_uid, true);
 
     $subject = word_filter_apply(sprintf(gettext("New User Account Notification for %1\$s"), $forum_name), $to_uid, true);
 
@@ -827,9 +827,9 @@ function email_send_user_approved_notification($to_uid)
 
     if (!email_address_valid($to_user['EMAIL'])) return false;
 
-    $forum_email = forum_get_setting('forum_email', null, 'admin@beehiveforum.co.uk');
+    $forum_email = forum_get_setting('forum_email', null, 'admin@woodbees.example');
 
-    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A Beehive Forum'), $to_uid, true);
+    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A WoodBees Forum'), $to_uid, true);
 
     $subject = word_filter_apply(sprintf(gettext("User approval notification for %1\$s"), $forum_name), $to_uid, true);
 
@@ -887,7 +887,7 @@ function email_send_post_approval_notification($to_uid)
 
     if (!email_address_valid($to_user['EMAIL'])) return false;
 
-    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A Beehive Forum'), $to_uid, true);
+    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A WoodBees Forum'), $to_uid, true);
 
     $subject = word_filter_apply(sprintf(gettext("Post Approval Notification for %1\$s"), $forum_name), $to_uid, true);
 
@@ -945,7 +945,7 @@ function email_send_link_approval_notification($to_uid)
 
     if (!email_address_valid($to_user['EMAIL'])) return false;
 
-    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A Beehive Forum'), $to_uid, true);
+    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A WoodBees Forum'), $to_uid, true);
 
     $subject = word_filter_apply(sprintf(gettext("Link Approval Notification for %1\$s"), $forum_name), $to_uid, true);
 
@@ -1003,7 +1003,7 @@ function email_send_message_to_user($to_uid, $from_uid, $subject, $message_body,
 
     if (!email_address_valid($to_user['EMAIL'])) return false;
 
-    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A Beehive Forum'), $to_uid, true);
+    $forum_name = word_filter_apply(forum_get_setting('forum_name', null, 'A WoodBees Forum'), $to_uid, true);
 
     $recipient = word_filter_apply(format_user_name($to_user['LOGON'], $to_user['NICKNAME']), $to_uid, true);
 

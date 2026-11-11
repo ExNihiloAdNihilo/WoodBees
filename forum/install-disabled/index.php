@@ -308,7 +308,7 @@ if (isset($_POST['install_method'])) {
                     echo "                <td align=\"center\">\n";
                     echo "                  <table cellpadding=\"2\" cellspacing=\"0\" width=\"95%\">\n";
                     echo "                    <tr>\n";
-                    echo "                      <td align=\"left\" class=\"postbody\">Installation of your Beehive Forum has completed successfully, but before you can use it you must delete the install folder. Once this has been done you can click Continue below to start using your Beehive Forum.</td>\n";
+                    echo "                      <td align=\"left\" class=\"postbody\">Installation of your WoodBees forum has completed successfully, but before you can use it you must delete the install folder. Once this has been done you can click Continue below to start using your WoodBees forum.</td>\n";
                     echo "                    </tr>\n";
                     echo "                    <tr>\n";
                     echo "                      <td align=\"left\" class=\"postbody\">&nbsp;</td>\n";
@@ -346,13 +346,13 @@ if (isset($_POST['install_method'])) {
                     echo "                <td align=\"center\">\n";
                     echo "                  <table cellpadding=\"2\" cellspacing=\"0\" width=\"95%\">\n";
                     echo "                    <tr>\n";
-                    echo "                      <td align=\"left\" class=\"postbody\">Your database has been succesfully setup for use with Beehive. However we were unable to automatically apply the changes to your config.inc.php.</td>\n";
+                    echo "                      <td align=\"left\" class=\"postbody\">Your database has been succesfully setup for use with WoodBees. However we were unable to automatically apply the changes to your config.inc.php.</td>\n";
                     echo "                    </tr>\n";
                     echo "                    <tr>\n";
                     echo "                      <td align=\"left\" class=\"postbody\">&nbsp;</td>\n";
                     echo "                    </tr>\n";
                     echo "                    <tr>\n";
-                    echo "                      <td align=\"left\" class=\"postbody\">In order to complete the installation you will need to save a copy of your config.inc.php to your hard disc drive by clicking the 'Download Config' button below and from there upload it to your server into Beehive's 'include' folder. After you have successfully uploaded your config.inc.php you must delete the install folder. Once this has been done you can click Continue below to start using your Beehive Forum.</td>\n";
+                    echo "                      <td align=\"left\" class=\"postbody\">In order to complete the installation you will need to save a copy of your config.inc.php to your hard disc drive by clicking the 'Download Config' button below and from there upload it to your server into WoodBees' 'include' folder. After you have successfully uploaded your config.inc.php you must delete the install folder. Once this has been done you can click Continue below to start using your WoodBees forum.</td>\n";
                     echo "                    </tr>\n";
                     echo "                    <tr>\n";
                     echo "                      <td align=\"left\" class=\"postbody\">&nbsp;</td>\n";
@@ -405,7 +405,7 @@ if (isset($_POST['install_method'])) {
 
         } catch (Exception $e) {
 
-            $error_array[] = "<p>Database connection to " . htmlentities_array($config['db_server']) . ":" . htmlentities_array($config['db_port']) . " could not be established. Please check your MySQL Database Configuration settings are correct and that you have permisison to access the database you've entered.</p>\n<p><b>Note:</b> The database must be created manually prior to the installation of the Beehive Forum software!</p>\n";
+            $error_array[] = "<p>Database connection to " . htmlentities_array($config['db_server']) . ":" . htmlentities_array($config['db_port']) . " could not be established. Please check your MySQL Database Configuration settings are correct and that you have permisison to access the database you've entered.</p>\n<p><b>Note:</b> The database must be created manually prior to the installation of the WoodBees software!</p>\n";
         }
     }
 
@@ -497,15 +497,15 @@ if (isset($_POST['install_method'])) {
             echo "                        <td align=\"left\" class=\"postbody\">&nbsp;</td>\n";
             echo "                      </tr>\n";
             echo "                      <tr>\n";
-            echo "                        <td align=\"left\" class=\"postbody\">Fortunately you can still get your Beehive Forum functional by following these simple instructions:</td>\n";
+            echo "                        <td align=\"left\" class=\"postbody\">Fortunately you can still get your WoodBees forum functional by following these simple instructions:</td>\n";
             echo "                      </tr>\n";
             echo "                      <tr>\n";
             echo "                        <td align=\"left\" class=\"postbody\">\n";
             echo "                          <ol>\n";
             echo "                            <li><p>Copy and paste the text in the box below into a text editor.</p></li>\n";
             echo "                            <li><p>Edit the \$config['db_server'], \$config['db_port'], \$config['db_database'], \$config['db_username'] and \$config['db_password'] entries near the top of the script to match those that you entered in the first step of this installation</p></li>\n";
-            echo "                            <li><p>Save the file as config.inc.php (all in lowercase) and upload it to the 'include' folder of your Beehive installation.</p></li>\n";
-            echo "                            <li><p>Delete the 'install' folder from the Beehive ditribution on your server.</p></li>\n";
+            echo "                            <li><p>Save the file as config.inc.php (all in lowercase) and upload it to the 'include' folder of your WoodBees installation.</p></li>\n";
+            echo "                            <li><p>Delete the 'install' folder from the WoodBees distribution on your server.</p></li>\n";
             echo "                          </ol>\n";
             echo "                        </td>\n";
             echo "                      </tr>\n";
@@ -513,7 +513,7 @@ if (isset($_POST['install_method'])) {
             echo "                        <td align=\"left\" class=\"postbody\">&nbsp;</td>\n";
             echo "                      </tr>\n";
             echo "                      <tr>\n";
-            echo "                        <td align=\"left\" class=\"postbody\">Once you've done all of that you can click the Continue button below to start using your Beehive Forum.</td>\n";
+            echo "                        <td align=\"left\" class=\"postbody\">Once you've done all of that you can click the Continue button below to start using your WoodBees forum.</td>\n";
             echo "                      </tr>\n";
             echo "                      <tr>\n";
             echo "                        <td align=\"left\" class=\"postbody\">&nbsp;</td>\n";
@@ -561,7 +561,7 @@ echo "<form accept-charset=\"utf-8\" id=\"install_form\" method=\"post\" action=
 echo "  <table cellpadding=\"0\" cellspacing=\"0\" width=\"650\">\n";
 echo "    <tr>\n";
 echo "      <td align=\"left\">\n";
-echo "        <p>Welcome to the Beehive Forum installer. Please fill out the details below and when you're ready, click the Install button to start the installation.</p>\n";
+echo "        <p>Welcome to the WoodBees installer. Please fill out the details below and when you're ready, click the Install button to start the installation.</p>\n";
 echo "        <p><b>WARNING</b>: Proceed only if you have performed a backup of your database! Failure to do so could result in loss of your forum. You have been warned!</p>\n";
 echo "      </td>\n";
 echo "    </tr>\n";
@@ -620,8 +620,8 @@ echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td colspan=\"2\">\n";
 echo "                          <p>", gettext("For new installations please select <b>New Install</b> from the drop-down and enter a Default Forum Webtag. A webtag may contain the characters A-Z, 0-9 and underscore. If you enter any other characters, errors will occur during install."), "</p>\n";
-echo "                          <p>", gettext("If you are performing a <b>Reinstall</b>, please enter a webtag as above. Any existing Beehive Forum tables will be automatically removed and all data within them will be permanently deleted."), "</p>\n";
-echo "                          <p>", gettext("For <b>Reconnections</b>, the database portion of the setup is skipped and the installation simply rewrites your config.inc.php file. Use this when you need to change your config.inc.php without reinstalling your Beehive Forum."), "</p>\n";
+echo "                          <p>", gettext("If you are performing a <b>Reinstall</b>, please enter a webtag as above. Any existing WoodBees tables will be automatically removed and all data within them will be permanently deleted."), "</p>\n";
+echo "                          <p>", gettext("For <b>Reconnections</b>, the database portion of the setup is skipped and the installation simply rewrites your config.inc.php file. Use this when you need to change your config.inc.php without reinstalling your WoodBees forum."), "</p>\n";
 echo "                          <p>", gettext("Finally, for <b>Upgrades</b> please select the correct upgrade path. The webtag field is also ignored when using this option. Selecting the wrong option here can have dire consequences for your forum if you have not backed-up."), "</p>\n";
 echo "                        </td>\n";
 echo "                      </tr>\n";
@@ -675,7 +675,7 @@ echo "                        <td align=\"left\" class=\"postbody\"><input type=
 echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td colspan=\"2\">\n";
-echo "                          <p>", gettext("These are the MySQL database details required to install and run your Beehive Forum. If you do not know what these settings are please contact your hosting provider."), "</p>\n";
+echo "                          <p>", gettext("These are the MySQL database details required to install and run your WoodBees forum. If you do not know what these settings are please contact your hosting provider."), "</p>\n";
 echo "                        </td>\n";
 echo "                      </tr>\n";
 echo "                    </table>\n";
@@ -757,16 +757,16 @@ echo "                <tr>\n";
 echo "                  <td align=\"center\">\n";
 echo "                    <table cellpadding=\"2\" cellspacing=\"0\" width=\"95%\">\n";
 echo "                      <tr>\n";
-echo "                        <td align=\"left\" class=\"postbody\"><span class=\"install_checkbox\"><input type=\"checkbox\" name=\"remove_conflicts\" id=\"remove_conflicts\" value=\"Y\" tabindex=\"12\"", (isset($remove_conflicts) && $remove_conflicts == 'Y' ? " checked=\"checked\"" : ''), " /><label for=\"remove_conflicts\">Automatically remove tables that conflict with Beehive Forum's own.</label></span></td>\n";
+echo "                        <td align=\"left\" class=\"postbody\"><span class=\"install_checkbox\"><input type=\"checkbox\" name=\"remove_conflicts\" id=\"remove_conflicts\" value=\"Y\" tabindex=\"12\"", (isset($remove_conflicts) && $remove_conflicts == 'Y' ? " checked=\"checked\"" : ''), " /><label for=\"remove_conflicts\">Automatically remove tables that conflict with WoodBees' own.</label></span></td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td align=\"left\" class=\"postbody\"><span class=\"install_checkbox\"><input type=\"checkbox\" name=\"enable_error_reports\" id=\"enable_error_reports\" value=\"Y\" tabindex=\"14\"", (isset($enable_error_reports) && $enable_error_reports == 'Y' ? " checked=\"checked\"" : ''), " /><label for=\"enable_error_reports\">Send error reports to Admin email address.</label></span></td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td colspan=\"2\">\n";
-echo "                          <p>", gettext("<b>Caution!</b> These options are recommended for advanced users only. There use can have a detrimental effect on the functionality of your Beehive Forum AND other software you may have installed."), "</p>\n";
-echo "                          <p>", gettext("<b>Automatically remove tables</b> permanently removes tables that would have conflicted with those used by Beehive Forum. If other tables exist which conflict with those used by the Beehive Forum software then enabling this option may cause any other scripts or software which rely on them to fail."), "</p>\n";
-echo "                          <p>", gettext("<b>Enable error reports</b> enables verbose error reporting for your Beehive Forum and sends these reports to the Admin User's Email Address. These error reports can be useful for helping to diagnose problems and find bugs that you can submit back to Project Beehive Forum. This option is only available when performing a new installation. To enable post-install please see readme.txt for instructions."), "</p>\n";
+echo "                          <p>", gettext("<b>Caution!</b> These options are recommended for advanced users only. There use can have a detrimental effect on the functionality of your WoodBees forum AND other software you may have installed."), "</p>\n";
+echo "                          <p>", gettext("<b>Automatically remove tables</b> permanently removes tables that would have conflicted with those used by WoodBees. If other tables exist which conflict with those used by the WoodBees software then enabling this option may cause any other scripts or software which rely on them to fail."), "</p>\n";
+echo "                          <p>", gettext("<b>Enable error reports</b> enables verbose error reporting for your WoodBees forum and sends these reports to the Admin User's Email Address. This option is only available when performing a new installation. To enable post-install please see readme.txt for instructions."), "</p>\n";
 echo "                        </td>\n";
 echo "                      </tr>\n";
 echo "                    </table>\n";

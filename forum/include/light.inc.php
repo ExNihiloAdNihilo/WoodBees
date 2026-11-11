@@ -63,7 +63,7 @@ function light_html_draw_top(array $options = array())
 
     forum_check_webtag_available($webtag);
 
-    $forum_name = forum_get_setting('forum_name', null, 'A Beehive Forum');
+    $forum_name = forum_get_setting('forum_name', null, 'A WoodBees Forum');
 
     foreach ($options as $key => $value) {
 
@@ -313,10 +313,10 @@ function light_navigation_bar(array $options = array())
     if (isset($back)) {
         echo "    <span class=\"back\"><a href=\"$back\">", html_style_image('mobile_back', gettext("Back")), "</a></span>\n";
     } else {
-        echo "    <span class=\"icon\">", html_style_image('mobile_icon', gettext("Beehive Forum")), "</span>\n";
+        echo "    <span class=\"icon\">", html_style_image('mobile_icon', gettext("WoodBees")), "</span>\n";
     }
 
-    echo "    ", html_style_image('mobile_logo', gettext("Beehive Forum Logo")), "\n";
+    echo "    ", html_style_image('mobile_logo', gettext("WoodBees Logo")), "\n";
     echo "  </span>\n";
     echo "  <ul>\n";
 
@@ -409,7 +409,7 @@ function light_html_draw_bottom()
         echo "  </div>\n";
     }
 
-    echo "  <h6><a href=\"http://www.beehiveforum.co.uk/\" target=\"_blank\">WoodBees ", WOODBEES_VERSION, " (built on Beehive Forum ", BEEHIVE_VERSION, ")<br />&copy; ", strftime('%Y'), " Project Beehive Forum</a></h6>\n";
+    echo "  <h6><a href=\"https://github.com/ExNihiloAdNihilo/WoodBees\" target=\"_blank\">WoodBees ", WOODBEES_VERSION, " (built on Beehive Forum ", BEEHIVE_VERSION, ")<br />&copy; ", strftime('%Y'), " WoodBees</a></h6>\n";
     echo "</div>\n";
     echo "</body>\n";
     echo "</html>\n";

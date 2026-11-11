@@ -82,7 +82,7 @@ cache_disable_aol();
 // Disable caching if proxy server detected.
 cache_disable_proxy();
 
-// Check that Beehive is installed correctly
+// Check that WoodBees is installed correctly
 install_check();
 
 // Required includes

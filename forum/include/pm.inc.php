@@ -1784,7 +1784,7 @@ function pm_export_xml($message_array, ZipArchive $zip, $options_array = array()
 
     if (sizeof($message_array) == 0) return false;
 
-    $root_xml = new SimpleXMLElement('<beehiveforum>');
+    $root_xml = new SimpleXMLElement('<woodbees>');
     $messages_xml = $root_xml->addChild('messages');
 
     foreach ($message_array as $message) {
@@ -1827,7 +1827,7 @@ function pm_export_xml($message_array, ZipArchive $zip, $options_array = array()
 
             $zip->addFromString(sprintf("message_%s.xml", $message['MID']), $root_xml->asXML());
 
-            $root_xml = new SimpleXMLElement('<beehiveforum>');
+            $root_xml = new SimpleXMLElement('<woodbees>');
             $messages_xml = $root_xml->addChild('messages');
         }
     }

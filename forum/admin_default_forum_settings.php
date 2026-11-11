@@ -180,13 +180,13 @@ if (isset($_POST['save']) || isset($_POST['confirm_unread_cutoff']) || isset($_P
     if (isset($_POST['forum_email']) && strlen(trim($_POST['forum_email'])) > 0) {
         $new_forum_settings['forum_email'] = trim($_POST['forum_email']);
     } else {
-        $new_forum_settings['forum_email'] = "admin@beehiveforum.co.uk";
+        $new_forum_settings['forum_email'] = "admin@woodbees.example";
     }
 
     if (isset($_POST['forum_noreply_email']) && strlen(trim($_POST['forum_noreply_email'])) > 0) {
         $new_forum_settings['forum_noreply_email'] = trim($_POST['forum_noreply_email']);
     } else {
-        $new_forum_settings['forum_noreply_email'] = "noreply@beehiveforum.co.uk";
+        $new_forum_settings['forum_noreply_email'] = "noreply@woodbees.example";
     }
 
     if (isset($_POST['content_delivery_domains']) && strlen(trim($_POST['content_delivery_domains'])) > 0) {
@@ -688,7 +688,7 @@ echo "                  <td align=\"center\">\n";
 echo "                    <table class=\"posthead\" width=\"95%\">\n";
 echo "                      <tr>\n";
 echo "                        <td align=\"left\" width=\"220\">", gettext("Forum Name"), ":</td>\n";
-echo "                        <td align=\"left\">", form_input_text("forum_name", (isset($forum_global_settings['forum_name']) ? htmlentities_array($forum_global_settings['forum_name']) : 'A Beehive Forum'), 52, 255), "&nbsp;</td>\n";
+echo "                        <td align=\"left\">", form_input_text("forum_name", (isset($forum_global_settings['forum_name']) ? htmlentities_array($forum_global_settings['forum_name']) : 'A WoodBees Forum'), 52, 255), "&nbsp;</td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td align=\"left\" width=\"220\">", gettext("Forum Description"), ":</td>\n";
@@ -777,18 +777,18 @@ echo "                  <td align=\"center\">\n";
 echo "                    <table class=\"posthead\" width=\"95%\">\n";
 echo "                      <tr>\n";
 echo "                        <td align=\"left\" width=\"220\">", gettext("Forum Email"), ":</td>\n";
-echo "                        <td align=\"left\">", form_input_text("forum_email", (isset($forum_global_settings['forum_email']) ? htmlentities_array($forum_global_settings['forum_email']) : 'admin@beehiveforum.co.uk'), 52, 80), "&nbsp;</td>\n";
+echo "                        <td align=\"left\">", form_input_text("forum_email", (isset($forum_global_settings['forum_email']) ? htmlentities_array($forum_global_settings['forum_email']) : 'admin@woodbees.example'), 52, 80), "&nbsp;</td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td align=\"left\" width=\"220\">", gettext("No-Reply Email"), ":</td>\n";
-echo "                        <td align=\"left\">", form_input_text("forum_noreply_email", (isset($forum_global_settings['forum_noreply_email']) ? htmlentities_array($forum_global_settings['forum_noreply_email']) : 'noreply@beehiveforum.co.uk'), 52, 80), "&nbsp;</td>\n";
+echo "                        <td align=\"left\">", form_input_text("forum_noreply_email", (isset($forum_global_settings['forum_noreply_email']) ? htmlentities_array($forum_global_settings['forum_noreply_email']) : 'noreply@woodbees.example'), 52, 80), "&nbsp;</td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td align=\"left\" colspan=\"2\">&nbsp;</td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td colspan=\"2\">\n";
-echo "                          <p>", gettext("Select the <b>Mail function</b> suitable for your server. By default your Beehive Forum will use PHP's built-in mail function. If this doesn't work or you prefer to use another method to send emails from your server you can select it here."), "</p>\n";
+echo "                          <p>", gettext("Select the <b>Mail function</b> suitable for your server. By default your WoodBees forum will use PHP's built-in mail function. If this doesn't work or you prefer to use another method to send emails from your server you can select it here."), "</p>\n";
 echo "                          <p>", gettext("<b>Important:</b> If you are unsure what settings to use for sending email please consult your hosting provider's documentation."), "</p>\n";
 echo "                          <p>", gettext("Use <b>No-Reply Email</b> to specify an email address that does not exist or will not be monitored for replies. This email address will be used in the headers for all emails sent from your forum including but not limited to Post and PM notifications, user emails and password reminders."), "</p>\n";
 echo "                          <p>", gettext("It is recommended that you use an email address that does not exist to help cut down on spam that may be directed at your main forum email address"), "</p>\n";
@@ -833,8 +833,8 @@ echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td align=\"left\">\n";
 echo "                          <p>", gettext("A <b>Content Delivery Network</b> or CDN can be used to help speed up page load of your forum by off-loading some of page content such as images, CSS and JavaScript to other servers."), "</p>\n";
-echo "                          <p>", gettext("You should enter any CDN paths in the text box above, one per line. Your Beehive Forum will automatically prefix every static content request with each of the CDN paths in turn."), "</p>\n";
-echo "                          <p>", gettext("Please Note: Your CDN paths should be to the root of the Beehive Forum content. For example, if you enter <i>cdn01.beehiveforum.co.uk</i>, requests for the user's CSS styles will be made to <i>cdn01.beehiveforum.co.uk/styles/[user_style]/style.css</i>"), "</p>\n";
+echo "                          <p>", gettext("You should enter any CDN paths in the text box above, one per line. Your WoodBees forum will automatically prefix every static content request with each of the CDN paths in turn."), "</p>\n";
+echo "                          <p>", gettext("Please Note: Your CDN paths should be to the root of the WoodBees content. For example, if you enter <i>cdn01.example.com</i>, requests for the user's CSS styles will be made to <i>cdn01.example.com/styles/[user_style]/style.css</i>"), "</p>\n";
 echo "                        </td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
@@ -1033,9 +1033,9 @@ echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td align=\"left\" colspan=\"2\">\n";
 echo "                          <p>", gettext("<b>Allow new user registrations</b> allows or disallows the creation of new user accounts. Setting the option to no completely disables the registration form."), "</p>\n";
-echo "                          <p>", gettext("<b>Prevent use of duplicate email addresses</b> forces Beehive to check the user accounts against the email address the user is registering with and prompts them to use another if it is already in use."), "</p>\n";
+echo "                          <p>", gettext("<b>Prevent use of duplicate email addresses</b> forces WoodBees to check the user accounts against the email address the user is registering with and prompts them to use another if it is already in use."), "</p>\n";
 echo "                          <p>", gettext("<b>Require email confirmation</b> when enabled will send an email to each new user with a link that can be used to confirm their email address. Until they confirm their email address they will not be able to post unless their user permissions are changed manually by an admin."), "</p>\n";
-echo "                          <p>", gettext("<b>Require user approval by admin</b> allows you to restrict access by new users until they have been approved by a moderator or admin. Without approval a user cannot access any area of the Beehive Forum installation including individual forums, PM inbox and My Forums sections."), "</p>\n";
+echo "                          <p>", gettext("<b>Require user approval by admin</b> allows you to restrict access by new users until they have been approved by a moderator or admin. Without approval a user cannot access any area of the WoodBees installation including individual forums, PM inbox and My Forums sections."), "</p>\n";
 echo "                        </td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
@@ -1225,7 +1225,7 @@ echo "                        <td align=\"left\" colspan=\"2\">&nbsp;</td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td align=\"left\" colspan=\"2\">\n";
-echo "                          <p>", gettext("Your Beehive Forum supports 2 different sizes of <b>Google AdSense</b> adverts. Enter the slot ids of the relevant sized ads into the boxes above and Beehive will automatically choose the correct ad for each page."), "</p>\n";
+echo "                          <p>", gettext("Your WoodBees forum supports 2 different sizes of <b>Google AdSense</b> adverts. Enter the slot ids of the relevant sized ads into the boxes above and WoodBees will automatically choose the correct ad for each page."), "</p>\n";
 echo "                        </td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
@@ -1299,11 +1299,11 @@ echo "    </tr>\n";
 echo "  </table>\n";
 echo "  <br />\n";
 
-$forum_name = forum_get_setting('forum_name', 'strlen', 'A Beehive Forum');
+$forum_name = forum_get_setting('forum_name', 'strlen', 'A WoodBees Forum');
 
 $frame_top_target = html_get_top_frame_name();
 
-$default_forum_rules = sprintf(gettext("<p><b>Forum Rules</b></p><p>Registration to %1\$s is free! We do insist that you abide by the rules and policies detailed below. If you agree to the terms, please check the 'I agree' checkbox and press the 'Register' button below. If you would like to cancel the registration, click <a href=\"index.php?webtag=%2\$s\" target=\"%3\$s\">here</a> to return to the forums index.</p><p>Although the administrators and moderators of %1\$s will attempt to keep all objectionable messages off this forum, it is impossible for us to review all messages. All messages express the views of the author, and neither the owners of %1\$s, nor Project Beehive Forum and its affiliates will be held responsible for the content of any message.</p><p>By agreeing to these rules, you warrant that you will not post any messages that are obscene, vulgar, sexually-orientated, hateful, threatening, or otherwise in violation of any laws.</p><p>The owners of %1\$s reserve the right to remove, edit, move or close any thread for any reason.</p>"), $forum_name, $webtag, $frame_top_target);
+$default_forum_rules = sprintf(gettext("<p><b>Forum Rules</b></p><p>Registration to %1\$s is free! We do insist that you abide by the rules and policies detailed below. If you agree to the terms, please check the 'I agree' checkbox and press the 'Register' button below. If you would like to cancel the registration, click <a href=\"index.php?webtag=%2\$s\" target=\"%3\$s\">here</a> to return to the forums index.</p><p>Although the administrators and moderators of %1\$s will attempt to keep all objectionable messages off this forum, it is impossible for us to review all messages. All messages express the views of the author, and neither the owners of %1\$s, nor WoodBees and its affiliates will be held responsible for the content of any message.</p><p>By agreeing to these rules, you warrant that you will not post any messages that are obscene, vulgar, sexually-orientated, hateful, threatening, or otherwise in violation of any laws.</p><p>The owners of %1\$s reserve the right to remove, edit, move or close any thread for any reason.</p>"), $forum_name, $webtag, $frame_top_target);
 
 if (!isset($forum_global_settings['forum_rules_message'])) $forum_global_settings['forum_rules_message'] = $default_forum_rules;
 
@@ -1332,7 +1332,7 @@ echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td align=\"left\" colspan=\"2\">\n";
 echo "                          <p>", gettext("Use <b>Forum Rules</b> to enter an Acceptable Use Policy that each user must agree to before registering on your forum."), "</p>\n";
-echo "                          <p>", gettext("You can use HTML in your forum rules. Hyperlinks and email addresses will also be automatically converted to links. To use the default Beehive Forum AUP clear the field."), "</p>\n";
+echo "                          <p>", gettext("You can use HTML in your forum rules. Hyperlinks and email addresses will also be automatically converted to links. To use the default WoodBees AUP clear the field."), "</p>\n";
 echo "                        </td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
@@ -1445,7 +1445,7 @@ echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td align=\"left\" colspan=\"2\">\n";
 echo "                          <p>", gettext("These settings allows your forum to be spidered by search engines like Google, AltaVista and Yahoo. If you switch this option off your forum will not be included in these search engines results."), "</p>\n";
-echo "                          <p>", gettext("In addition to simple spidering, Beehive can also generate a sitemap for the forum to make it easier for search engines to find and index the messages posted by your users."), "</p>\n";
+echo "                          <p>", gettext("In addition to simple spidering, WoodBees can also generate a sitemap for the forum to make it easier for search engines to find and index the messages posted by your users."), "</p>\n";
 
 if (isset($forum_global_settings['sitemap_enabled']) && $forum_global_settings['sitemap_enabled'] == "Y") {
 
@@ -1456,8 +1456,8 @@ if (isset($forum_global_settings['sitemap_enabled']) && $forum_global_settings['
     }
 }
 
-echo "                          <p>", gettext("Sitemaps are automatically saved to the sitemaps sub-directory of your Beehive Forum installation. If this directory doesn't exist you must create it and ensure that it is writable by the server / PHP process. To allow search engines to find your sitemap you must add the URL to your robots.txt."), "</p>\n";
-echo "                          <p>", gettext("Depending on server performance and the number of forums and threads your Beehive installation contains, generating a sitemap may take several minutes to complete. If performance of your server is adversely affected it is recommend you disable generation of the sitemap."), "</p>\n";
+echo "                          <p>", gettext("Sitemaps are automatically saved to the sitemaps sub-directory of your WoodBees installation. If this directory doesn't exist you must create it and ensure that it is writable by the server / PHP process. To allow search engines to find your sitemap you must add the URL to your robots.txt."), "</p>\n";
+echo "                          <p>", gettext("Depending on server performance and the number of forums and threads your WoodBees installation contains, generating a sitemap may take several minutes to complete. If performance of your server is adversely affected it is recommend you disable generation of the sitemap."), "</p>\n";
 echo "                        </td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
@@ -1606,13 +1606,13 @@ echo "                        <td align=\"left\" colspan=\"2\">&nbsp;</td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td align=\"left\" colspan=\"2\">\n";
-echo "                          <p>", gettext("Beehive allows attachments to be uploaded to messages when posted. If you have limited web space you may which to disable attachments by clearing the box above."), "</p>\n";
-echo "                          <p>", gettext("<b>Attachment Dir</b> is the location Beehive should store attachments in. This directory must exist on your web space and must be writable by the web server / PHP process otherwise uploads will fail."), "</p>\n";
+echo "                          <p>", gettext("WoodBees allows attachments to be uploaded to messages when posted. If you have limited web space you may which to disable attachments by clearing the box above."), "</p>\n";
+echo "                          <p>", gettext("<b>Attachment Dir</b> is the location WoodBees should store attachments in. This directory must exist on your web space and must be writable by the web server / PHP process otherwise uploads will fail."), "</p>\n";
 echo "                          <p>", gettext("<b>Maximum attachment space per user / post</b> is the maximum amount of disk space a user has for attachments. Once this space is used up the user cannot upload any more attachments. Maximum user space is the amount of space the user has for all uploaded files, whether they are attached to a post, a private message or left unassigned. Max post space is the maximum size per individual post or PM. Set to zero (0) to allow unlimited space."), "</p>\n";
-echo "                          <p>", gettext("<b>Maximum attachment file size</b> is the maximum size of a single uploaded file. This is the limit of your webserver and/or PHP. Only set this value if you are having problems with attachments not uploading. Leave it blank to have your Beehive Forum determine the amount from PHP's upload_max_filesize configuration setting."), "</p>\n";
+echo "                          <p>", gettext("<b>Maximum attachment file size</b> is the maximum size of a single uploaded file. This is the limit of your webserver and/or PHP. Only set this value if you are having problems with attachments not uploading. Leave it blank to have your WoodBees forum determine the amount from PHP's upload_max_filesize configuration setting."), "</p>\n";
 echo "                          <p>", gettext("<b>Allow embedding of attachments in messages / signatures</b> allows users to embed attachments in posts. Enabling this option while useful can increase your bandwidth usage drastically under certain configurations of PHP. If you have limited bandwidth it is recommended that you disable this option."), "</p>\n";
-echo "                          <p>", gettext("<b>Use Alternative attachment method</b> Forces Beehive to use an alternative retrieval method for attachments. If you receive 404 error messages when trying to download attachments from messages try enabling this option."), "</p>\n";
-echo "                          <p>", gettext("<b>Allowed attachment mime-types</b> allows you to restrict the mime-types of files that can be uploaded. Enter each allowed mime-type on a new line. <b>Note:</b> Beehive doesn't perform strict analysis of the files uploaded and renamed files may be able to circumvent this restriction."), "</p>\n";
+echo "                          <p>", gettext("<b>Use Alternative attachment method</b> Forces WoodBees to use an alternative retrieval method for attachments. If you receive 404 error messages when trying to download attachments from messages try enabling this option."), "</p>\n";
+echo "                          <p>", gettext("<b>Allowed attachment mime-types</b> allows you to restrict the mime-types of files that can be uploaded. Enter each allowed mime-type on a new line. <b>Note:</b> WoodBees doesn't perform strict analysis of the files uploaded and renamed files may be able to circumvent this restriction."), "</p>\n";
 echo "                        </td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";

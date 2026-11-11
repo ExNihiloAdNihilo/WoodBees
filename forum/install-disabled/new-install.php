@@ -48,8 +48,8 @@ $remove_conflicts = (isset($remove_conflicts) && $remove_conflicts === true);
 /** @noinspection PhpUndefinedVariableInspection */
 if (($conflicting_tables = install_check_table_conflicts($config['db_database'], $forum_webtag, true, true, $remove_conflicts))) {
 
-    $error_str = "Selected database contains tables which conflict with Beehive Forum. ";
-    $error_str .= "If this database contains an existing Beehive Forum, please check that ";
+    $error_str = "Selected database contains tables which conflict with WoodBees. ";
+    $error_str .= "If this database contains an existing WoodBees installation, please check that ";
     $error_str .= "you have selected the correct install / upgrade method.\n\n";
 
     $error_str .= "If you continue to encounter errors you may want to consider enabling ";
@@ -440,7 +440,7 @@ if (!perm_update_user_global_perms($admin_uid, USER_PERM_ADMIN_TOOLS | USER_PERM
     throw new Exception('Failed to set admin global permissions');
 }
 
-if (!($forum_fid = forum_create($forum_webtag, 'A Beehive Forum', $admin_uid, $config['db_database'], FORUM_UNRESTRICTED, false, $error_str))) {
+if (!($forum_fid = forum_create($forum_webtag, 'A WoodBees Forum', $admin_uid, $config['db_database'], FORUM_UNRESTRICTED, false, $error_str))) {
     throw new Exception($error_str);
 }
 

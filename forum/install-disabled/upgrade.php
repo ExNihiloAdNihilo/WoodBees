@@ -39,7 +39,7 @@ require_once BH_INCLUDE_PATH . 'install.inc.php';
 $current_datetime = date(MYSQL_DATETIME, time());
 
 if (!($forum_prefix_array = install_get_table_data())) {
-    throw new Exception("Could not locate any previous Beehive Forum installations");
+    throw new Exception("Could not locate any previous WoodBees installations");
 }
 
 $attachment_real_path = null;

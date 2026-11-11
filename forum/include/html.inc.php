@@ -508,7 +508,7 @@ function html_draw_top(array $options = array())
 
     forum_check_webtag_available($webtag);
 
-    $forum_name = forum_get_setting('forum_name', null, 'A Beehive Forum');
+    $forum_name = forum_get_setting('forum_name', null, 'A WoodBees Forum');
 
     foreach ($options as $key => $value) {
 

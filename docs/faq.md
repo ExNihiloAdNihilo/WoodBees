@@ -1,5 +1,13 @@
 # Beehive Forum Frequently Asked Questions
 
+WoodBees Alpha 0.1 — a fork of Beehive Forum, maintained at
+<https://github.com/ExNihiloAdNihilo/WoodBees>.
+
+The FAQ below is inherited from the original Beehive Forum project and
+is kept as-is: it's the original authors' own account of why and how
+they built the engine WoodBees is built on. The troubleshooting section
+(6) is updated to reflect running WoodBees specifically.
+
 Version 0.1 / 8th December 2002
 
 ## 0. Contents
@@ -149,24 +157,24 @@ If you are experiencing connectivity problems or permission denied
 errors, check that you have edited the config.inc.php so that the
 database details match those provided by your hosting provider. Be
 sure to double check the username and password. If they are incorrect
-your Beehive Forum will fail to function.
+your WoodBees forum will fail to function.
 
 ### 6.2 Unknown or missing table errors
 
 In the case of unknown or missing table errors, be sure that you have
 correctly and successfully imported the schema.sql file in the docs
-folder of the Beehive Forum Distribution. If you experience errors
+folder of the WoodBees distribution. If you experience errors
 during the import, check that your version of MySQL is recent enough
 (see readme.txt for requirements)
 
 ### 6.3 Blank page errors
 
 Blank pages can be caused by enabling the gzip compression support
-in your Beehive Forum's config.inc.php. Problems arise when the server
+in your WoodBees forum's config.inc.php. Problems arise when the server
 already has gzip compression for PHP scripts enabled or a 3rd party
 compression library such as mod_gzip is installed. Before reporting
 this as a bug, try disabling the gzip compression in config.inc.php
-of your Beehive Forum by changing the $gzip_compress_output variable
+of your WoodBees forum by changing the $gzip_compress_output variable
 to False.
 
 ### 6.4 Error: Strict Standards: var: Deprecated on PHP/5.x
@@ -177,7 +185,7 @@ wouldn't be a problem as the error reporting level is by default set
 the same as PHP/4.x. However if the level is increased to include
 E_STRICT, a new reporting level which is designed to notify on less
 than recommended coding practices, the above error will occur when
-using your BeehiveForum. At the moment the only work around for this
+using your WoodBees forum. At the moment the only work around for this
 is to disable / step down the error reporting to E_ALL or below.
 
 ### 6.5 Email Notifications on Windows

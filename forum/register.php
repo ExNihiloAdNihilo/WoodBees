@@ -770,7 +770,7 @@ if (isset($user_agree_rules) && $user_agree_rules == 'Y') {
 
         } else if (($text_captcha_image = $text_captcha->make_image()) !== false) {
 
-            $forum_owner_email = forum_get_setting('forum_email', 'strlen', 'admin@beehiveforum.co.uk');
+            $forum_owner_email = forum_get_setting('forum_email', 'strlen', 'admin@woodbees.example');
             $forum_owner_link = sprintf("<a href=\"mailto:%s\">%s</a>", $forum_owner_email, gettext("forum owner"));
 
             echo "  <br />\n";
@@ -826,10 +826,10 @@ if (isset($user_agree_rules) && $user_agree_rules == 'Y') {
 
 } else {
 
-    $forum_name = forum_get_setting('forum_name', 'strlen', 'A Beehive Forum');
+    $forum_name = forum_get_setting('forum_name', 'strlen', 'A WoodBees Forum');
 
     if (($forum_rules = forum_get_setting('forum_rules_message', 'strlen', false)) !== false) {
-        $forum_rules = sprintf(gettext("<p><b>Forum Rules</b></p><p>Registration to %1\$s is free! We do insist that you abide by the rules and policies detailed below. If you agree to the terms, please check the 'I agree' checkbox and press the 'Register' button below. If you would like to cancel the registration, click <a href=\"index.php?webtag=%2\$s\">here</a> to return to the forums index.</p><p>Although the administrators and moderators of %1\$s will attempt to keep all objectionable messages off this forum, it is impossible for us to review all messages. All messages express the views of the author, and neither the owners of %1\$s, nor Project Beehive Forum and its affiliates will be held responsible for the content of any message.</p><p>By agreeing to these rules, you warrant that you will not post any messages that are obscene, vulgar, sexually-orientated, hateful, threatening, or otherwise in violation of any laws.</p><p>The owners of %1\$s reserve the right to remove, edit, move or close any thread for any reason.</p>"), $forum_name, $webtag);
+        $forum_rules = sprintf(gettext("<p><b>Forum Rules</b></p><p>Registration to %1\$s is free! We do insist that you abide by the rules and policies detailed below. If you agree to the terms, please check the 'I agree' checkbox and press the 'Register' button below. If you would like to cancel the registration, click <a href=\"index.php?webtag=%2\$s\">here</a> to return to the forums index.</p><p>Although the administrators and moderators of %1\$s will attempt to keep all objectionable messages off this forum, it is impossible for us to review all messages. All messages express the views of the author, and neither the owners of %1\$s, nor WoodBees and its affiliates will be held responsible for the content of any message.</p><p>By agreeing to these rules, you warrant that you will not post any messages that are obscene, vulgar, sexually-orientated, hateful, threatening, or otherwise in violation of any laws.</p><p>The owners of %1\$s reserve the right to remove, edit, move or close any thread for any reason.</p>"), $forum_name, $webtag);
     }
 
     echo "<br />\n";

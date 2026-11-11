@@ -253,7 +253,7 @@ function forum_closed_message()
     );
 
 
-    $forum_name = forum_get_setting('forum_name', null, 'A Beehive Forum');
+    $forum_name = forum_get_setting('forum_name', null, 'A WoodBees Forum');
 
     echo "<h1>", gettext("Closed"), "</h1>\n";
 
@@ -295,7 +295,7 @@ function forum_restricted_message()
 
     } else {
 
-        $forum_name = forum_get_setting('forum_name', null, 'A Beehive Forum');
+        $forum_name = forum_get_setting('forum_name', null, 'A WoodBees Forum');
 
         if (!($forum_owner_uid = forum_get_setting('owner_uid'))) {
             html_draw_error(sprintf(gettext("You do not have access to %s"), htmlentities_array($forum_name)));
@@ -769,16 +769,16 @@ function instance_identifier_get()
 
 function forum_get_name($fid)
 {
-    if (!$db = db::get()) return gettext("A Beehive Forum");
+    if (!$db = db::get()) return gettext("A WoodBees Forum");
 
-    if (!is_numeric($fid)) return gettext("A Beehive Forum");
+    if (!is_numeric($fid)) return gettext("A WoodBees Forum");
 
     $sql = "SELECT SVALUE AS FORUM_NAME FROM FORUM_SETTINGS ";
     $sql .= "WHERE SNAME = 'forum_name' AND FID = '$fid'";
 
-    if (!($result = $db->query($sql))) return gettext("A Beehive Forum");
+    if (!($result = $db->query($sql))) return gettext("A WoodBees Forum");
 
-    if ($result->num_rows == 0) return gettext("A Beehive Forum");
+    if ($result->num_rows == 0) return gettext("A WoodBees Forum");
 
     list($forum_name) = $result->fetch_row();
 
@@ -1478,17 +1478,12 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
 
         // Add some default forum links
         $sql = "INSERT INTO `{$forum_table_prefix}FORUM_LINKS` (POSITION, TITLE, URI) ";
-        $sql .= "VALUES (2, 'Project Beehive Forum Home', 'http://www.beehiveforum.co.uk/')";
+        $sql .= "VALUES (2, 'WoodBees on GitHub', 'https://github.com/ExNihiloAdNihilo/WoodBees')";
 
         $db->query($sql);
 
         $sql = "INSERT INTO `{$forum_table_prefix}FORUM_LINKS` (POSITION, TITLE, URI) ";
-        $sql .= "VALUES (3, 'Project Beehive Forum on Facebook', 'http://www.facebook.com/beehiveforum')";
-
-        $db->query($sql);
-
-        $sql = "INSERT INTO `{$forum_table_prefix}FORUM_LINKS` (POSITION, TITLE, URI) ";
-        $sql .= "VALUES (3, 'Project Beehive Forum on Twitter', 'https://twitter.com/beehiveforum')";
+        $sql .= "VALUES (3, 'Donate to Beehive Forum', 'http://www.beehiveforum.co.uk/donate/')";
 
         $db->query($sql);
 
@@ -1532,7 +1527,7 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
 
         // First Post content.
         $sql = "INSERT INTO `{$forum_table_prefix}POST_CONTENT` (TID, PID, CONTENT) ";
-        $sql .= "VALUES ('$new_tid', '$new_pid', 'Welcome to your new Beehive Forum')";
+        $sql .= "VALUES ('$new_tid', '$new_pid', 'Welcome to your new WoodBees forum')";
 
         $db->query($sql);
 
@@ -1561,9 +1556,9 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
             'default_language' => 'en_GB',
             'default_emoticons' => 'default',
             'default_style' => 'default',
-            'forum_keywords' => 'A Beehive Forum, Beehive Forum, Project Beehive Forum',
-            'forum_desc' => 'A Beehive Forum',
-            'forum_email' => 'admin@beehiveforum.co.uk',
+            'forum_keywords' => 'WoodBees, A WoodBees Forum',
+            'forum_desc' => 'A WoodBees Forum',
+            'forum_email' => 'admin@woodbees.example',
             'forum_name' => $forum_name,
             'show_links' => 'Y',
             'allow_polls' => 'Y',
@@ -1987,9 +1982,9 @@ function forum_search($forum_search, $page, $sort_by, $sort_dir)
 
         $forum_fid = $forum_data['FID'];
 
-        // Check the forum name is set. If it isn't set it to 'A Beehive Forum'
+        // Check the forum name is set. If it isn't set it to 'A WoodBees Forum'
         if (!isset($forum_data['FORUM_NAME']) || strlen(trim($forum_data['FORUM_NAME'])) < 1) {
-            $forum_data['FORUM_NAME'] = "A Beehive Forum";
+            $forum_data['FORUM_NAME'] = "A WoodBees Forum";
         }
 
         // Check the forum description is set.

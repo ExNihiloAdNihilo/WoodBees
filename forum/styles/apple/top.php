@@ -2,7 +2,7 @@
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-    <title>Project Beehive Forum</title>
+    <title>WoodBees</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <link rel="stylesheet" href="top.css" type="text/css"/>
     <link rel="stylesheet" href="images.css" type="text/css"/>
@@ -10,7 +10,7 @@
 <!-- We Like Bees -->
 <body>
 <div class="image beehive-logo">
-    <a href="http://www.beehiveforum.co.uk/" target="_blank">Project Beehive Forum</a>
+    <a href="https://github.com/ExNihiloAdNihilo/WoodBees" target="_blank">WoodBees</a>
 </div>
 </body>
 </html>

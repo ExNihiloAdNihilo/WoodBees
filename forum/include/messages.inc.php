@@ -541,7 +541,7 @@ function messages_social_links($tid)
 
 function messages_bottom()
 {
-    echo "<p align=\"right\">Beehive Forum 2002</p>\n";
+    echo "<p align=\"right\">WoodBees 2026</p>\n";
 }
 
 function message_display($tid, $message, $msg_count, $first_msg, $folder_fid, $in_list = true, $closed = false, $is_poll = false, $show_sigs = true, $is_preview = false, $highlight_array = array())
@@ -1872,12 +1872,10 @@ function messages_beehive_bar()
     echo "  <tr>\n";
     echo "    <td width=\"60%\" align=\"left\">\n";
     echo "      WoodBees ", WOODBEES_VERSION, " (built on Beehive Forum ", BEEHIVE_VERSION, ")&nbsp;|&nbsp;\n";
-    echo "      <a href=\"http://www.beehiveforum.co.uk/faq/\" target=\"_blank\">", gettext("FAQ"), "</a>&nbsp;|&nbsp;\n";
-    echo "      <a href=\"http://www.beehiveforum.co.uk/docs/\" target=\"_blank\">", gettext("Docs"), "</a>&nbsp;|&nbsp;\n";
-    echo "      <a href=\"http://www.beehiveforum.co.uk/support/\" target=\"_blank\">", gettext("Support"), "</a>&nbsp;|&nbsp;\n";
-    echo "      <a href=\"http://www.beehiveforum.co.uk/donate/\" target=\"_blank\">", gettext("Donate!"), "</a>\n";
+    echo "      <a href=\"https://github.com/ExNihiloAdNihilo/WoodBees\" target=\"_blank\">", gettext("GitHub"), "</a>&nbsp;|&nbsp;\n";
+    echo "      <a href=\"http://www.beehiveforum.co.uk/donate/\" target=\"_blank\">", gettext("Donate to Beehive Forum!"), "</a>\n";
     echo "    </td>\n";
-    echo "    <td width=\"40%\" align=\"right\">&copy;2002 - ", strftime("%Y", time()), " <a href=\"http://www.beehiveforum.co.uk/\" target=\"_blank\">Project&nbsp;Beehive&nbsp;Forum</a></td>\n";
+    echo "    <td width=\"40%\" align=\"right\">&copy;2002 - ", strftime("%Y", time()), " <a href=\"https://github.com/ExNihiloAdNihilo/WoodBees\" target=\"_blank\">WoodBees</a></td>\n";
     echo "  </tr>\n";
     echo "</table>\n";
     echo "</div>\n";
