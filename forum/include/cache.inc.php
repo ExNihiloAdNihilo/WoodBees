@@ -223,12 +223,14 @@ function cache_check_messages()
         $sql .= "ON (POST_RECIPIENT.TID = POST.TID AND POST_RECIPIENT.PID = POST.PID) ";
         $sql .= "WHERE POST.TID = '$tid') AS POST_DATA, (SELECT UNIX_TIMESTAMP(MAX(USER_POLL_VOTES.VOTED)) ";
         $sql .= "AS POLL_VOTE FROM `{$table_prefix}USER_POLL_VOTES` USER_POLL_VOTES ";
-        $sql .= "WHERE USER_POLL_VOTES.TID = '$tid') AS POLL_DATA";
+        $sql .= "WHERE USER_POLL_VOTES.TID = '$tid') AS POLL_DATA, ";
+        $sql .= "(SELECT UNIX_TIMESTAMP(MAX(MODIFIED)) AS THREAD_MODIFIED ";
+        $sql .= "FROM `{$table_prefix}THREAD` WHERE TID = '$tid') AS THREAD_DATA";
 
     } else {
 
         $sql = "SELECT UNIX_TIMESTAMP(MAX(CREATED)) AS CREATED, ";
-        $sql .= "0 AS VIEWED, 0 AS APPROVED, 0 AS EDITED, 0 AS POLL_VOTE ";
+        $sql .= "0 AS VIEWED, 0 AS APPROVED, 0 AS EDITED, 0 AS POLL_VOTE, 0 AS THREAD_MODIFIED ";
         $sql .= "FROM `{$table_prefix}POST`";
     }
 
@@ -236,9 +238,9 @@ function cache_check_messages()
 
     if ($result->num_rows == 0) return true;
 
-    list($created, $viewed, $approved, $edited, $voted) = $result->fetch_row();
+    list($created, $viewed, $approved, $edited, $voted, $thread_modified) = $result->fetch_row();
 
-    $last_modified = max($created, $viewed, $approved, $edited, $voted);
+    $last_modified = max($created, $viewed, $approved, $edited, $voted, $thread_modified);
 
     $etag = md5($_SESSION['UID'] . $_SESSION['LOGON']);
 

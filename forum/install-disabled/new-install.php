@@ -63,7 +63,7 @@ if (($conflicting_tables = install_check_table_conflicts($config['db_database'],
 
 $sql = "CREATE TABLE FORUMS (";
 $sql .= "  FID MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT, ";
-$sql .= "  WEBTAG VARCHAR(255) NOT NULL, ";
+$sql .= "  WEBTAG VARCHAR(64) NOT NULL, ";
 $sql .= "  OWNER_UID MEDIUMINT(8) UNSIGNED NOT NULL, ";
 $sql .= "  DATABASE_NAME VARCHAR(255) NOT NULL, ";
 $sql .= "  DEFAULT_FORUM TINYINT(4) NOT NULL, ";
@@ -78,7 +78,7 @@ $db->query($sql);
 
 $sql = "CREATE TABLE FORUM_SETTINGS (";
 $sql .= "  FID MEDIUMINT(8) UNSIGNED NOT NULL, ";
-$sql .= "  SNAME VARCHAR(255) NOT NULL, ";
+$sql .= "  SNAME VARCHAR(190) NOT NULL, ";
 $sql .= "  SVALUE TEXT NOT NULL, ";
 $sql .= "  PRIMARY KEY (FID, SNAME) ";
 $sql .= ") ENGINE=MYISAM  DEFAULT CHARSET=UTF8";
@@ -289,7 +289,7 @@ $db->query($sql);
 
 $sql = "CREATE TABLE USER_TOKEN (";
 $sql .= "  UID MEDIUMINT(8) UNSIGNED NOT NULL,";
-$sql .= "  TOKEN varchar(255) NOT NULL,";
+$sql .= "  TOKEN varchar(64) NOT NULL,";
 $sql .= "  EXPIRES datetime NOT NULL,";
 $sql .= "  PRIMARY KEY (UID, TOKEN)";
 $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
@@ -397,7 +397,7 @@ $sql .= "  UID MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
 $sql .= "  SID MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
 $sql .= "  FORUM MEDIUMINT(8) UNSIGNED NOT NULL,";
 $sql .= "  LAST_LOGON DATETIME NOT NULL,";
-$sql .= "  IPADDRESS VARCHAR(255) NOT NULL,";
+$sql .= "  IPADDRESS VARCHAR(64) NOT NULL,";
 $sql .= "  REFERER VARCHAR(255) DEFAULT NULL,";
 $sql .= "  USER_AGENT VARCHAR(255) DEFAULT NULL,";
 $sql .= "  PRIMARY KEY (VID),";
@@ -414,6 +414,15 @@ $db->query($sql);
 if (!install_set_default_forum_settings()) {
     throw new Exception('Failed to save forum settings');
 }
+
+// Store the forum instance identifier (global setting, FID 0).
+$instance_identifier_value = isset($instance_identifier) ? $instance_identifier : '';
+
+$sql = "INSERT INTO FORUM_SETTINGS (FID, SNAME, SVALUE) ";
+$sql .= "VALUES (0, 'instance_identifier', '" . $db->escape($instance_identifier_value) . "') ";
+$sql .= "ON DUPLICATE KEY UPDATE SVALUE = VALUES(SVALUE)";
+
+$db->query($sql);
 
 if (!install_set_search_bots()) {
     throw new Exception('Failed to create search bot entries');

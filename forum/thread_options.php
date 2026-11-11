@@ -168,9 +168,19 @@ if (isset($_POST['save'])) {
 
         if (isset($_POST['rename']) && strlen(trim($_POST['rename'])) > 0) {
 
-            $t_rename = trim($_POST['rename']);
+            $t_rename = thread_title_normalise($_POST['rename']);
 
-            if ($t_rename !== trim($thread_data['TITLE'])) {
+            if (strlen($t_rename) == 0) {
+
+                $error_msg_array[] = gettext("The thread address must contain at least one displayable character!");
+                $valid = false;
+
+            } else if (($rename_clash_tid = thread_get_tid_by_title($t_rename)) !== false && $rename_clash_tid != $tid) {
+
+                $error_msg_array[] = gettext("A thread already exists at that address.");
+                $valid = false;
+
+            } else if ($t_rename !== thread_title_normalise($thread_data['TITLE'])) {
 
                 if (thread_change_title($tid, $t_rename)) {
 
@@ -576,7 +586,7 @@ if ($thread_data['DELETED'] == 'N') {
             echo "                    <table class=\"posthead\" width=\"95%\">\n";
             echo "                      <tr>\n";
             echo "                        <td align=\"left\" width=\"260\" class=\"posthead\">", gettext("Rename thread"), ":</td>\n";
-            echo "                        <td align=\"left\">", form_input_text("rename", htmlentities_array($thread_data['TITLE']), 37, 64), "</td>\n";
+            echo "                        <td align=\"left\">", form_input_text("rename", htmlentities_array($thread_data['TITLE']), 37, 250), "</td>\n";
             echo "                      </tr>\n";
             echo "                      <tr>\n";
             echo "                        <td align=\"left\" class=\"posthead\">", gettext("Move thread"), ":</td>\n";

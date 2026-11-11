@@ -1,5 +1,14 @@
 # Beehive Forum Release Notes
 
+## What's new in WoodBees Alpha 0.1 (Released 10th November 2026)
+
+WoodBees is a fork of Beehive Forum (built on 1.5.2). Changes from upstream:
+
+- Free-form thread "addresses" (any script, not just ASCII titles), with duplicate addresses appended to the existing thread instead of creating a new one.
+- Moderated tags: tag approve/de-approve, "Add tag" on comments, moderation requests posted to a private Moderators folder, and inline `#hashtags` routed through the same moderation queue.
+- World-language input throughout (Unicode-aware thread/tag normalisation), a per-installation instance identifier, and schema groundwork (`ORIGIN_INSTANCE` columns) for future cross-instance import/export.
+- Manticore Search replaces the defunct Sphinx search backend, with a MySQL FULLTEXT fallback if the search server is unreachable.
+
 ## What's new in 1.5.2 (Released 5th November 2016)
 
 - Changes from 1.5.1

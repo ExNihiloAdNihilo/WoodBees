@@ -103,7 +103,9 @@ class db extends mysqli
                 throw new Exception(sprintf('Could not connect to database server. Error received: %s', mysqli_connect_error()), MYSQL_CONNECT_ERROR);
             }
 
-            if (!$db->set_charset('utf8')) {
+            $db_charset = (isset(self::$config['db_charset']) && strlen(self::$config['db_charset']) > 0) ? self::$config['db_charset'] : 'utf8';
+
+            if (!$db->set_charset($db_charset)) {
                 throw new Exception('Could not change MySQL character-set. Check your MySQL user credentials');
             }
 

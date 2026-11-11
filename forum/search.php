@@ -36,6 +36,7 @@ require_once BH_INCLUDE_PATH . 'messages.inc.php';
 require_once BH_INCLUDE_PATH . 'poll.inc.php';
 require_once BH_INCLUDE_PATH . 'search.inc.php';
 require_once BH_INCLUDE_PATH . 'session.inc.php';
+require_once BH_INCLUDE_PATH . 'tag.inc.php';
 require_once BH_INCLUDE_PATH . 'thread.inc.php';
 require_once BH_INCLUDE_PATH . 'threads.inc.php';
 require_once BH_INCLUDE_PATH . 'word_filter.inc.php';
@@ -153,8 +154,8 @@ if (((isset($_POST) && sizeof($_POST) > 0 && !isset($_POST['search_reset'])) || 
 
     if (isset($_GET['search_string']) && strlen(trim($_GET['search_string'])) > 0) {
         $search_arguments['search_string'] = trim($_GET['search_string']);
-    } else if (isset($_GET['tag']) && strlen(trim($_GET['tag'])) > 0) {
-        $search_arguments['search_tag'] = trim($_GET['tag']);
+    } else if (isset($_GET['tag']) && strlen(tag_normalise($_GET['tag'])) > 0) {
+        $search_arguments['search_tag'] = tag_normalise($_GET['tag']);
     } else if (isset($_POST['search_string']) && strlen(trim($_POST['search_string'])) > 0) {
         $search_arguments['search_string'] = trim($_POST['search_string']);
     }

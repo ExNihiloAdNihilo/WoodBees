@@ -626,6 +626,8 @@ function forum_check_setting_name($setting_name)
         'show_stats',
         'start_page',
         'start_page_css',
+        'tag_moderator_fid',
+        'tag_request_tid',
         'wiki_integration_uri',
     );
 
@@ -716,9 +718,53 @@ function forum_check_global_setting_name($setting_name)
         'ajax_chat_enabled',
         'visitor_log_auto_prune',
         'visitor_log_prune_last_run',
+        'instance_identifier',
     );
 
     return in_array($setting_name, $valid_global_forum_settings);
+}
+
+/**
+ * Normalise / validate a forum instance identifier.
+ *
+ * Free-form, any script, visible characters and spaces only, 1 to 64
+ * characters. Returns '' when nothing usable remains.
+ *
+ * @param string $identifier
+ * @return string
+ */
+function instance_identifier_normalise($identifier)
+{
+    if (!is_string($identifier)) $identifier = strval($identifier);
+
+    if (class_exists('Normalizer')) {
+        $normalised = Normalizer::normalize($identifier, Normalizer::FORM_C);
+        if ($normalised !== false) $identifier = $normalised;
+    }
+
+    // Whitespace variants / separators -> single ASCII space.
+    $identifier = preg_replace('/[\p{Cc}\p{Zl}\p{Zp}\p{Zs}]+/u', ' ', $identifier);
+
+    // Strip format characters (zero-width, bidi controls, ...).
+    $identifier = preg_replace('/\p{Cf}/u', '', $identifier);
+
+    $identifier = trim(preg_replace('/ +/', ' ', $identifier));
+
+    if (mb_strlen($identifier, 'UTF-8') > 64) {
+        $identifier = rtrim(mb_substr($identifier, 0, 64, 'UTF-8'));
+    }
+
+    return $identifier;
+}
+
+/**
+ * The identifier string this forum install stamps on content it originates.
+ *
+ * @return string  the configured identifier, or '' when unset
+ */
+function instance_identifier_get()
+{
+    return instance_identifier_normalise(forum_get_global_setting('instance_identifier', null, ''));
 }
 
 function forum_get_name($fid)
@@ -930,7 +976,7 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
         $sql = "CREATE TABLE `{$forum_table_prefix}BANNED` (";
         $sql .= "  ID MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT, ";
         $sql .= "  BANTYPE TINYINT(4) NOT NULL, ";
-        $sql .= "  BANDATA VARCHAR(255) NOT NULL, ";
+        $sql .= "  BANDATA VARCHAR(190) NOT NULL, ";
         $sql .= "  COMMENT VARCHAR(255) NOT NULL, ";
         $sql .= "  EXPIRES DATETIME DEFAULT NULL, ";
         $sql .= "  PRIMARY KEY (ID), ";
@@ -1058,17 +1104,19 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
         $sql .= "  APPROVED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
         $sql .= "  EDITED DATETIME DEFAULT NULL,";
         $sql .= "  EDITED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
-        $sql .= "  IPADDRESS VARCHAR(255) NOT NULL,";
+        $sql .= "  IPADDRESS VARCHAR(64) NOT NULL,";
         $sql .= "  MOVED_TID MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
         $sql .= "  MOVED_PID MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
         $sql .= "  INDEXED DATETIME DEFAULT NULL,";
+        $sql .= "  ORIGIN_INSTANCE VARCHAR(64) DEFAULT NULL,";
         $sql .= "  PRIMARY KEY (TID,PID),";
         $sql .= "  KEY FROM_UID (FROM_UID),";
         $sql .= "  KEY IPADDRESS (IPADDRESS,FROM_UID),";
         $sql .= "  KEY APPROVED (APPROVED),";
         $sql .= "  KEY CREATED (CREATED),";
         $sql .= "  KEY EDITED (EDITED),";
-        $sql .= "  KEY INDEXED (INDEXED)";
+        $sql .= "  KEY INDEXED (INDEXED),";
+        $sql .= "  KEY ORIGIN_INSTANCE (ORIGIN_INSTANCE)";
         $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
 
         $db->query($sql);
@@ -1127,9 +1175,18 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
 
         $sql = "CREATE TABLE `{$forum_table_prefix}TAG` (";
         $sql .= "  TID MEDIUMINT(11) UNSIGNED NOT NULL AUTO_INCREMENT,";
-        $sql .= "  TAG VARCHAR(255) DEFAULT NULL,";
+        $sql .= "  TAG VARCHAR(30) DEFAULT NULL,";
+        $sql .= "  CREATED DATETIME DEFAULT NULL,";
+        $sql .= "  CREATED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
+        $sql .= "  APPROVED DATETIME DEFAULT NULL,";
+        $sql .= "  APPROVED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
+        $sql .= "  SOURCE_TID MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
+        $sql .= "  SOURCE_PID MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
+        $sql .= "  ORIGIN_INSTANCE VARCHAR(64) DEFAULT NULL,";
         $sql .= "  PRIMARY KEY (TID),";
-        $sql .= "  UNIQUE KEY TAG (TAG)";
+        $sql .= "  UNIQUE KEY TAG (TAG),";
+        $sql .= "  KEY APPROVED (APPROVED),";
+        $sql .= "  KEY ORIGIN_INSTANCE (ORIGIN_INSTANCE)";
         $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
 
         $db->query($sql);
@@ -1231,7 +1288,7 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
         $sql .= "  TID MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT, ";
         $sql .= "  FID MEDIUMINT(8) UNSIGNED NOT NULL, ";
         $sql .= "  BY_UID MEDIUMINT(8) UNSIGNED NOT NULL, ";
-        $sql .= "  TITLE VARCHAR(64) NOT NULL, ";
+        $sql .= "  TITLE VARCHAR(250) NOT NULL, ";
         $sql .= "  LENGTH MEDIUMINT(8) UNSIGNED NOT NULL, ";
         $sql .= "  UNREAD_PID MEDIUMINT(8) UNSIGNED DEFAULT NULL, ";
         $sql .= "  POLL_FLAG CHAR(1) DEFAULT 'N', ";
@@ -1244,9 +1301,12 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
         $sql .= "  STICKY_UNTIL DATETIME DEFAULT NULL, ";
         $sql .= "  ADMIN_LOCK DATETIME DEFAULT NULL, ";
         $sql .= "  DELETED CHAR(1) NOT NULL DEFAULT 'N', ";
+        $sql .= "  ORIGIN_INSTANCE VARCHAR(64) DEFAULT NULL, ";
         $sql .= "  PRIMARY KEY (TID), ";
         $sql .= "  KEY STICKY (STICKY, MODIFIED, FID, LENGTH, DELETED), ";
         $sql .= "  KEY MODIFIED (MODIFIED, FID, LENGTH, DELETED), ";
+        $sql .= "  KEY TITLE_LOOKUP (TITLE), ";
+        $sql .= "  KEY ORIGIN_INSTANCE (ORIGIN_INSTANCE), ";
         $sql .= "  FULLTEXT KEY TITLE (TITLE) ";
         $sql .= ") ENGINE=MYISAM  DEFAULT CHARSET=UTF8";
 
@@ -1379,7 +1439,7 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
 
         $sql = "CREATE TABLE `{$forum_table_prefix}USER_TRACK` (";
         $sql .= "  UID MEDIUMINT(8) UNSIGNED NOT NULL,";
-        $sql .= "  USER_KEY VARCHAR(255) NOT NULL,";
+        $sql .= "  USER_KEY VARCHAR(190) NOT NULL,";
         $sql .= "  USER_VALUE TEXT DEFAULT NULL,";
         $sql .= "  PRIMARY KEY  (UID, USER_KEY)";
         $sql .= ") ENGINE=MYISAM  DEFAULT CHARSET=UTF8";

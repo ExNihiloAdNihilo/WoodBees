@@ -1,3 +1,8 @@
+> **Superseded.** Sphinx is no longer maintained as open source. WoodBees now
+> uses **Manticore Search** (a drop-in successor speaking the same protocol) and
+> ships a container for it — see [`docs/manticore/manticore_setup.md`](../manticore/manticore_setup.md).
+> This file is kept for reference only.
+
 # Project Beehive Forum Sphinx Integration
 
 ## 0. Requirements

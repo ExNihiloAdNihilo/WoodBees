@@ -126,6 +126,9 @@ $admin_log_type_array = array(
     APPROVED_LINK => gettext("Approved Link"),
     DELETE_LINK => gettext("Deleted Link"),
     EDIT_LINK => gettext("Edited Link"),
+    APPROVED_TAG => gettext("Approved Tag"),
+    DEAPPROVED_TAG => gettext("De-approved Tag"),
+    DELETED_TAG => gettext("Deleted Tag"),
 );
 
 $admin_log_group_type_array = array(

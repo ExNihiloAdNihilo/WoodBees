@@ -643,7 +643,7 @@ function html_draw_top(array $options = array())
 
     $forum_content_rating = html_get_forum_content_rating();
 
-    echo "<meta name=\"generator\" content=\"Beehive Forum ", BEEHIVE_VERSION, "\" />\n";
+    echo "<meta name=\"generator\" content=\"WoodBees ", WOODBEES_VERSION, "\" />\n";
     echo "<meta name=\"keywords\" content=\"", word_filter_add_ob_tags($meta_keywords, true), "\" />\n";
     echo "<meta name=\"description\" content=\"", word_filter_add_ob_tags($meta_description, true), "\" />\n";
     echo "<meta name=\"rating\" content=\"$forum_content_rating\" />\n";

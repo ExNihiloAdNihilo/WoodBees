@@ -28,6 +28,68 @@ require_once BH_INCLUDE_PATH . 'timezone.inc.php';
 require_once BH_INCLUDE_PATH . 'user.inc.php';
 // End Required includes
 
+/**
+ * Normalise a thread title / "address".
+ *
+ * Thread titles act as free-form addresses - a URL, a word, or any string in
+ * any script (Arabic, Japanese, Cyrillic, Hebrew, ...). They are
+ * case-insensitive and must only contain displayable characters, so we:
+ *   - NFC-normalise (so visually identical strings compare equal),
+ *   - turn every kind of whitespace / separator into a single ASCII space,
+ *   - strip control and format characters (zero-width, bidi overrides, ...),
+ *   - lower-case (Unicode-aware),
+ *   - cap at the width of the THREAD.TITLE column (in characters).
+ *
+ * @param string $title
+ * @return string
+ */
+function thread_title_normalise($title)
+{
+    // Thread addresses may be URL-ish, so punctuation is kept.
+    return text_address_normalise($title, 250, false);
+}
+
+/**
+ * Shared normaliser for the free-form "address" style identifiers - thread
+ * titles and tags. See thread_title_normalise() for the rules.
+ *
+ * @param string $value
+ * @param int    $max_length   maximum length in characters
+ * @param bool   $letters_only when true, keep only letters, marks, digits and
+ *                             spaces (used for tags); when false, keep every
+ *                             displayable character (used for thread addresses)
+ * @return string
+ */
+function text_address_normalise($value, $max_length, $letters_only = false)
+{
+    if (!is_string($value)) $value = strval($value);
+
+    if (class_exists('Normalizer')) {
+        $normalised = Normalizer::normalize($value, Normalizer::FORM_C);
+        if ($normalised !== false) $value = $normalised;
+    }
+
+    // Any control char / line or paragraph separator / space variant -> one space.
+    $value = preg_replace('/[\p{Cc}\p{Zl}\p{Zp}\p{Zs}]+/u', ' ', $value);
+
+    // Format characters (soft hyphen, zero-width joiners, bidi controls, ...).
+    $value = preg_replace('/\p{Cf}/u', '', $value);
+
+    if ($letters_only) {
+        $value = preg_replace('/[^\p{L}\p{M}\p{N} ]+/u', '', $value);
+    }
+
+    $value = trim(preg_replace('/ +/', ' ', $value));
+
+    $value = mb_strtolower($value, 'UTF-8');
+
+    if (mb_strlen($value, 'UTF-8') > $max_length) {
+        $value = rtrim(mb_substr($value, 0, $max_length, 'UTF-8'));
+    }
+
+    return $value;
+}
+
 function format_user_name($logon, $nickname)
 {
     if (strlen(trim($nickname)) > 0) {

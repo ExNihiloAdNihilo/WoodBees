@@ -117,7 +117,7 @@ if (isset($_POST['sig_text'])) {
 }
 
 if (isset($_POST['thread_title']) && strlen(trim($_POST['thread_title'])) > 0) {
-    $thread_title = trim($_POST['thread_title']);
+    $thread_title = thread_title_normalise($_POST['thread_title']);
 }
 
 if (isset($_POST['fid']) && is_numeric($_POST['fid'])) {
@@ -295,6 +295,11 @@ if (isset($_POST['preview_poll']) || isset($_POST['preview_form']) || isset($_PO
     if (!isset($thread_title) || strlen(trim($thread_title)) == 0) {
 
         $error_msg_array[] = gettext("You must enter a title for the thread!");
+        $valid = false;
+
+    } else if (thread_get_tid_by_title($thread_title) !== false) {
+
+        $error_msg_array[] = gettext("A thread already exists at that address. Please choose a different one for your poll.");
         $valid = false;
     }
 
@@ -842,7 +847,7 @@ echo "                      <tr>\n";
 echo "                        <td align=\"left\"><h2>", gettext("Thread title"), "</h2></td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
-echo "                        <td align=\"left\">", form_input_text("thread_title", isset($thread_title) ? htmlentities_array($thread_title) : null, 30, 64, null, "thread_title"), "</td>\n";
+echo "                        <td align=\"left\">", form_input_text("thread_title", isset($thread_title) ? htmlentities_array($thread_title) : null, 30, 250, null, "thread_title"), "</td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td align=\"left\">&nbsp;</td>\n";

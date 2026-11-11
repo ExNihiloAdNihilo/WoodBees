@@ -89,7 +89,13 @@ if (isset($_POST['newthread']) && (isset($_POST['post']) || isset($_POST['previe
 
     if (isset($_POST['threadtitle']) && strlen(trim($_POST['threadtitle'])) > 0) {
 
-        $threadtitle = trim($_POST['threadtitle']);
+        $threadtitle = thread_title_normalise($_POST['threadtitle']);
+
+        if (strlen($threadtitle) == 0) {
+
+            $error_msg_array[] = gettext("The thread address must contain at least one displayable character!");
+            $valid = false;
+        }
     } else {
 
         $error_msg_array[] = gettext("You must enter a title for the thread!");
@@ -161,7 +167,7 @@ if (isset($_POST['emots_toggle']) || isset($_POST['sig_toggle'])) {
     if (isset($_POST['newthread'])) {
 
         if (isset($_POST['threadtitle']) && strlen(trim($_POST['threadtitle'])) > 0) {
-            $threadtitle = trim($_POST['threadtitle']);
+            $threadtitle = thread_title_normalise($_POST['threadtitle']);
         }
 
         if (isset($_POST['fid']) && is_numeric($_POST['fid'])) {
@@ -399,7 +405,30 @@ if ($valid && isset($_POST['post'])) {
 
         if (post_check_ddkey($dedupe)) {
 
-            if ($new_thread) {
+            if ($new_thread && ($existing_tid = thread_get_tid_by_title($threadtitle)) !== false) {
+
+                // A thread already exists at this address anywhere in the forum.
+                // Append this post to it instead of creating a duplicate.
+                $tid = $existing_tid;
+
+                if (!($fid = thread_get_folder_fid($tid))) {
+                    light_html_draw_error(gettext("Not Found"));
+                }
+
+                if (!session::check_perm(USER_PERM_POST_CREATE | USER_PERM_POST_READ, $fid)) {
+                    light_html_draw_error(gettext("You do not have permission to post in this thread!"));
+                }
+
+                $thread_data = thread_get($tid);
+
+                if (isset($thread_data['CLOSED']) && $thread_data['CLOSED'] > 0 && (!session::check_perm(USER_PERM_FOLDER_MODERATE, $fid))) {
+                    light_html_draw_error(gettext("This thread is closed, you cannot post in it!"));
+                }
+
+                $new_thread = false;
+                $reply_to_pid = 0;
+
+            } else if ($new_thread) {
 
                 $tid = post_create_thread($fid, $_SESSION['UID'], $threadtitle, 'N', 'N', false);
                 $reply_to_pid = 0;
@@ -452,9 +481,12 @@ if ($valid && isset($_POST['post'])) {
 
                 $uri = "lmessages.php?webtag=$webtag&msg=$return_msg";
             } else {
-                if (isset($tid) && is_numeric($tid) && isset($reply_to_pid) && is_numeric($reply_to_pid)) {
+                if (isset($tid) && is_numeric($tid) && isset($reply_to_pid) && is_numeric($reply_to_pid) && $reply_to_pid > 0) {
 
                     $uri = "lmessages.php?webtag=$webtag&msg=$tid.$reply_to_pid";
+                } else if (isset($tid) && is_numeric($tid) && isset($new_pid) && is_numeric($new_pid)) {
+
+                    $uri = "lmessages.php?webtag=$webtag&msg=$tid.$new_pid";
                 } else {
 
                     $uri = "lmessages.php?webtag=$webtag";
@@ -573,7 +605,7 @@ if ($new_thread) {
     echo "<h3>", gettext("Create new thread"), "</h3>\n";
     echo "<div class=\"post_inner\">\n";
     echo "<div class=\"post_folder\">", gettext("Select folder"), ":", light_folder_draw_dropdown($fid, "fid"), "</div>";
-    echo "<div class=\"post_thread_title\">", gettext("Thread title"), ":", light_form_input_text("threadtitle", htmlentities_array($threadtitle), 30, 64), "</div>";
+    echo "<div class=\"post_thread_title\">", gettext("Thread title"), ":", light_form_input_text("threadtitle", htmlentities_array($threadtitle), 30, 250), "</div>";
 } else {
 
     if (!($reply_message = messages_get($tid, $reply_to_pid))) {

@@ -32,6 +32,7 @@ require_once BH_INCLUDE_PATH . 'ip.inc.php';
 require_once BH_INCLUDE_PATH . 'perm.inc.php';
 require_once BH_INCLUDE_PATH . 'poll.inc.php';
 require_once BH_INCLUDE_PATH . 'session.inc.php';
+require_once BH_INCLUDE_PATH . 'tag.inc.php';
 require_once BH_INCLUDE_PATH . 'user.inc.php';
 require_once BH_INCLUDE_PATH . 'word_filter.inc.php';
 // End Required includes
@@ -197,7 +198,7 @@ function post_create_thread($fid, $uid, $title, $poll = 'N', $sticky = 'N', $clo
 
     if (!($table_prefix = get_table_prefix())) return false;
 
-    $title = $db->escape($title);
+    $title = $db->escape(thread_title_normalise($title));
 
     $poll = ($poll == 'Y') ? 'Y' : 'N';
 
@@ -721,25 +722,15 @@ function post_add_tags($tid, $pid, array $tags)
     if (!is_numeric($tid)) return false;
     if (!is_numeric($pid)) return false;
 
-    if (!($table_prefix = get_table_prefix())) return false;
-
-    if (!$db = db::get()) return false;
-
-    $tags = $db->escape($tags);
+    $uid = (isset($_SESSION['UID']) && is_numeric($_SESSION['UID'])) ? intval($_SESSION['UID']) : 0;
 
     foreach ($tags as $tag) {
 
-        $sql = "INSERT IGNORE INTO `{$table_prefix}TAG` (TAG) VALUES ('$tag')";
-        if (!$db->query($sql)) return false;
+        // Inline #hashtags go through the same moderation flow as tags added
+        // with the "Add tag" button: an existing tag is linked, a new one is
+        // created pending and queued for a moderator.
+        tag_request($tag, $tid, $pid, $uid);
     }
-
-    $tags = implode("','", $tags);
-
-    $sql = "INSERT IGNORE INTO `{$table_prefix}POST_TAG` (TID, PID, TAG) ";
-    $sql .= "SELECT '$tid', '$pid', TAG.TID FROM `{$table_prefix}TAG` TAG ";
-    $sql .= "WHERE TAG.TAG IN ('$tags')";
-
-    if (!$db->query($sql)) return false;
 
     return true;
 }

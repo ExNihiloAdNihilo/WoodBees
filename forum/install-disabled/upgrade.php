@@ -528,12 +528,46 @@ foreach ($forum_prefix_array as $forum_fid => $table_data) {
 
         $sql = "CREATE TABLE `{$table_data['PREFIX']}TAG` (";
         $sql .= "  TID MEDIUMINT(11) UNSIGNED NOT NULL AUTO_INCREMENT,";
-        $sql .= "  TAG VARCHAR(255) DEFAULT NULL,";
+        $sql .= "  TAG VARCHAR(30) DEFAULT NULL,";
+        $sql .= "  CREATED DATETIME DEFAULT NULL,";
+        $sql .= "  CREATED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
+        $sql .= "  APPROVED DATETIME DEFAULT NULL,";
+        $sql .= "  APPROVED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
+        $sql .= "  SOURCE_TID MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
+        $sql .= "  SOURCE_PID MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
         $sql .= "  PRIMARY KEY (TID),";
-        $sql .= "  UNIQUE KEY TAG (TAG)";
+        $sql .= "  UNIQUE KEY TAG (TAG),";
+        $sql .= "  KEY APPROVED (APPROVED)";
         $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
 
         $db->query($sql);
+    }
+
+    // Tag moderation columns (added after the original TAG table shipped).
+    if (install_table_exists($config['db_database'], "{$table_data['WEBTAG']}_TAG")) {
+
+        foreach (array('CREATED DATETIME DEFAULT NULL',
+                       'CREATED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL',
+                       'APPROVED DATETIME DEFAULT NULL',
+                       'APPROVED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL',
+                       'SOURCE_TID MEDIUMINT(8) UNSIGNED DEFAULT NULL',
+                       'SOURCE_PID MEDIUMINT(8) UNSIGNED DEFAULT NULL') as $column_def) {
+
+            list($column_name) = explode(' ', $column_def);
+
+            if (!install_column_exists($config['db_database'], "{$table_data['WEBTAG']}_TAG", $column_name)) {
+                $db->query("ALTER TABLE `{$table_data['PREFIX']}TAG` ADD COLUMN $column_def");
+            }
+        }
+
+        // Pre-existing tags (from inline #hashtags) keep working: mark them approved.
+        $db->query("UPDATE `{$table_data['PREFIX']}TAG` SET APPROVED = NOW() WHERE APPROVED IS NULL AND CREATED IS NULL");
+
+        $db->query("ALTER TABLE `{$table_data['PREFIX']}TAG` CHANGE TAG TAG VARCHAR(30) DEFAULT NULL");
+
+        if (!install_index_exists($config['db_database'], "{$table_data['WEBTAG']}_TAG", 'APPROVED')) {
+            $db->query("ALTER TABLE `{$table_data['PREFIX']}TAG` ADD KEY APPROVED (APPROVED)");
+        }
     }
 
     if (!install_column_exists($config['db_database'], "{$table_data['WEBTAG']}_USER_TRACK", 'USER_KEY')) {
@@ -872,13 +906,72 @@ foreach ($forum_prefix_array as $forum_fid => $table_data) {
     $sql = "ALTER TABLE `{$table_data['PREFIX']}THREAD` ";
     $sql .= "CHANGE FID FID MEDIUMINT(8) UNSIGNED NOT NULL AFTER TID, ";
     $sql .= "CHANGE BY_UID BY_UID MEDIUMINT(8) UNSIGNED NOT NULL AFTER FID, ";
-    $sql .= "CHANGE TITLE TITLE VARCHAR(64) COLLATE UTF8_GENERAL_CI NOT NULL AFTER BY_UID, ";
+    $sql .= "CHANGE TITLE TITLE VARCHAR(250) COLLATE UTF8_GENERAL_CI NOT NULL AFTER BY_UID, ";
     $sql .= "CHANGE LENGTH LENGTH MEDIUMINT(8) UNSIGNED NOT NULL AFTER TITLE, ";
     $sql .= "CHANGE POLL_FLAG POLL_FLAG CHAR(1) COLLATE UTF8_GENERAL_CI NULL DEFAULT 'N' AFTER UNREAD_PID, ";
     $sql .= "CHANGE CREATED CREATED DATETIME NOT NULL AFTER APPROVED_BY, ";
     $sql .= "CHANGE STICKY STICKY CHAR(1) COLLATE UTF8_GENERAL_CI NOT NULL DEFAULT 'N' AFTER CLOSED";
 
     $db->query($sql);
+
+    // Thread titles are free-form addresses in any script: lower-case them
+    // (Unicode-aware normalisation of existing rows happens in PHP over time;
+    // here we at least fold case so lookups match).
+    $sql = "UPDATE `{$table_data['PREFIX']}THREAD` SET TITLE = LOWER(TRIM(TITLE)) WHERE TITLE <> LOWER(TRIM(TITLE))";
+
+    $db->query($sql);
+
+    // Index used to resolve a thread address to its TID when posting. VARCHAR(250)
+    // is fully indexable under both utf8 and (a future) utf8mb4 on MyISAM, so the
+    // earlier prefix / composite form of this index is replaced with a plain one.
+    $sql = "SELECT COUNT(*) FROM information_schema.STATISTICS ";
+    $sql .= "WHERE TABLE_SCHEMA = '{$config['db_database']}' ";
+    $sql .= "AND TABLE_NAME = '{$table_data['WEBTAG']}_THREAD' ";
+    $sql .= "AND INDEX_NAME = 'TITLE_LOOKUP' ";
+    $sql .= "AND (SUB_PART IS NOT NULL OR COLUMN_NAME <> 'TITLE' OR SEQ_IN_INDEX > 1)";
+
+    $result = $db->query($sql);
+    list($title_lookup_outdated) = $result->fetch_row();
+
+    if ($title_lookup_outdated > 0) {
+        $db->query("ALTER TABLE `{$table_data['PREFIX']}THREAD` DROP KEY TITLE_LOOKUP");
+    }
+
+    if (!install_index_exists($config['db_database'], "{$table_data['WEBTAG']}_THREAD", 'TITLE_LOOKUP')) {
+        $db->query("ALTER TABLE `{$table_data['PREFIX']}THREAD` ADD KEY TITLE_LOOKUP (TITLE)");
+    }
+
+    // Instance-of-origin marker for content imported from other forums.
+    if (!install_column_exists($config['db_database'], "{$table_data['WEBTAG']}_THREAD", 'ORIGIN_INSTANCE')) {
+        $db->query("ALTER TABLE `{$table_data['PREFIX']}THREAD` ADD COLUMN ORIGIN_INSTANCE VARCHAR(64) DEFAULT NULL");
+    }
+
+    if (!install_index_exists($config['db_database'], "{$table_data['WEBTAG']}_THREAD", 'ORIGIN_INSTANCE')) {
+        $db->query("ALTER TABLE `{$table_data['PREFIX']}THREAD` ADD KEY ORIGIN_INSTANCE (ORIGIN_INSTANCE)");
+    }
+
+    if (!install_column_exists($config['db_database'], "{$table_data['WEBTAG']}_POST", 'ORIGIN_INSTANCE')) {
+        $db->query("ALTER TABLE `{$table_data['PREFIX']}POST` ADD COLUMN ORIGIN_INSTANCE VARCHAR(64) DEFAULT NULL");
+    }
+
+    if (!install_index_exists($config['db_database'], "{$table_data['WEBTAG']}_POST", 'ORIGIN_INSTANCE')) {
+        $db->query("ALTER TABLE `{$table_data['PREFIX']}POST` ADD KEY ORIGIN_INSTANCE (ORIGIN_INSTANCE)");
+    }
+
+    if (!install_column_exists($config['db_database'], "{$table_data['WEBTAG']}_TAG", 'ORIGIN_INSTANCE')) {
+        $db->query("ALTER TABLE `{$table_data['PREFIX']}TAG` ADD COLUMN ORIGIN_INSTANCE VARCHAR(64) DEFAULT NULL");
+    }
+
+    if (!install_index_exists($config['db_database'], "{$table_data['WEBTAG']}_TAG", 'ORIGIN_INSTANCE')) {
+        $db->query("ALTER TABLE `{$table_data['PREFIX']}TAG` ADD KEY ORIGIN_INSTANCE (ORIGIN_INSTANCE)");
+    }
+
+    // utf8mb4-readiness: shrink indexed VARCHAR(255) columns to widths that
+    // will still fit MyISAM's 1000-byte key limit under a future utf8mb4
+    // conversion. Data in these columns is always far shorter.
+    $db->query("ALTER TABLE `{$table_data['PREFIX']}POST` CHANGE IPADDRESS IPADDRESS VARCHAR(64) COLLATE UTF8_GENERAL_CI NOT NULL");
+    $db->query("ALTER TABLE `{$table_data['PREFIX']}BANNED` CHANGE BANDATA BANDATA VARCHAR(190) COLLATE UTF8_GENERAL_CI NOT NULL");
+    $db->query("ALTER TABLE `{$table_data['PREFIX']}USER_TRACK` CHANGE USER_KEY USER_KEY VARCHAR(190) COLLATE UTF8_GENERAL_CI NOT NULL");
 
     $sql = "ALTER TABLE `{$table_data['PREFIX']}THREAD_STATS` ";
     $sql .= "CHANGE TID TID MEDIUMINT(8) UNSIGNED NOT NULL FIRST, ";
@@ -1088,6 +1181,30 @@ if (!install_index_exists($config['db_database'], 'VISITOR_LOG', 'IPADDRESS')) {
 
     $sql = "ALTER TABLE `VISITOR_LOG` ADD KEY IPADDRESS(IPADDRESS)";
     $db->query($sql);
+}
+
+// utf8mb4-readiness: shrink indexed VARCHAR(255) columns on the MyISAM global
+// tables to widths that will still fit MyISAM's 1000-byte key limit under a
+// future utf8mb4 conversion. The data in these columns is always far shorter.
+// (SESSIONS is InnoDB with a larger key limit, so REFERER is left as-is.)
+$db->query("ALTER TABLE FORUMS CHANGE WEBTAG WEBTAG VARCHAR(64) COLLATE UTF8_GENERAL_CI NOT NULL");
+$db->query("ALTER TABLE FORUM_SETTINGS CHANGE SNAME SNAME VARCHAR(190) COLLATE UTF8_GENERAL_CI NOT NULL");
+$db->query("ALTER TABLE USER_TOKEN CHANGE TOKEN TOKEN VARCHAR(64) COLLATE UTF8_GENERAL_CI NOT NULL");
+$db->query("ALTER TABLE VISITOR_LOG CHANGE IPADDRESS IPADDRESS VARCHAR(64) COLLATE UTF8_GENERAL_CI NOT NULL");
+
+// Forum instance identifier (global setting). It may only be changed by
+// running an upgrade; $instance_identifier is passed through from the
+// installer form when the admin entered a new value.
+if (isset($instance_identifier) && strlen($instance_identifier) > 0) {
+
+    $sql = "INSERT INTO FORUM_SETTINGS (FID, SNAME, SVALUE) ";
+    $sql .= "VALUES (0, 'instance_identifier', '" . $db->escape($instance_identifier) . "') ";
+    $sql .= "ON DUPLICATE KEY UPDATE SVALUE = VALUES(SVALUE)";
+    $db->query($sql);
+
+} else {
+
+    $db->query("INSERT IGNORE INTO FORUM_SETTINGS (FID, SNAME, SVALUE) VALUES (0, 'instance_identifier', '')");
 }
 
 $sql = "DELETE FROM POST_ATTACHMENT_IDS WHERE AID NOT IN (SELECT AID FROM POST_ATTACHMENT_FILES)";

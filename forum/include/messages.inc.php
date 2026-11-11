@@ -35,6 +35,7 @@ require_once BH_INCLUDE_PATH . 'perm.inc.php';
 require_once BH_INCLUDE_PATH . 'poll.inc.php';
 require_once BH_INCLUDE_PATH . 'search.inc.php';
 require_once BH_INCLUDE_PATH . 'session.inc.php';
+require_once BH_INCLUDE_PATH . 'tag.inc.php';
 require_once BH_INCLUDE_PATH . 'thread.inc.php';
 require_once BH_INCLUDE_PATH . 'threads.inc.php';
 require_once BH_INCLUDE_PATH . 'user.inc.php';
@@ -101,6 +102,8 @@ function messages_get($tid, $pid = 1, $limit = 1)
     messages_have_attachments($tid, $messages_array);
 
     messages_get_ratings($tid, $messages_array);
+
+    messages_get_tags($tid, $messages_array);
 
     return ($limit > 1) ? $messages_array : array_shift($messages_array);
 }
@@ -259,6 +262,54 @@ function messages_get_ratings($tid, &$messages_array)
     return true;
 }
 
+function messages_get_tags($tid, &$messages_array)
+{
+    if (!($table_prefix = get_table_prefix())) return false;
+
+    if (!$db = db::get()) return false;
+
+    if (!is_numeric($tid)) return false;
+
+    if (sizeof($messages_array) < 1) return false;
+
+    $viewer_uid = (isset($_SESSION['UID']) && is_numeric($_SESSION['UID'])) ? intval($_SESSION['UID']) : 0;
+
+    // All messages in a thread share a folder, so a single moderator check does.
+    $first_message = reset($messages_array);
+    $can_moderate = (isset($first_message['FID']) && session::check_perm(USER_PERM_FOLDER_MODERATE, $first_message['FID']));
+
+    foreach (array_keys($messages_array) as $pid) {
+        $messages_array[$pid]['TAGS'] = array();
+    }
+
+    $pid_list = implode("','", array_map('intval', array_keys($messages_array)));
+
+    $sql = "SELECT POST_TAG.PID, TAG.TID AS TAGID, TAG.TAG, TAG.APPROVED, TAG.CREATED_BY ";
+    $sql .= "FROM `{$table_prefix}POST_TAG` POST_TAG ";
+    $sql .= "INNER JOIN `{$table_prefix}TAG` TAG ON (TAG.TID = POST_TAG.TAG) ";
+    $sql .= "WHERE POST_TAG.TID = '$tid' AND POST_TAG.PID IN ('$pid_list') ";
+    $sql .= "ORDER BY TAG.TAG";
+
+    if (!($result = $db->query($sql))) return false;
+
+    while (($row = $result->fetch_assoc()) !== null) {
+
+        $pending = ($row['APPROVED'] === null);
+
+        if ($pending && !$can_moderate && $row['CREATED_BY'] != $viewer_uid) {
+            continue;
+        }
+
+        $messages_array[$row['PID']]['TAGS'][] = array(
+            'TAGID'   => $row['TAGID'],
+            'TAG'     => $row['TAG'],
+            'PENDING' => $pending
+        );
+    }
+
+    return true;
+}
+
 function message_get_meta_content($msg, &$meta_keywords, &$meta_description)
 {
     if (!validate_msg($msg)) return;
@@ -356,23 +407,58 @@ function message_apply_formatting($message, $ignore_sig = false)
         $message = implode('', $message_parts);
     }
 
-    if ($enable_tags) {
+    if ($enable_tags && preg_match_all('/(^|\s)#([A-Z0-9]{1,255})/iu', $message, $hashtag_matches)) {
 
-        $message_parts = preg_split('/([<|>])/u', $message, -1, PREG_SPLIT_DELIM_CAPTURE);
+        // Only turn a #hashtag into a link once its tag has been approved by a
+        // moderator; unapproved ones stay as plain text.
+        $approved_hashtags = array();
 
-        for ($i = 0; $i < sizeof($message_parts); $i++) {
+        if (($tag_table_prefix = get_table_prefix()) && ($tag_db = db::get())) {
 
-            if (!($i % 4) && (!isset($message_parts[$i - 2]) || !strstr($message_parts[$i - 2], "href"))) {
+            $candidate_tags = array_unique(array_map('mb_strtolower', $hashtag_matches[2]));
+            $candidate_in = implode("','", array_map(array($tag_db, 'escape'), $candidate_tags));
 
-                $message_parts[$i] = preg_replace(
-                    '/(^|\s)#([A-Z0-9]{1,255})/iu',
-                    "$1<a href=\"search.php?webtag=$webtag&amp;tag=$2\" class=\"tag\" target=\"" . html_get_frame_name('right') . "\">#$2</a>",
-                    $message_parts[$i]
-                );
+            $tag_sql = "SELECT LOWER(TAG) FROM `{$tag_table_prefix}TAG` ";
+            $tag_sql .= "WHERE APPROVED IS NOT NULL AND TAG IN ('$candidate_in')";
+
+            if (($tag_result = $tag_db->query($tag_sql))) {
+
+                while (($tag_row = $tag_result->fetch_row()) !== null) {
+                    $approved_hashtags[$tag_row[0]] = true;
+                }
             }
         }
 
-        $message = implode('', $message_parts);
+        if (sizeof($approved_hashtags) > 0) {
+
+            $tag_frame_target = html_get_frame_name('right');
+
+            $message_parts = preg_split('/([<|>])/u', $message, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+            for ($i = 0; $i < sizeof($message_parts); $i++) {
+
+                if (!($i % 4) && (!isset($message_parts[$i - 2]) || !strstr($message_parts[$i - 2], "href"))) {
+
+                    $message_parts[$i] = preg_replace_callback(
+                        '/(^|\s)#([A-Z0-9]{1,255})/iu',
+                        function ($m) use ($webtag, $approved_hashtags, $tag_frame_target) {
+
+                            $tag_name = mb_strtolower($m[2]);
+
+                            if (!isset($approved_hashtags[$tag_name])) {
+                                return $m[0];
+                            }
+
+                            return $m[1] . "<a href=\"search.php?webtag=$webtag&amp;tag=" . rawurlencode($tag_name)
+                                 . "\" class=\"tag\" target=\"$tag_frame_target\">#" . htmlentities_array($m[2]) . "</a>";
+                        },
+                        $message_parts[$i]
+                    );
+                }
+            }
+
+            $message = implode('', $message_parts);
+        }
     }
 
     $message = emoticons_apply($message);
@@ -839,6 +925,47 @@ function message_display($tid, $message, $msg_count, $first_msg, $folder_fid, $i
             }
         }
 
+        if (!$is_preview && tag_enabled() && isset($message['PID'])) {
+
+            $post_tags = isset($message['TAGS']) ? $message['TAGS'] : array();
+
+            echo "              <tr>\n";
+            echo "                <td class=\"postbody\" align=\"left\">\n";
+            echo "                  <p class=\"post_tags\"><b>", gettext("Tags"), ":</b> ";
+
+            if (sizeof($post_tags) > 0) {
+
+                $tag_link_array = array();
+
+                foreach ($post_tags as $post_tag) {
+
+                    $tag_uri = htmlentities_array("search.php?webtag=$webtag&tag=" . rawurlencode($post_tag['TAG']));
+
+                    $tag_link = "<a href=\"$tag_uri\" class=\"tag\" target=\"" . html_get_frame_name('right') . "\">" . htmlentities_array($post_tag['TAG']) . "</a>";
+
+                    if ($post_tag['PENDING']) {
+                        $tag_link .= " <span class=\"smallertext\">(" . gettext("pending") . ")</span>";
+                    }
+
+                    $tag_link_array[] = $tag_link;
+                }
+
+                echo implode(', ', $tag_link_array);
+
+            } else {
+
+                echo "<span class=\"smallertext\">", gettext("none yet"), "</span>";
+            }
+
+            if (session::logged_in()) {
+                echo " &nbsp;<a href=\"tag_add.php?webtag=$webtag&amp;msg=$tid.{$message['PID']}&amp;return_msg=$tid.$first_msg\" target=\"_parent\">", gettext("Add tag"), "</a>";
+            }
+
+            echo "</p>\n";
+            echo "                </td>\n";
+            echo "              </tr>\n";
+        }
+
         echo "            </table>\n";
 
         if (!$is_preview) {
@@ -1003,6 +1130,14 @@ function message_get_post_options_html($tid, $pid, $message)
     $html .= "                        <td align=\"left\"><a href=\"thread_options.php?webtag=$webtag&amp;msg={$message['TID']}.{$message['PID']}&amp;markasread=" . ($message['PID'] - 1) . "&amp;return_msg=$tid.$pid\" target=\"_self\" title=\"" . gettext("Mark as unread") . "\">" . html_style_image('mark_as_unread', gettext("Mark as unread")) . "</a></td>\n";
     $html .= "                        <td align=\"left\" style=\"white-space: nowrap\"><a href=\"thread_options.php?webtag=$webtag&amp;msg={$message['TID']}.{$message['PID']}&amp;markasread=" . ($message['PID'] - 1) . "&amp;return_msg=$tid.$pid\" target=\"_self\" title=\"" . gettext("Mark as unread") . "\">" . gettext("Mark as unread") . "</a></td>\n";
     $html .= "                      </tr>\n";
+
+    if (tag_enabled()) {
+
+        $html .= "                      <tr>\n";
+        $html .= "                        <td align=\"left\"><a href=\"tag_add.php?webtag=$webtag&amp;msg={$message['TID']}.{$message['PID']}&amp;return_msg=$tid.$pid\" target=\"_parent\" title=\"" . gettext("Add tag") . "\">" . html_style_image('tag', gettext("Add tag")) . "</a></td>\n";
+        $html .= "                        <td align=\"left\" style=\"white-space: nowrap\"><a href=\"tag_add.php?webtag=$webtag&amp;msg={$message['TID']}.{$message['PID']}&amp;return_msg=$tid.$pid\" target=\"_parent\" title=\"" . gettext("Add tag") . "\">" . gettext("Add tag") . "</a></td>\n";
+        $html .= "                      </tr>\n";
+    }
 
     if ($_SESSION['UID'] != $message['FROM_UID']) {
 
@@ -1736,7 +1871,7 @@ function messages_beehive_bar()
     echo "<table width=\"98%\">\n";
     echo "  <tr>\n";
     echo "    <td width=\"60%\" align=\"left\">\n";
-    echo "      Beehive Forum ", BEEHIVE_VERSION, "&nbsp;|&nbsp;\n";
+    echo "      WoodBees ", WOODBEES_VERSION, " (built on Beehive Forum ", BEEHIVE_VERSION, ")&nbsp;|&nbsp;\n";
     echo "      <a href=\"http://www.beehiveforum.co.uk/faq/\" target=\"_blank\">", gettext("FAQ"), "</a>&nbsp;|&nbsp;\n";
     echo "      <a href=\"http://www.beehiveforum.co.uk/docs/\" target=\"_blank\">", gettext("Docs"), "</a>&nbsp;|&nbsp;\n";
     echo "      <a href=\"http://www.beehiveforum.co.uk/support/\" target=\"_blank\">", gettext("Support"), "</a>&nbsp;|&nbsp;\n";
