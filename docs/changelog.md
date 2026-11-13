@@ -1,5 +1,26 @@
 # Beehive Forum Change Log (Generated: Tue, 23 Aug 2016 20:25:51)
 
+## Date: Fri, 13 Nov 2026
+
+- Changed: DB_MODE is now a required .env setting (mariadb, mysql, or
+           external), with support for pointing WoodBees at an
+           external MariaDB/MySQL server instead of the bundled one.
+- Added: Copy-to-clipboard buttons on the install wizard, and
+         scripts/switch-db-engine.sh / switch-db-engine.ps1 helper
+         scripts, for safely switching DB engine or mode without
+         losing data or leaving orphaned containers behind.
+
+## Date: Thu, 12 Nov 2026
+
+- Changed: docker-compose.yml's database image is now selectable via
+           DB_IMAGE (MariaDB 11.4 or MySQL 8.4).
+- Fixed: Renamed the GROUPS table to GROUP_INFO, since MySQL 8
+         reserves GROUPS as a keyword and refused to create it.
+- Fixed: Web image build failing against Alpine's CDN due to a stale
+         CA bundle.
+- Fixed: Forum Stats page 500/502s on a fresh install with no
+         date-of-birth data.
+
 ## Date: Mon, 08 Aug 2016
 
 - Fixed: Remove width and height from images.css main .image selector.
