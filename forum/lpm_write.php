@@ -397,11 +397,7 @@ if (mb_strlen($content) >= 65535) {
     $valid = false;
 }
 
-if (isset($_POST['dedupe']) && is_numeric($_POST['dedupe'])) {
-    $dedupe = intval($_POST['dedupe']);
-} else {
-    $dedupe = time();
-}
+$dedupe = post_get_ddkey();
 
 if ($valid && isset($_POST['send'])) {
 

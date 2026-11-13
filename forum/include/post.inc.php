@@ -493,44 +493,90 @@ function post_draw_to_dropdown_in_thread($tid, $default_uid, $show_all = true, $
     return $html;
 }
 
+/**
+ * The double-submit ("dedupe") key for a post or PM form.
+ *
+ * Every rendered form carries its own random key in a hidden field, and the
+ * key is carried over while the same form is previewed or re-shown with an
+ * error. Forms rendered before Alpha 0.3.1 carried a numeric time() value;
+ * those still pass the format check and work the same way.
+ */
+function post_get_ddkey()
+{
+    if (isset($_POST['dedupe']) && is_string($_POST['dedupe']) && preg_match('/^[0-9a-f]{1,32}$/Di', $_POST['dedupe'])) {
+        return strtolower($_POST['dedupe']);
+    }
+
+    return post_new_ddkey();
+}
+
+function post_new_ddkey()
+{
+    try {
+        return bin2hex(random_bytes(8));
+    } catch (Throwable $e) {
+        return substr(md5(uniqid(mt_rand(), true)), 0, 16);
+    }
+}
+
+/**
+ * Records that the form with this dedupe key has been submitted by the
+ * current user. Returns true the first time a key is seen and false for any
+ * repeat (double-click, browser retry, resubmitted tab), including repeats
+ * that arrive at the same moment: each key is one USER_TRACK row and
+ * INSERT IGNORE on its primary key lets exactly one request create it.
+ * Keys are remembered for a day.
+ */
 function post_check_ddkey($ddkey)
 {
     if (!$db = db::get()) return false;
 
-    if (!is_numeric($ddkey)) return false;
+    if (!is_string($ddkey) && !is_int($ddkey)) return false;
 
-    $ddkey_datetime = date(MYSQL_DATETIME, $ddkey);
+    $ddkey = strtolower((string)$ddkey);
+
+    if (!preg_match('/^[0-9a-f]{1,32}$/D', $ddkey)) return false;
 
     if (!isset($_SESSION['UID']) || !is_numeric($_SESSION['UID'])) return false;
 
     if (!($table_prefix = get_table_prefix())) return false;
 
-    $sql = "SELECT USER_VALUE FROM `{$table_prefix}USER_TRACK` ";
-    $sql .= "WHERE UID = '{$_SESSION['UID']}' AND USER_KEY = 'DDKEY'";
+    $uid = intval($_SESSION['UID']);
 
-    if (!($result = $db->query($sql))) return false;
+    $current_datetime = date(MYSQL_DATETIME, time());
 
-    if ($result->num_rows) {
+    $expired_datetime = date(MYSQL_DATETIME, time() - DAY_IN_SECONDS);
 
-        list($ddkey_datetime_check) = $result->fetch_row();
+    // Forget old keys, and the single 'DDKEY' row used before Alpha 0.3.1.
+    $sql = "DELETE FROM `{$table_prefix}USER_TRACK` WHERE UID = '$uid' ";
+    $sql .= "AND (USER_KEY = 'DDKEY' OR (USER_KEY LIKE 'DDKEY:%' AND USER_VALUE < '$expired_datetime'))";
 
-        $sql = "UPDATE LOW_PRIORITY `{$table_prefix}USER_TRACK` ";
-        $sql .= "SET USER_VALUE = CAST('$ddkey_datetime' AS DATETIME) ";
-        $sql .= "WHERE UID = '{$_SESSION['UID']}' AND USER_KEY = 'DDKEY'";
+    if (!$db->query($sql)) return false;
 
-        if (!($result = $db->query($sql))) return false;
+    $sql = "INSERT IGNORE INTO `{$table_prefix}USER_TRACK` (UID, USER_KEY, USER_VALUE) ";
+    $sql .= "VALUES ('$uid', 'DDKEY:$ddkey', '$current_datetime')";
 
-    } else {
+    if (!$db->query($sql)) return false;
 
-        $ddkey_datetime_check = '';
+    return ($db->affected_rows > 0);
+}
 
-        $sql = "INSERT INTO `{$table_prefix}USER_TRACK` (UID, USER_KEY, USER_VALUE) ";
-        $sql .= "VALUES ('{$_SESSION['UID']}', 'DDKEY', CAST('$ddkey_datetime' AS DATETIME))";
+/**
+ * Shown when a post form is submitted again after it was already posted,
+ * instead of silently returning to the thread as if a new comment had been
+ * made. $msg is the thread/comment to offer a link back to, if known.
+ */
+function post_draw_duplicate_error($msg = null, $light = false)
+{
+    $message = gettext("This comment has already been posted, so it was not posted a second time. If you meant to write another comment, please start a new one.");
 
-        if (!($result = $db->query($sql))) return false;
+    $vars = (is_string($msg) && preg_match('/^[0-9]+\.[0-9]+$/D', $msg)) ? array('msg' => $msg) : array();
+
+    if ($light) {
+        light_html_draw_error($message, 'lmessages.php', 'get', array('back' => gettext("Back")), $vars);
     }
 
-    return !($ddkey_datetime == $ddkey_datetime_check);
+    html_draw_error($message, 'discussion.php', 'get', array('back' => gettext("Back")), $vars);
 }
 
 function post_check_frequency()

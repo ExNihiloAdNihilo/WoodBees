@@ -562,11 +562,7 @@ if ((mb_strlen($message_text) + mb_strlen($sig_text)) >= 65535) {
     $valid = false;
 }
 
-if (isset($_POST['dedupe']) && is_numeric($_POST['dedupe'])) {
-    $dedupe = intval($_POST['dedupe']);
-} else {
-    $dedupe = time();
-}
+$dedupe = post_get_ddkey();
 
 if ($valid && isset($_POST['post'])) {
 
@@ -633,6 +629,12 @@ if ($valid && isset($_POST['post'])) {
                     }
                 }
             }
+
+        } else {
+
+            // This form was already posted (double-click, browser retry or a
+            // resubmitted tab).
+            post_draw_duplicate_error();
         }
 
         if (isset($tid) && $tid > 0) {

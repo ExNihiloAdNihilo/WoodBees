@@ -584,11 +584,7 @@ if (isset($_POST['preview_poll']) || isset($_POST['preview_form']) || isset($_PO
     }
 }
 
-if (isset($_POST['dedupe']) && is_numeric($_POST['dedupe'])) {
-    $dedupe = intval($_POST['dedupe']);
-} else {
-    $dedupe = time();
-}
+$dedupe = post_get_ddkey();
 
 if ($valid && isset($_POST['apply'])) {
 

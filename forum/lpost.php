@@ -131,11 +131,7 @@ if (isset($_POST['attachment']) && is_array($_POST['attachment'])) {
 } else {
     $attachments = array();
 }
-if (isset($_POST['dedupe']) && is_numeric($_POST['dedupe'])) {
-    $dedupe = intval($_POST['dedupe']);
-} else {
-    $dedupe = time();
-}
+$dedupe = post_get_ddkey();
 
 if (isset($_POST['post']) || isset($_POST['preview'])) {
 
@@ -470,6 +466,19 @@ if ($valid && isset($_POST['post'])) {
                     }
                 }
             }
+
+        } else {
+
+            // This form was already posted (double-click, browser retry or a
+            // resubmitted tab). Say so instead of returning to the thread as
+            // if a new comment had been made.
+            if ($new_thread) {
+                $duplicate_tid = thread_get_tid_by_title($threadtitle);
+            } else {
+                $duplicate_tid = (isset($tid) && is_numeric($tid)) ? $tid : false;
+            }
+
+            post_draw_duplicate_error(($duplicate_tid !== false) ? "$duplicate_tid.1" : null, true);
         }
 
         if ($new_thread && isset($tid) && is_numeric($tid)) {
