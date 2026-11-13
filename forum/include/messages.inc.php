@@ -65,6 +65,7 @@ function messages_get($tid, $pid = 1, $limit = 1)
     $sql = "SELECT FOLDER.FID, POST.TID, POST.PID, POST.REPLY_TO_PID, POST.FROM_UID, UNIX_TIMESTAMP(POST.CREATED) AS CREATED, ";
     $sql .= "UNIX_TIMESTAMP(POST.EDITED) AS EDITED, POST.EDITED_BY, POST.IPADDRESS, POST.MOVED_TID, POST.MOVED_PID, ";
     $sql .= "UNIX_TIMESTAMP(POST.APPROVED) AS APPROVED, POST.APPROVED_BY, USER.LOGON AS FROM_LOGON, ";
+    $sql .= "POST.ORIGIN_INSTANCE, POST.ORIGIN_AUTHOR, ";
     $sql .= "COALESCE(USER_PEER.PEER_NICKNAME, USER.NICKNAME) AS FROM_NICKNAME, USER_PEER.RELATIONSHIP AS RELATIONSHIP, ";
     $sql .= "USER_PREFS_GLOBAL.ANON_LOGON, COALESCE(USER_PREFS_FORUM.AVATAR_URL, USER_PREFS_GLOBAL.AVATAR_URL) AS AVATAR_URL, ";
     $sql .= "THREAD.BY_UID AS THREAD_BY_UID, COALESCE(USER_PREFS_FORUM.AVATAR_AID, USER_PREFS_GLOBAL.AVATAR_AID) AS AVATAR_AID, ";
@@ -93,6 +94,21 @@ function messages_get($tid, $pid = 1, $limit = 1)
         if (!isset($message['FROM_NICKNAME'])) $message['FROM_NICKNAME'] = gettext("Unknown user");
         if (!isset($message['FROM_LOGON'])) $message['FROM_LOGON'] = gettext("Unknown user");
         if (!isset($message['FROM_UID'])) $message['FROM_UID'] = null;
+
+        // Imported (federated) comment: FROM_UID is a non-login placeholder,
+        // so show the original author as text, e.g. "CoolBreeze @ BedRock".
+        $message['FROM_IMPORTED'] = isset($message['ORIGIN_INSTANCE']) && strlen($message['ORIGIN_INSTANCE']) > 0;
+
+        if ($message['FROM_IMPORTED']) {
+
+            $origin_author = (isset($message['ORIGIN_AUTHOR']) && strlen($message['ORIGIN_AUTHOR']) > 0) ? $message['ORIGIN_AUTHOR'] : gettext("Unknown user");
+
+            $message['FROM_LOGON'] = $message['FROM_NICKNAME'] = sprintf(gettext("%s @ %s"), $origin_author, $message['ORIGIN_INSTANCE']);
+            $message['RELATIONSHIP'] = null;
+            $message['AVATAR_URL'] = null;
+            $message['AVATAR_AID'] = null;
+            $message['USER_ACTIVE'] = null;
+        }
 
         $messages_array[$message['PID']] = $message;
     }
@@ -670,7 +686,7 @@ function message_display($tid, $message, $msg_count, $first_msg, $folder_fid, $i
     echo "                <td width=\"1%\" align=\"right\" style=\"white-space: nowrap\"><span class=\"posttofromlabel\">&nbsp;", gettext("From"), ":&nbsp;</span></td>\n";
     echo "                <td style=\"white-space: nowrap\" width=\"98%\" align=\"left\"><span class=\"posttofrom\">";
 
-    if (isset($message['FROM_UID'])) {
+    if (isset($message['FROM_UID']) && empty($message['FROM_IMPORTED'])) {
 
         echo "<a href=\"user_profile.php?webtag=$webtag&amp;uid={$message['FROM_UID']}\" target=\"_blank\" class=\"popup 650x500\">";
         echo word_filter_add_ob_tags(format_user_name($message['FROM_LOGON'], $message['FROM_NICKNAME']), true), "</a>&nbsp;</span>";
@@ -1118,10 +1134,14 @@ function message_get_post_options_html($tid, $pid, $message)
         $html .= "                      </tr>\n";
     }
 
-    $html .= "                      <tr>\n";
-    $html .= "                        <td align=\"left\"><a href=\"pm_write.php?webtag=$webtag&amp;uid={$message['FROM_UID']}&amp;msg={$message['TID']}.{$message['PID']}&amp;return_msg=$tid.$pid\" target=\"_parent\" title=\"" . gettext("Reply as PM") . "\">" . html_style_image('pm_unread', gettext("Reply as PM")) . "</a></td>\n";
-    $html .= "                        <td align=\"left\" style=\"white-space: nowrap\"><a href=\"pm_write.php?webtag=$webtag&amp;uid={$message['FROM_UID']}&amp;msg={$message['TID']}.{$message['PID']}&amp;return_msg=$tid.$pid\" target=\"_parent\" title=\"" . gettext("Reply as PM") . "\">" . gettext("Reply as PM") . "</a></td>\n";
-    $html .= "                      </tr>\n";
+    if (empty($message['FROM_IMPORTED'])) {
+
+        $html .= "                      <tr>\n";
+        $html .= "                        <td align=\"left\"><a href=\"pm_write.php?webtag=$webtag&amp;uid={$message['FROM_UID']}&amp;msg={$message['TID']}.{$message['PID']}&amp;return_msg=$tid.$pid\" target=\"_parent\" title=\"" . gettext("Reply as PM") . "\">" . html_style_image('pm_unread', gettext("Reply as PM")) . "</a></td>\n";
+        $html .= "                        <td align=\"left\" style=\"white-space: nowrap\"><a href=\"pm_write.php?webtag=$webtag&amp;uid={$message['FROM_UID']}&amp;msg={$message['TID']}.{$message['PID']}&amp;return_msg=$tid.$pid\" target=\"_parent\" title=\"" . gettext("Reply as PM") . "\">" . gettext("Reply as PM") . "</a></td>\n";
+        $html .= "                      </tr>\n";
+    }
+
     $html .= "                      <tr>\n";
     $html .= "                        <td align=\"left\"><a href=\"display.php?webtag=$webtag&amp;print_msg={$message['TID']}.{$message['PID']}&amp;return_msg=$tid.$pid\" target=\"_self\" title=\"" . gettext("Print") . "\">" . html_style_image('print', gettext("Print")) . "</a></td>\n";
     $html .= "                        <td align=\"left\" style=\"white-space: nowrap\"><a href=\"display.php?webtag=$webtag&amp;print_msg={$message['TID']}.{$message['PID']}&amp;return_msg=$tid.$pid\" target=\"_self\" title=\"" . gettext("Print") . "\">" . gettext("Print") . "</a></td>\n";
@@ -1139,7 +1159,7 @@ function message_get_post_options_html($tid, $pid, $message)
         $html .= "                      </tr>\n";
     }
 
-    if ($_SESSION['UID'] != $message['FROM_UID']) {
+    if ($_SESSION['UID'] != $message['FROM_UID'] && empty($message['FROM_IMPORTED'])) {
 
         $html .= "                      <tr>\n";
         $html .= "                        <td align=\"left\"><a href=\"user_rel.php?webtag=$webtag&amp;uid={$message['FROM_UID']}&amp;msg={$message['TID']}.{$message['PID']}&amp;return_msg=$tid.$pid\" target=\"_self\" title=\"" . gettext("Relationship") . "\">" . html_style_image('enemy', gettext("Relationship")) . "</a></td>\n";
@@ -1147,7 +1167,7 @@ function message_get_post_options_html($tid, $pid, $message)
         $html .= "                      </tr>\n";
     }
 
-    if ($perm_has_admin_access) {
+    if ($perm_has_admin_access && empty($message['FROM_IMPORTED'])) {
 
         $html .= "                      <tr>\n";
         $html .= "                        <td align=\"left\"><a href=\"admin_user.php?webtag=$webtag&amp;uid={$message['FROM_UID']}&amp;msg={$message['TID']}.{$message['PID']}\" target=\"_self\" title=\"" . gettext("Privileges") . "\">" . html_style_image('admin_tool', gettext("Privileges")) . "</a></td>\n";

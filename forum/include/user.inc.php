@@ -38,7 +38,7 @@ function user_count()
 {
     if (!$db = db::get()) return false;
 
-    $sql = "SELECT COUNT(UID) AS COUNT FROM USER";
+    $sql = "SELECT COUNT(UID) AS COUNT FROM USER WHERE PASSWD <> '" . USER_PLACEHOLDER_PASSWD . "'";
 
     if (!($result = $db->query($sql))) return false;
 
@@ -344,6 +344,9 @@ function user_logon($logon, $password)
 
     list($uid, $passhash, $salt) = $result->fetch_row();
 
+    // Federation placeholder accounts can never log on.
+    if ($passhash === USER_PLACEHOLDER_PASSWD) return false;
+
     if ((md5($password) == $passhash) && (strlen(trim($salt))) == 0) {
 
         if (!user_reset_password($uid, $password, $passhash)) return false;
@@ -618,7 +621,8 @@ function user_get_by_logon($logon)
 
     $sql = "SELECT UID, LOGON, PASSWD, NICKNAME, EMAIL, ";
     $sql .= "REGISTERED, IPADDRESS, REFERER, APPROVED ";
-    $sql .= "FROM USER WHERE LOGON LIKE '$logon'";
+    $sql .= "FROM USER WHERE LOGON LIKE '$logon' ";
+    $sql .= "AND PASSWD <> '" . USER_PLACEHOLDER_PASSWD . "'";
 
     if (!($result = $db->query($sql))) return false;
 
@@ -1811,4 +1815,35 @@ function user_get_posts($uid)
     }
 
     return false;
+}
+
+/**
+ * True when the user is a federation placeholder: the non-login account an
+ * imported comment's FROM_UID points at (one per origin instance). The real
+ * author is kept as text in POST.ORIGIN_AUTHOR. See federation.inc.php.
+ *
+ * @param int $uid
+ * @return bool
+ */
+function user_is_placeholder($uid)
+{
+    static $cache = array();
+
+    if (!is_numeric($uid) || $uid < 1) return false;
+
+    $uid = intval($uid);
+
+    if (isset($cache[$uid])) return $cache[$uid];
+
+    if (!$db = db::get()) return false;
+
+    $sql = "SELECT PASSWD FROM USER WHERE UID = '$uid'";
+
+    if (!($result = $db->query($sql)) || $result->num_rows == 0) return false;
+
+    list($passhash) = $result->fetch_row();
+
+    $cache[$uid] = ($passhash === USER_PLACEHOLDER_PASSWD);
+
+    return $cache[$uid];
 }

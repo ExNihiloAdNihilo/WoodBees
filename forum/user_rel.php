@@ -105,6 +105,11 @@ if (isset($_GET['uid']) && is_numeric($_GET['uid'])) {
     html_draw_error(gettext("No user specified!"));
 }
 
+// Federation placeholders (owners of imported comments) are not real users.
+if (user_is_placeholder($peer_uid)) {
+    html_draw_error(gettext("This account only holds comments imported from another instance."));
+}
+
 // Cannot modify relationship settings for the current account
 if (($peer_uid == $_SESSION['UID'])) {
     html_draw_error(gettext("You cannot change user relationship for your own user account"));

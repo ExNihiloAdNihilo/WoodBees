@@ -471,8 +471,9 @@ if (isset($_POST['to_logon'])) {
         }
     }
 
-} else if (isset($tid) && isset($reply_to_pid) && ($reply_to_pid > 0)) {
+} else if (isset($tid) && isset($reply_to_pid) && ($reply_to_pid > 0) && empty($reply_message['FROM_IMPORTED'])) {
 
+    // (Imported comments have no local author to address the reply to.)
     $to_logon = $reply_message['FROM_LOGON'];
 
     $to_logon_array[$reply_message['FROM_UID']] = array(

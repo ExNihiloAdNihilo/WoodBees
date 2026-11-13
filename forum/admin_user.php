@@ -71,6 +71,13 @@ if (isset($_GET['uid']) && is_numeric($_GET['uid'])) {
     html_draw_error(gettext("No user specified."), 'admin_users.php', 'get', array('back' => gettext("Back")));
 }
 
+// Federation placeholders (owners of imported comments) are not real users:
+// they cannot log on, so there is nothing to ban, edit or grant here. Use
+// Admin > Instance Redaction to deal with an instance's content.
+if (user_is_placeholder($uid)) {
+    html_draw_error(gettext("This account only holds comments imported from another instance."), 'admin_users.php', 'get', array('back' => gettext("Back")));
+}
+
 if (isset($_GET['msg']) && validate_msg($_GET['msg'])) {
     $ret = "messages.php?webtag=$webtag&msg={$_GET['msg']}";
 } else if (isset($_POST['ret']) && strlen(trim($_POST['ret'])) > 0) {

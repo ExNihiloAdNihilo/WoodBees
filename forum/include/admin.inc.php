@@ -387,6 +387,9 @@ function admin_user_search($user_search, $sort_by = 'LAST_VISIT', $sort_dir = 'D
             break;
     }
 
+    // Federation placeholder accounts (owners of imported comments) are not members.
+    $user_fetch_sql = (strlen(trim($user_fetch_sql)) > 0 ? "$user_fetch_sql AND " : "WHERE ") . "USER.PASSWD <> '" . USER_PLACEHOLDER_PASSWD . "' ";
+
     $sql = "SELECT SQL_CALC_FOUND_ROWS USER.UID, USER.LOGON, USER.NICKNAME, ";
     $sql .= "ACTIVE_SESSIONS.ID, UNIX_TIMESTAMP(USER.REGISTERED) AS REGISTERED, ";
     $sql .= "UNIX_TIMESTAMP(USER_FORUM.LAST_VISIT) AS LAST_VISIT FROM USER ";
@@ -492,6 +495,9 @@ function admin_user_get_all($sort_by = 'LAST_VISIT', $sort_dir = 'ASC', $filter 
             $user_fetch_sql = "";
             break;
     }
+
+    // Federation placeholder accounts (owners of imported comments) are not members.
+    $user_fetch_sql = (strlen(trim($user_fetch_sql)) > 0 ? "$user_fetch_sql AND " : "WHERE ") . "USER.PASSWD <> '" . USER_PLACEHOLDER_PASSWD . "' ";
 
     $sql = "SELECT SQL_CALC_FOUND_ROWS USER.UID, USER.LOGON, USER.NICKNAME, ";
     $sql .= "ACTIVE_SESSIONS.ID, UNIX_TIMESTAMP(USER.REGISTERED) AS REGISTERED, ";

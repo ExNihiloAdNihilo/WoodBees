@@ -469,6 +469,7 @@ function post_draw_to_dropdown_in_thread($tid, $default_uid, $show_all = true, $
     $sql .= "LEFT JOIN `{$table_prefix}USER_PEER` USER_PEER ";
     $sql .= "ON (USER_PEER.PEER_UID = POST.FROM_UID AND USER_PEER.UID = '{$_SESSION['UID']}') ";
     $sql .= "WHERE POST.TID = '$tid' AND POST.FROM_UID <> '$default_uid' ";
+    $sql .= "AND POST.ORIGIN_INSTANCE IS NULL ";
     $sql .= "GROUP BY POST.FROM_UID LIMIT 0, 20";
 
     if (!($result = $db->query($sql))) return false;

@@ -129,6 +129,12 @@ $admin_log_type_array = array(
     APPROVED_TAG => gettext("Approved Tag"),
     DEAPPROVED_TAG => gettext("De-approved Tag"),
     DELETED_TAG => gettext("Deleted Tag"),
+    FEDERATION_EXPORT => gettext("Federation Export"),
+    FEDERATION_IMPORT => gettext("Federation Import"),
+    FEDERATION_REDACT => gettext("Instance Redaction"),
+    FEDERATION_TRUST => gettext("Trusted Instance"),
+    FEDERATION_UNTRUST => gettext("Untrusted Instance"),
+    FEDERATION_FORGET => gettext("Forgot Instance Key"),
 );
 
 $admin_log_group_type_array = array(
@@ -829,6 +835,51 @@ if (sizeof($admin_log_array['admin_log_array']) > 0) {
                 $admin_user_link = sprintf($index_link, rawurlencode($admin_user_link), $entry_array[1]);
 
                 $action_text = sprintf(gettext("Deleted all user data for account '%s'"), $admin_user_link);
+                break;
+
+            case FEDERATION_EXPORT:
+
+                $action_text = sprintf(gettext("Exported federation bundle %s (%s threads, %s comments, %s)"), $entry_array[0], $entry_array[1], $entry_array[2], $entry_array[3]);
+                break;
+
+            case FEDERATION_IMPORT:
+
+                $action_text = sprintf(gettext("Imported federation bundle %s from '%s' (%s comments, %s skipped)"), $entry_array[1], $entry_array[0], $entry_array[2], $entry_array[3]);
+                break;
+
+            case FEDERATION_REDACT:
+
+                $action_text = sprintf(gettext("Redacted content from '%s' (scope %s, %s): %s threads, %s comments, %s tags"), $entry_array[0], $entry_array[1], $entry_array[2], $entry_array[3], $entry_array[4], $entry_array[5]);
+                break;
+
+            case FEDERATION_TRUST:
+
+                $action_text = sprintf(gettext("Trusted instance '%s' with key %s"), $entry_array[0], $entry_array[1]);
+                break;
+
+            case FEDERATION_UNTRUST:
+
+                $action_text = sprintf(gettext("Untrusted instance '%s'"), $entry_array[0]);
+                break;
+
+            case FEDERATION_FORGET:
+
+                $action_text = sprintf(gettext("Forgot the pinned key of instance '%s'"), $entry_array[0]);
+                break;
+
+            case APPROVED_TAG:
+
+                $action_text = sprintf(gettext("Approved tag #%s"), $entry_array[0]);
+                break;
+
+            case DEAPPROVED_TAG:
+
+                $action_text = sprintf(gettext("De-approved tag #%s"), $entry_array[0]);
+                break;
+
+            case DELETED_TAG:
+
+                $action_text = sprintf(gettext("Deleted tag #%s"), $entry_array[0]);
                 break;
 
             default:

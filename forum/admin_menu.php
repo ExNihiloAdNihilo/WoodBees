@@ -121,6 +121,17 @@ if (forum_check_webtag_available($webtag, false)) {
             echo "  </tr>\n";
         }
 
+        // Instance federation (export / import / redaction).
+        echo "  <tr>\n";
+        echo "    <td align=\"left\" class=\"postbody\">", html_style_image('bullet'), "&nbsp;<a href=\"admin_export.php?webtag=$webtag\" target=\"", html_get_frame_name('right'), "\">", gettext("Federation Export"), "</a></td>\n";
+        echo "  </tr>\n";
+        echo "  <tr>\n";
+        echo "    <td align=\"left\" class=\"postbody\">", html_style_image('bullet'), "&nbsp;<a href=\"admin_import.php?webtag=$webtag\" target=\"", html_get_frame_name('right'), "\">", gettext("Federation Import"), "</a></td>\n";
+        echo "  </tr>\n";
+        echo "  <tr>\n";
+        echo "    <td align=\"left\" class=\"postbody\">", html_style_image('bullet'), "&nbsp;<a href=\"admin_instance_redact.php?webtag=$webtag\" target=\"", html_get_frame_name('right'), "\">", gettext("Instance Redaction"), "</a></td>\n";
+        echo "  </tr>\n";
+
         echo "  <tr>\n";
         echo "    <td align=\"left\" class=\"postbody\">", html_style_image('bullet'), "&nbsp;<a href=\"admin_visitor_log.php?webtag=$webtag\" target=\"", html_get_frame_name('right'), "\">", gettext("Visitor Log"), "</a></td>\n";
         echo "  </tr>\n";
