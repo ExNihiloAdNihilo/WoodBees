@@ -330,7 +330,19 @@ function message_get_meta_content($msg, &$meta_keywords, &$meta_description)
 
     list($tid) = explode('.', $msg);
 
-    if (($thread_data = thread_get($tid)) && ($message_content = message_get_content($tid, 1))) {
+    if (!($db = db::get()) || !($table_prefix = get_table_prefix())) return;
+
+    // Use the first APPROVED comment: comment 1 can be awaiting approval
+    // (or hidden by an instance redaction), and these tags are public.
+    $sql = "SELECT MIN(PID) FROM `{$table_prefix}POST` WHERE TID = '" . intval($tid) . "' AND APPROVED IS NOT NULL";
+
+    if (!($result = $db->query($sql))) return;
+
+    list($first_pid) = $result->fetch_row();
+
+    if (!is_numeric($first_pid)) return;
+
+    if (($thread_data = thread_get($tid)) && ($message_content = message_get_content($tid, $first_pid))) {
 
         $meta_keywords_array = search_extract_keywords(strip_tags(htmlentities_decode_array($message_content)));
 
