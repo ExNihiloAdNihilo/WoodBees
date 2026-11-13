@@ -158,7 +158,9 @@ function email_send_thread_subscription($tid, $pid)
 
     $thread_subscribed = THREAD_SUBSCRIBED;
 
-    $user_ignored_completely = USER_IGNORED_COMPLETELY;
+    // Subscribers who have the poster on Ignored or Ignored Completely get no
+    // email about their posts. Friends and everyone else do.
+    $user_ignored_any = USER_IGNORED | USER_IGNORED_COMPLETELY;
 
     $sql = "SELECT THREAD.TITLE AS THREAD_TITLE, TO_USER.UID, TO_USER.LOGON, TO_USER.NICKNAME, ";
     $sql .= "TO_USER.EMAIL, FROM_USER.LOGON AS FROM_LOGON, FROM_USER.NICKNAME AS FROM_NICKNAME, ";
@@ -173,7 +175,7 @@ function email_send_thread_subscription($tid, $pid)
     $sql .= "WHERE USER_THREAD.UID NOT IN (SELECT FROM_UID FROM `{$table_prefix}POST` WHERE TID = POST.TID AND PID = POST.PID) ";
     $sql .= "AND USER_THREAD.UID NOT IN (SELECT TO_UID FROM `{$table_prefix}POST_RECIPIENT` WHERE TID = POST.TID AND PID = POST.PID) ";
     $sql .= "AND THREAD.TID = $tid AND POST.PID = $pid ";
-    $sql .= "HAVING (RELATIONSHIP IS NULL OR RELATIONSHIP & 8 = $user_ignored_completely) ";
+    $sql .= "HAVING (RELATIONSHIP IS NULL OR RELATIONSHIP & $user_ignored_any = 0) ";
     $sql .= "AND (LAST_VISIT > CREATED OR CREATED IS NULL)";
 
     if (!($result = $db->query($sql))) return false;
