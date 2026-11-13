@@ -33,11 +33,23 @@ if [[ ! "$ans" =~ ^[Yy] ]]; then
     exit 0
 fi
 
+# This project's Compose name (usually the checkout folder's name, lowercased).
+# Needed to pick out *this* install's db_data volume below - a plain
+# `--filter name=db_data` is a substring match and would also catch other
+# Docker projects' volumes (e.g. "someapp_db_data").
+project=$(docker compose config 2>/dev/null | sed -n 's/^name: //p' | head -n 1)
+if [ -z "$project" ]; then
+    echo "Could not determine this project's Compose name (is .env valid? try 'docker compose config')." >&2
+    exit 1
+fi
+
 docker compose down --remove-orphans
 
-read -r -p "Switching DB engine (MariaDB <-> MySQL)? This needs a fresh db_data volume - wipe it now? [y/N] " wipe
+read -r -p "Switching DB engine (MariaDB <-> MySQL)? This permanently deletes this install's database (db_data volume) - wipe it now? [y/N] " wipe
 if [[ "$wipe" =~ ^[Yy] ]]; then
-    vols=$(docker volume ls -q --filter name=db_data)
+    vols=$(docker volume ls -q \
+        --filter "label=com.docker.compose.project=$project" \
+        --filter "label=com.docker.compose.volume=db_data")
     if [ -n "$vols" ]; then
         docker volume rm $vols
         echo "Removed: $vols"

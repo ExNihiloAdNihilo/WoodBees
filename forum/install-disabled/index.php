@@ -628,8 +628,9 @@ echo "                          <table cellpadding=\"2\" cellspacing=\"0\" width
 echo "                            <tr>\n";
 echo "                              <td align=\"left\" width=\"260\" valign=\"top\" class=\"postbody\">", gettext("Switching <code>DB_IMAGE</code> (MariaDB &lt;-&gt; MySQL):"), "</td>\n";
 echo "                              <td align=\"left\" class=\"postbody\">\n";
-echo "                                <code>docker compose down<br />docker volume rm \$(docker volume ls -q --filter name=db_data)<br />docker compose up -d</code><br />\n";
-echo "                                <button type=\"button\" class=\"docker_copy_button\" data-copy-text='docker compose down\ndocker volume rm \$(docker volume ls -q --filter name=db_data)\ndocker compose up -d'>", gettext("Copy commands"), "</button>\n";
+echo "                                <code>docker compose down -v<br />docker compose up -d</code><br />\n";
+echo "                                <button type=\"button\" class=\"docker_copy_button\" data-copy-text='docker compose down -v\ndocker compose up -d'>", gettext("Copy commands"), "</button>\n";
+echo "                                <p>", gettext("This permanently deletes this WoodBees install's database and search index (Manticore rebuilds the index automatically). Volumes belonging to other Docker projects are not touched. Run the installer again afterwards."), "</p>\n";
 echo "                              </td>\n";
 echo "                            </tr>\n";
 echo "                            <tr>\n";

@@ -17,12 +17,15 @@ exact text without retyping it.
 
 - **Switching `DB_IMAGE` (MariaDB ↔ MySQL)** re-uses the same `db_data`
   volume, and the two engines don't share an on-disk format. Stop the stack
-  and remove that volume before starting the other engine:
+  and remove its volumes before starting the other engine:
   ```
-  docker compose down
-  docker volume rm $(docker volume ls -q --filter name=db_data)
+  docker compose down -v
   docker compose up -d
   ```
+  `-v` permanently deletes this project's volumes only - the database plus
+  the Manticore search index, which is rebuilt automatically (and would be
+  stale after a database wipe anyway). Other Docker projects' volumes are
+  not touched. Run the installer again afterwards.
 - **Switching `DB_MODE` between a bundled engine and `external`** changes
   which services are active (the `mysql` service only runs behind the `db`
   Compose profile), but Compose doesn't remove a container just because it
