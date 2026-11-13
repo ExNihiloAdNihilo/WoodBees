@@ -4,6 +4,16 @@ Everything below "What's new in 1.5.2" and older is the inherited
 Beehive Forum changelog, kept as the historical record of the engine
 WoodBees is built on.
 
+## What's new in WoodBees Alpha 0.2 (branch `db-engine-selectable`, not yet merged into `master`)
+
+Changes from Alpha 0.1:
+
+- Selectable database engine: `DB_MODE` (`mariadb`, `mysql`, or `external`) is now a required `.env` setting, with `DB_IMAGE` choosing MariaDB 11.4 or MySQL 8.4 for the bundled modes, or pointing WoodBees at a database server you already run for `external` mode.
+- Fixed a MySQL 8 install failure: `GROUPS` is a reserved keyword there, so the forum-groups table is now `GROUP_INFO`.
+- Fixed the web image failing to build against Alpine's package CDN (stale CA bundle).
+- Fixed Admin > Forum Stats crashing on a fresh install with no user birthdate data.
+- Install wizard: Copy-to-clipboard buttons, and host-side `scripts/switch-db-engine.sh`/`.ps1` helper scripts, for safely switching database engine or mode without losing data or leaving orphaned containers behind.
+
 ## What's new in WoodBees Alpha 0.1 (Released 10th November 2026)
 
 WoodBees is a fork of Beehive Forum (built on 1.5.2). Changes from upstream:

@@ -1,4 +1,4 @@
-# WoodBees Alpha 0.1
+# WoodBees Alpha 0.2
 
 A fork of Beehive Forum. See [docs/release.md](docs/release.md) for what's new in this release.
 
