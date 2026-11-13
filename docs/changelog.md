@@ -2,6 +2,20 @@
 
 ## Date: Fri, 13 Nov 2026 (unreleased)
 
+- Added: Instance federation. Admin > Federation Export downloads a
+         signed JSON bundle of threads, comments and tags; Admin >
+         Federation Import verifies it (Ed25519, trust on first use with
+         a confirmed key fingerprint) and appends comments to existing
+         threads with the same address; Admin > Instance Redaction hides
+         or deletes another instance's content comment by comment. See
+         docs/federation.md.
+- Added: Per-install Ed25519 signing key, kept outside the web root on
+         the new instance_keys Docker volume (WOODBEES_KEY_DIR).
+- Changed: New POST.ORIGIN_AUTHOR / POST.ORIGIN_REF columns and
+           IMPORT_LOG / TRUSTED_INSTANCE tables; run the installer's
+           Upgrade method on existing installs.
+- Fixed: Installer Upgrade method failing with an SQL syntax error
+         (missing backtick in the POST_SEARCH_ID TRUNCATE).
 - Changed: Database engine is now picked by a Compose file
            (docker-compose.mariadb.yml / .mysql.yml / .external.yml)
            via COMPOSE_FILE in .env, replacing DB_MODE, DB_IMAGE and
