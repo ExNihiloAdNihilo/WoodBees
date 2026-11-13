@@ -591,6 +591,7 @@ function search_fetch_results($page, $sort_by = null, $sort_dir = null)
     $sql .= "OR USER_PEER.RELATIONSHIP IS NULL) ";
     $sql .= "AND ((USER_PEER.RELATIONSHIP & " . USER_IGNORED . ") = 0 ";
     $sql .= "OR USER_PEER.RELATIONSHIP IS NULL) ";
+    $sql .= search_approved_post_sql();
 
     switch ($sort_by) {
 
@@ -656,6 +657,28 @@ function search_fetch_results($page, $sort_by = null, $sort_dir = null)
     );
 }
 
+/**
+ * SQL condition (starting with AND) that keeps comments awaiting approval -
+ * including ones hidden by an instance redaction - out of search results,
+ * except for their author and moderators of their folder. The search
+ * results list prints a content snippet, so without this a hidden or
+ * unapproved comment could be read through search.
+ *
+ * @return string
+ */
+function search_approved_post_sql()
+{
+    $uid = intval($_SESSION['UID']);
+
+    $sql = "AND (POST.APPROVED IS NOT NULL OR POST.FROM_UID = '$uid'";
+
+    if (($moderated_fids = session::get_folders_by_perm(USER_PERM_FOLDER_MODERATE)) !== false && sizeof($moderated_fids) > 0) {
+        $sql .= " OR THREAD.FID IN (" . implode(',', array_map('intval', $moderated_fids)) . ")";
+    }
+
+    return $sql . ") ";
+}
+
 function search_get_first_result_msg()
 {
     if (!$db = db::get()) return false;
@@ -677,6 +700,7 @@ function search_get_first_result_msg()
     $sql .= "OR USER_PEER.RELATIONSHIP IS NULL) ";
     $sql .= "AND ((USER_PEER.RELATIONSHIP & " . USER_IGNORED . ") = 0 ";
     $sql .= "OR USER_PEER.RELATIONSHIP IS NULL) ";
+    $sql .= search_approved_post_sql();
 
     if (!in_array($sort_dir, array(SEARCH_SORT_ASC, SEARCH_SORT_DESC))) {
         $sort_dir = SEARCH_SORT_DESC;
