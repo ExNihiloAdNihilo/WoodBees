@@ -13,6 +13,7 @@ Changes from Alpha 0.1:
 - Fixed the web image failing to build against Alpine's package CDN (stale CA bundle).
 - Fixed Admin > Forum Stats crashing on a fresh install with no user birthdate data.
 - Install wizard: Copy-to-clipboard buttons, and host-side `scripts/switch-db-engine.sh`/`.ps1` helper scripts, for safely switching database engine or mode without losing data or leaving orphaned containers behind.
+- Fixed a silent Manticore search failure: a misconfigured search-server database connection (e.g. `DB_MODE=external` left pointing at the bundled database's default host) used to retry forever with no visible error, and a search against the never-indexed server failed with no error shown at all. Manticore now warns loudly in its own logs and keeps retrying the index build in the background; the admin Search Settings page reports the specific cause; and the search form greys itself out for regular users with a plain "Search is not currently available" message instead of failing silently.
 
 ## What's new in WoodBees Alpha 0.1 (Released 10th November 2026)
 
