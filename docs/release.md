@@ -4,7 +4,7 @@ Everything below "What's new in 1.5.2" and older is the inherited
 Beehive Forum changelog, kept as the historical record of the engine
 WoodBees is built on.
 
-## What's new in WoodBees Alpha 0.2 (branch `db-engine-selectable`, not yet merged into `master`)
+## What's new in WoodBees Alpha 0.2 (Released 13th November 2026)
 
 Changes from Alpha 0.1:
 
