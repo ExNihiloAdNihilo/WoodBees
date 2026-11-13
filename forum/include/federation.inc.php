@@ -1101,9 +1101,12 @@ function federation_import(array $checked, $target_fid, &$error_str = null)
             $ref_escaped = $db->escape($post['ref']);
             $content_escaped = $db->escape($post['content']);
 
+            // APPROVED_BY = the author (as for a local post), so the comment
+            // doesn't carry an "APPROVED ... by <importing admin>" line; who
+            // imported it is in IMPORT_LOG.
             $sql = "INSERT INTO `{$table_prefix}POST` (TID, REPLY_TO_PID, FROM_UID, CREATED, APPROVED, APPROVED_BY, ";
             $sql .= "IPADDRESS, ORIGIN_INSTANCE, ORIGIN_AUTHOR, ORIGIN_REF) VALUES ('$tid', '$reply_pid', '$from_uid', ";
-            $sql .= "CAST('{$post['created']}' AS DATETIME), CAST('$current_datetime' AS DATETIME), $admin_uid, '', ";
+            $sql .= "CAST('{$post['created']}' AS DATETIME), CAST('$current_datetime' AS DATETIME), '$from_uid', '', ";
             $sql .= "'$origin_escaped', '$author_escaped', '$ref_escaped')";
 
             if (!$db->query($sql)) {

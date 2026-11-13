@@ -449,7 +449,11 @@ if (sizeof($post_approval_array['post_array']) > 0) {
         echo "                   <td align=\"left\" width=\"20\">", form_checkbox("process[]", $post_approval_entry['MSG']), "</td>\n";
         echo "                   <td align=\"left\"><a href=\"admin_post_approve.php?webtag=$webtag&msg={$post_approval_entry['MSG']}\" target=\"_self\">", word_filter_add_ob_tags($post_approval_entry['TITLE'], true), "</a></td>\n";
         echo "                   <td align=\"left\">{$post_approval_entry['FOLDER_TITLE']}</td>\n";
-        echo "                   <td align=\"left\"><a href=\"user_profile.php?webtag=$webtag&amp;uid={$post_approval_entry['UID']}\" target=\"_blank\" class=\"popup 650x500\">", word_filter_add_ob_tags(format_user_name($post_approval_entry['LOGON'], $post_approval_entry['NICKNAME']), true) . "</a></td>\n";
+        if (!empty($post_approval_entry['IMPORTED'])) {
+            echo "                   <td align=\"left\">", word_filter_add_ob_tags(format_user_name($post_approval_entry['LOGON'], $post_approval_entry['NICKNAME']), true), "</td>\n";
+        } else {
+            echo "                   <td align=\"left\"><a href=\"user_profile.php?webtag=$webtag&amp;uid={$post_approval_entry['UID']}\" target=\"_blank\" class=\"popup 650x500\">", word_filter_add_ob_tags(format_user_name($post_approval_entry['LOGON'], $post_approval_entry['NICKNAME']), true) . "</a></td>\n";
+        }
         echo "                   <td align=\"left\">", format_date_time($post_approval_entry['CREATED']), "</td>\n";
         echo "                 </tr>\n";
     }

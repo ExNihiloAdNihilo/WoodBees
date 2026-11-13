@@ -836,6 +836,7 @@ function admin_get_post_approval_queue($page = 1)
     $sql = "SELECT SQL_CALC_FOUND_ROWS FOLDER.TITLE AS FOLDER_TITLE, ";
     $sql .= "TRIM(CONCAT_WS(' ', COALESCE(FOLDER.PREFIX, ''), THREAD.TITLE)) AS TITLE, ";
     $sql .= "USER.UID, USER.LOGON, USER.NICKNAME, UNIX_TIMESTAMP(POST.CREATED) AS CREATED, ";
+    $sql .= "POST.ORIGIN_INSTANCE, POST.ORIGIN_AUTHOR, ";
     $sql .= "CONCAT(POST.TID, '.', POST.PID) AS MSG FROM `{$table_prefix}POST` POST ";
     $sql .= "LEFT JOIN USER USER ON (USER.UID = POST.FROM_UID) ";
     $sql .= "LEFT JOIN `{$table_prefix}THREAD` THREAD ON (THREAD.TID = POST.TID) ";
@@ -857,6 +858,14 @@ function admin_get_post_approval_queue($page = 1)
     }
 
     while (($post_array = $result->fetch_assoc()) !== null) {
+
+        // Imported comment: show "author @ origin" and no profile link.
+        $post_array['IMPORTED'] = isset($post_array['ORIGIN_INSTANCE']) && strlen($post_array['ORIGIN_INSTANCE']) > 0;
+
+        if ($post_array['IMPORTED']) {
+            $post_array['LOGON'] = $post_array['NICKNAME'] = user_imported_author_name($post_array['ORIGIN_AUTHOR'], $post_array['ORIGIN_INSTANCE']);
+        }
+
         $post_approval_array[] = $post_array;
     }
 

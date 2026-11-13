@@ -578,7 +578,8 @@ function search_fetch_results($page, $sort_by = null, $sort_dir = null)
 
     $sql = "SELECT SQL_CALC_FOUND_ROWS THREAD.FID, THREAD.TID, POST.PID, THREAD.BY_UID, POST.FROM_UID, ";
     $sql .= "USER_TRACK.USER_VALUE AS KEYWORDS, UNIX_TIMESTAMP(POST.CREATED) AS CREATED, ";
-    $sql .= "USER.LOGON AS FROM_LOGON, COALESCE(USER_PEER.PEER_NICKNAME, USER.NICKNAME) AS FROM_NICKNAME  ";
+    $sql .= "USER.LOGON AS FROM_LOGON, COALESCE(USER_PEER.PEER_NICKNAME, USER.NICKNAME) AS FROM_NICKNAME, ";
+    $sql .= "POST.ORIGIN_INSTANCE, POST.ORIGIN_AUTHOR ";
     $sql .= "FROM SEARCH_RESULTS INNER JOIN `{$table_prefix}THREAD` THREAD ON (THREAD.TID = SEARCH_RESULTS.TID) ";
     $sql .= "INNER JOIN `{$table_prefix}FOLDER` FOLDER ON (FOLDER.FID = THREAD.FID) ";
     $sql .= "INNER JOIN `{$table_prefix}POST` POST ON (POST.TID = SEARCH_RESULTS.TID AND POST.PID = SEARCH_RESULTS.PID) ";
@@ -647,6 +648,11 @@ function search_fetch_results($page, $sort_by = null, $sort_dir = null)
 
         if (!isset($search_result['FROM_LOGON'])) $search_result['FROM_LOGON'] = gettext("Unknown user");
         if (!isset($search_result['FROM_NICKNAME'])) $search_result['FROM_NICKNAME'] = gettext("Unknown user");
+
+        // Imported comment: the original author as text, not the placeholder.
+        if (isset($search_result['ORIGIN_INSTANCE']) && strlen($search_result['ORIGIN_INSTANCE']) > 0) {
+            $search_result['FROM_LOGON'] = $search_result['FROM_NICKNAME'] = user_imported_author_name($search_result['ORIGIN_AUTHOR'], $search_result['ORIGIN_INSTANCE']);
+        }
 
         $search_results_array[] = $search_result;
     }

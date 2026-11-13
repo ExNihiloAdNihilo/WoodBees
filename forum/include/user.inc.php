@@ -1847,3 +1847,88 @@ function user_is_placeholder($uid)
 
     return $cache[$uid];
 }
+
+/**
+ * Display name of an imported (federated) comment's author, e.g.
+ * "CoolBreeze @ BedRock".
+ *
+ * @param string|null $origin_author POST.ORIGIN_AUTHOR
+ * @param string $origin_instance    POST.ORIGIN_INSTANCE
+ * @return string
+ */
+function user_imported_author_name($origin_author, $origin_instance)
+{
+    $author = (is_string($origin_author) && strlen($origin_author) > 0) ? $origin_author : gettext("Unknown user");
+
+    return sprintf(gettext("%s @ %s"), $author, $origin_instance);
+}
+
+/**
+ * Whether a logon belongs to a federation placeholder account.
+ *
+ * @param string $logon
+ * @return bool
+ */
+function user_is_placeholder_logon($logon)
+{
+    return is_string($logon) && strncasecmp($logon, USER_PLACEHOLDER_LOGON_PREFIX, strlen(USER_PLACEHOLDER_LOGON_PREFIX)) === 0;
+}
+
+/**
+ * In a list of rows naming a comment's author, replace each federation
+ * placeholder account with the comment's original "author @ origin" text
+ * (from POST.ORIGIN_AUTHOR / ORIGIN_INSTANCE). Rows get IMPORTED = true so
+ * callers can skip profile links. One query for the whole list.
+ *
+ * @param array  $rows         rows (by reference), any keys
+ * @param string $logon_key    key of the logon column
+ * @param string $nickname_key key of the nickname column
+ * @param string $tid_key      key of the thread id
+ * @param string|null $pid_key key of the comment id; null = the thread's first comment
+ */
+function user_apply_imported_authors(array &$rows, $logon_key, $nickname_key, $tid_key = 'TID', $pid_key = null)
+{
+    $wanted = array();
+
+    foreach ($rows as $key => $row) {
+
+        if (!isset($row[$logon_key]) || !user_is_placeholder_logon($row[$logon_key])) continue;
+
+        if (!isset($row[$tid_key]) || !is_numeric($row[$tid_key])) continue;
+
+        $pid = isset($pid_key) ? (isset($row[$pid_key]) ? $row[$pid_key] : null) : 1;
+
+        if (!is_numeric($pid)) continue;
+
+        $wanted[$key] = array(intval($row[$tid_key]), intval($pid));
+    }
+
+    if (sizeof($wanted) == 0) return;
+
+    if (!$db = db::get()) return;
+
+    if (!($table_prefix = get_table_prefix())) return;
+
+    $pairs = array();
+
+    foreach ($wanted as $tid_pid) $pairs[] = "({$tid_pid[0]}, {$tid_pid[1]})";
+
+    $sql = "SELECT TID, PID, ORIGIN_AUTHOR, ORIGIN_INSTANCE FROM `{$table_prefix}POST` ";
+    $sql .= "WHERE (TID, PID) IN (" . implode(', ', array_unique($pairs)) . ") AND ORIGIN_INSTANCE IS NOT NULL";
+
+    if (!($result = $db->query($sql))) return;
+
+    $names = array();
+
+    while (($post = $result->fetch_assoc()) !== null) {
+        $names["{$post['TID']}.{$post['PID']}"] = user_imported_author_name($post['ORIGIN_AUTHOR'], $post['ORIGIN_INSTANCE']);
+    }
+
+    foreach ($wanted as $key => $tid_pid) {
+
+        if (!isset($names["{$tid_pid[0]}.{$tid_pid[1]}"])) continue;
+
+        $rows[$key][$logon_key] = $rows[$key][$nickname_key] = $names["{$tid_pid[0]}.{$tid_pid[1]}"];
+        $rows[$key]['IMPORTED'] = true;
+    }
+}

@@ -101,9 +101,7 @@ function messages_get($tid, $pid = 1, $limit = 1)
 
         if ($message['FROM_IMPORTED']) {
 
-            $origin_author = (isset($message['ORIGIN_AUTHOR']) && strlen($message['ORIGIN_AUTHOR']) > 0) ? $message['ORIGIN_AUTHOR'] : gettext("Unknown user");
-
-            $message['FROM_LOGON'] = $message['FROM_NICKNAME'] = sprintf(gettext("%s @ %s"), $origin_author, $message['ORIGIN_INSTANCE']);
+            $message['FROM_LOGON'] = $message['FROM_NICKNAME'] = user_imported_author_name(isset($message['ORIGIN_AUTHOR']) ? $message['ORIGIN_AUTHOR'] : null, $message['ORIGIN_INSTANCE']);
             $message['RELATIONSHIP'] = null;
             $message['AVATAR_URL'] = null;
             $message['AVATAR_AID'] = null;
@@ -1569,7 +1567,8 @@ function message_get_author($tid, $pid)
 
     if (!isset($_SESSION['UID']) || !is_numeric($_SESSION['UID'])) return false;
 
-    $sql = "SELECT USER.UID, USER.LOGON, COALESCE(USER_PEER.PEER_NICKNAME, USER.NICKNAME) AS NICKNAME ";
+    $sql = "SELECT USER.UID, USER.LOGON, COALESCE(USER_PEER.PEER_NICKNAME, USER.NICKNAME) AS NICKNAME, ";
+    $sql .= "POST.ORIGIN_INSTANCE, POST.ORIGIN_AUTHOR ";
     $sql .= "FROM `{$table_prefix}POST` POST LEFT JOIN USER USER ON (USER.UID = POST.FROM_UID) ";
     $sql .= "LEFT JOIN `{$table_prefix}USER_PEER` USER_PEER ON (USER_PEER.PEER_UID = POST.FROM_UID ";
     $sql .= "AND USER_PEER.UID = '{$_SESSION['UID']}') WHERE POST.TID = '$tid' AND POST.PID = '$pid'";
@@ -1578,7 +1577,16 @@ function message_get_author($tid, $pid)
 
     if ($result->num_rows == 0) return false;
 
-    return $result->fetch_assoc();
+    $author = $result->fetch_assoc();
+
+    // Imported comment: the original author as text, not the placeholder.
+    if (isset($author['ORIGIN_INSTANCE']) && strlen($author['ORIGIN_INSTANCE']) > 0) {
+
+        $author['LOGON'] = $author['NICKNAME'] = user_imported_author_name($author['ORIGIN_AUTHOR'], $author['ORIGIN_INSTANCE']);
+        $author['IMPORTED'] = true;
+    }
+
+    return $author;
 }
 
 function messages_update_read($tid, $pid, $last_read, $length, $modified)

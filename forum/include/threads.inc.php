@@ -30,6 +30,7 @@ require_once BH_INCLUDE_PATH . 'format.inc.php';
 require_once BH_INCLUDE_PATH . 'forum.inc.php';
 require_once BH_INCLUDE_PATH . 'html.inc.php';
 require_once BH_INCLUDE_PATH . 'session.inc.php';
+require_once BH_INCLUDE_PATH . 'user.inc.php';
 // End Required includes
 
 function threads_get_folders($uid)
@@ -1259,6 +1260,8 @@ function threads_get_most_recent($uid, $limit = 10, $fid = false, $creation_orde
         $threads_get_array[$thread['TID']] = $thread;
     }
 
+    user_apply_imported_authors($threads_get_array, 'LOGON', 'NICKNAME');
+
     threads_have_attachments($threads_get_array);
 
     return $threads_get_array;
@@ -1326,6 +1329,9 @@ function threads_process_list($sql)
 
         $threads_array[$thread['TID']] = $thread;
     }
+
+    // Imported threads: "Started by author @ origin", not the placeholder.
+    user_apply_imported_authors($threads_array, 'LOGON', 'NICKNAME');
 
     threads_have_attachments($threads_array);
 

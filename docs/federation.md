@@ -22,6 +22,18 @@ usual second admin password prompt.
   example the volume is deleted), a new key is generated and every peer will
   refuse this instance's bundles until they deliberately re-trust it. An
   existing key file is never overwritten.
+- **Without Docker** (a plain Linux host with PHP 7.4 + sodium): either
+  create the default directory once, outside the web root, owned by the
+  web server user with mode 700 (`sudo install -d -o www-data -m 700
+  /var/lib/woodbees/keys`), or point `WOODBEES_KEY_DIR` at another such
+  directory in PHP's environment (php-fpm pool `env[WOODBEES_KEY_DIR] =
+  /path`, nginx `fastcgi_param WOODBEES_KEY_DIR /path;` or Apache `SetEnv
+  WOODBEES_KEY_DIR /path`). The key is then created on the next install,
+  upgrade or export, as a mode-600 file; if it is first created by root
+  from the command line it is handed to the directory's owner. If the
+  directory is missing or not writable, the installer and the export page
+  say so and no key is made. Tested in the plain `php:7.4-fpm-alpine`
+  image (no Dockerfile preparation); native Windows PHP is untested.
 - **Instance identifier.** The `instance_identifier` global setting (set in
   the installer) is only the human-readable label. It can change; the key
   does not. Content born on an instance is stamped with this label.
@@ -166,7 +178,14 @@ for the origins it claims for re-shared comments. Per-comment signatures
   admin user list, user counts, logon lookups (so they cannot be addressed by
   PM or as a post recipient) and the thread recipient dropdown; the
   relationship and admin-user pages refuse them. Replying to an imported
-  comment does not address the reply to anyone.
+  comment does not address the reply to anyone. The "author @ instance"
+  name is also what the thread list ("Started by"), search results, the
+  threads RSS feed and the Post Approval Queue show. Placeholders are not
+  counted as members, newest member or top poster in the forum stats;
+  Admin > Posting Stats lists them as "Imported from <instance>". An
+  imported comment's approver is its placeholder author (like a local
+  post), so it carries no "APPROVED ... by" line; who imported it is in
+  `IMPORT_LOG`.
 - **Tags.** Tags that already exist here are linked as they are (approved or
   not). New tags are created **pending** in the Tag Approval Queue with
   `TAG.ORIGIN_INSTANCE` set, and one notice per import listing them is posted
@@ -237,6 +256,9 @@ existing install and generates the signing key if there is none.
 
 - Attachments, polls, ratings and post recipients are not exported.
 - Thread view counts, stickiness and closed state are not exported.
-- Search: imported comments are indexed by Manticore on its next reindex
-  like any other comment.
+- Search: imported comments get a `POST_SEARCH_ID` row like local ones, so
+  Manticore picks them up on its next delta reindex (every 15 minutes in
+  the Docker stack). Search results only list comments awaiting approval
+  (which includes redaction-hidden ones) to their author and to
+  moderators of the folder.
 - No per-comment signatures; no automatic key rotation.

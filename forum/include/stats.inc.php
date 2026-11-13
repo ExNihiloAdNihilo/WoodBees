@@ -819,7 +819,8 @@ function stats_get_user_count()
 {
     if (!$db = db::get()) return false;
 
-    $sql = "SELECT COUNT(UID) AS COUNT FROM USER";
+    // Federation placeholder accounts are not members.
+    $sql = "SELECT COUNT(UID) AS COUNT FROM USER WHERE PASSWD <> '" . USER_PLACEHOLDER_PASSWD . "'";
 
     if (!($result = $db->query($sql))) return false;
 
@@ -877,7 +878,7 @@ function stats_get_newest_user()
 
     if (!isset($_SESSION['UID']) || !is_numeric($_SESSION['UID'])) return false;
 
-    $sql = "SELECT MAX(UID) FROM USER";
+    $sql = "SELECT MAX(UID) FROM USER WHERE PASSWD <> '" . USER_PLACEHOLDER_PASSWD . "'";
 
     if (!($result = $db->query($sql))) return false;
 
@@ -965,6 +966,12 @@ function stats_get_post_tallys($start_timestamp, $end_timestamp)
             if (!isset($user_stats['LOGON'])) $user_stats['LOGON'] = gettext("Unknown user");
             if (!isset($user_stats['NICKNAME'])) $user_stats['NICKNAME'] = "";
 
+            // Federation placeholder (one per origin): label it as that
+            // instance's imported comments rather than as a member.
+            if (user_is_placeholder_logon($user_stats['LOGON'])) {
+                $user_stats['LOGON'] = $user_stats['NICKNAME'] = sprintf(gettext("Imported from %s"), $user_stats['NICKNAME']);
+            }
+
             $post_tallys['user_stats'][] = $user_stats;
         }
     }
@@ -984,6 +991,7 @@ function stats_get_top_poster()
     $sql = "SELECT POST.FROM_UID AS UID, USER.LOGON, USER.NICKNAME, ";
     $sql .= "COUNT(POST.PID) AS POST_COUNT FROM `{$table_prefix}POST` POST ";
     $sql .= "LEFT JOIN USER USER ON (USER.UID = POST.FROM_UID) ";
+    $sql .= "WHERE (USER.PASSWD IS NULL OR USER.PASSWD <> '" . USER_PLACEHOLDER_PASSWD . "') ";
     $sql .= "GROUP BY POST.FROM_UID ORDER BY POST_COUNT DESC ";
     $sql .= "LIMIT 0, 1";
 

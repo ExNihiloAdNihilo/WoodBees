@@ -13,6 +13,13 @@
          exactly what a Hide redaction changed (threads undeleted,
          original comment and tag approvals) and leaves alone anything a
          moderator has dealt with since.
+- Changed: Imported comments show "author @ instance" in the thread
+           list, search results, threads RSS feed and Post Approval
+           Queue too; federation placeholder accounts are left out of
+           the member count, newest member and top poster stats.
+- Fixed: Search results showed a snippet of comments awaiting approval
+         (and of comments hidden by an instance redaction) to everyone;
+         they now only show to the author and folder moderators.
 - Added: Per-install Ed25519 signing key, kept outside the web root on
          the new instance_keys Docker volume (WOODBEES_KEY_DIR).
 - Changed: New POST.ORIGIN_AUTHOR / POST.ORIGIN_REF columns and
