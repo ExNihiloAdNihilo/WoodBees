@@ -1,11 +1,12 @@
 # Beehive Forum Change Log (Generated: Tue, 23 Aug 2016 20:25:51)
 
-## Date: Fri, 13 Nov 2026 (unreleased)
+## Date: Fri, 13 Nov 2026 (WoodBees Alpha 0.3)
 
+- Changed: Version bump to WoodBees Alpha 0.3.
 - Added: Instance federation. Admin > Federation Export downloads a
          signed JSON bundle of threads, comments and tags; Admin >
          Federation Import verifies it (Ed25519, trust on first use with
-         a confirmed key fingerprint) and appends comments to existing
+         a confirmed key fingerprint) and merges comments into existing
          threads with the same address; Admin > Instance Redaction hides
          or deletes another instance's content comment by comment. See
          docs/federation.md.

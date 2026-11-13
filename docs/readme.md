@@ -1,6 +1,6 @@
 # WoodBees Readme
 
-WoodBees Alpha 0.2 — a fork of Beehive Forum, maintained at
+WoodBees Alpha 0.3 — a fork of Beehive Forum, maintained at
 <https://github.com/ExNihiloAdNihilo/WoodBees>. See [release.md](release.md)
 for what's changed in WoodBees.
 
@@ -214,6 +214,11 @@ interacting with your MySQL database:
 
 SELECT, CREATE, CREATE TEMPORARY TABLES, INSERT, ALTER,
 UPDATE, INDEX, DELETE and DROP.
+
+WoodBees also needs LOCK TABLES. Federation imports use it while they
+renumber a merged thread into date order; without it the imported
+comments are added at the end of the thread instead, and the import
+result says so. The bundled Docker database user has it already.
 
 Additionally you can grant the FILE privilege globally for the user
 account to aid in the creation of the dictionary. To do this will

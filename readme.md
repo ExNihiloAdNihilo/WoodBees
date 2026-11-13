@@ -1,6 +1,23 @@
-# WoodBees Alpha 0.2
+# WoodBees Alpha 0.3
 
 A fork of Beehive Forum. See [docs/release.md](docs/release.md) for what's new in this release.
+
+**Upgrading from Alpha 0.2?** Read "Before you upgrade" in
+[docs/release.md](docs/release.md) first: back up
+`forum/include/config.inc.php` before pulling, update `.env` for the
+per-engine Compose files, then `docker compose up -d --build` and run the
+installer's Upgrade method.
+
+## Instance federation
+
+WoodBees instances can share threads, comments and tags with each other as
+signed bundle files: *Admin > Federation Export* on one instance, *Admin >
+Federation Import* on the other. Each install has its own signing key (kept
+on the `instance_keys` Docker volume - don't delete it), and an instance's
+key is pinned the first time you import from it, after you check its
+fingerprint with that instance's admin. *Admin > Instance Redaction* hides
+(with Restore) or deletes everything that came from a given instance. Full
+details: [docs/federation.md](docs/federation.md).
 
 ## Database engine
 
