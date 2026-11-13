@@ -23,7 +23,7 @@ services:
       # of this one through COMPOSE_FILE in .env. With COMPOSE_FILE unset,
       # Compose stops here with this message instead of quietly starting a
       # stack that has no database.
-      COMPOSE_FILE: ${COMPOSE_FILE:?Copy .env.example to .env and choose a database engine file (COMPOSE_FILE) - see .env.example}
+      COMPOSE_FILE: ${COMPOSE_FILE:?Set COMPOSE_FILE and COMPOSE_PATH_SEPARATOR in .env to choose a database engine file (copy .env.example to .env if you have none) - see .env.example}
     volumes:
       - ./docker/overrides.ini:/usr/local/etc/php/conf.d/99-overrides.ini
       - ./forum:/var/www/html
