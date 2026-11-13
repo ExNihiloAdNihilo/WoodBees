@@ -398,7 +398,7 @@ function install_get_table_names(&$global_tables, &$forum_tables)
         $global_tables_store = array(
             'FORUMS',
             'FORUM_SETTINGS',
-            'GROUPS',
+            'GROUP_INFO',
             'GROUP_PERMS',
             'GROUP_USERS',
             'PM',

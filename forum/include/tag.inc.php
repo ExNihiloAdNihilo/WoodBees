@@ -490,9 +490,9 @@ function tag_sync_moderator_folder_access($fid = null)
     }
 
     $sql = "SELECT DISTINCT GROUP_USERS.UID FROM GROUP_USERS ";
-    $sql .= "INNER JOIN GROUPS ON (GROUPS.GID = GROUP_USERS.GID) ";
-    $sql .= "INNER JOIN GROUP_PERMS ON (GROUP_PERMS.GID = GROUPS.GID) ";
-    $sql .= "WHERE GROUPS.FORUM IN (0, $forum_fid) AND (GROUP_PERMS.PERM & $mod_mask) > 0";
+    $sql .= "INNER JOIN GROUP_INFO ON (GROUP_INFO.GID = GROUP_USERS.GID) ";
+    $sql .= "INNER JOIN GROUP_PERMS ON (GROUP_PERMS.GID = GROUP_INFO.GID) ";
+    $sql .= "WHERE GROUP_INFO.FORUM IN (0, $forum_fid) AND (GROUP_PERMS.PERM & $mod_mask) > 0";
 
     if (($result = $db->query($sql))) {
 

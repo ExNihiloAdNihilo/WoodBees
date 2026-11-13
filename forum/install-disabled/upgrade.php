@@ -59,7 +59,7 @@ if (($attachment_dir = forum_get_global_setting('attachment_dir', null, false)) 
 /** @noinspection PhpUndefinedVariableInspection */
 if (!install_table_exists($config['db_database'], 'USER_PERM')) {
 
-    $sql = "CREATE TABLE GROUPS_NEW (";
+    $sql = "CREATE TABLE GROUP_INFO_NEW (";
     $sql .= "  GID MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT,";
     $sql .= "  FORUM MEDIUMINT(8) UNSIGNED NOT NULL,";
     $sql .= "  GROUP_NAME VARCHAR(32) NOT NULL,";
@@ -98,37 +98,37 @@ if (!install_table_exists($config['db_database'], 'USER_PERM')) {
 
     $db->query($sql);
 
-    $sql = "INSERT INTO GROUPS_NEW (FORUM, GROUP_NAME, GROUP_DESC, GID_OLD) ";
-    $sql .= "SELECT GROUP_PERMS.FORUM, GROUPS.GROUP_NAME, GROUPS.GROUP_DESC, ";
-    $sql .= "GROUPS.GID FROM GROUPS INNER JOIN GROUP_PERMS ";
-    $sql .= "ON (GROUP_PERMS.GID = GROUPS.GID) ";
-    $sql .= "GROUP BY GROUPS.GID";
+    $sql = "INSERT INTO GROUP_INFO_NEW (FORUM, GROUP_NAME, GROUP_DESC, GID_OLD) ";
+    $sql .= "SELECT GROUP_PERMS.FORUM, `GROUPS`.GROUP_NAME, `GROUPS`.GROUP_DESC, ";
+    $sql .= "`GROUPS`.GID FROM `GROUPS` INNER JOIN GROUP_PERMS ";
+    $sql .= "ON (GROUP_PERMS.GID = `GROUPS`.GID) ";
+    $sql .= "GROUP BY `GROUPS`.GID";
 
     $db->query($sql);
 
-    $sql = "INSERT INTO GROUP_PERMS_NEW SELECT DISTINCT GROUPS_NEW.GID, ";
+    $sql = "INSERT INTO GROUP_PERMS_NEW SELECT DISTINCT GROUP_INFO_NEW.GID, ";
     $sql .= "GROUP_PERMS.FID, BIT_OR(GROUP_PERMS.PERM) AS PERM FROM GROUP_USERS ";
     $sql .= "INNER JOIN GROUP_PERMS ON (GROUP_PERMS.GID = GROUP_USERS.GID) ";
-    $sql .= "INNER JOIN GROUPS ON (GROUPS.GID = GROUP_USERS.GID) INNER JOIN GROUPS_NEW ";
-    $sql .= "ON (GROUPS_NEW.GID_OLD = GROUPS.GID) GROUP BY GID, FID ";
+    $sql .= "INNER JOIN `GROUPS` ON (`GROUPS`.GID = GROUP_USERS.GID) INNER JOIN GROUP_INFO_NEW ";
+    $sql .= "ON (GROUP_INFO_NEW.GID_OLD = `GROUPS`.GID) GROUP BY GID, FID ";
     $sql .= "ORDER BY GID, FID";
 
     $db->query($sql);
 
-    $sql = "INSERT INTO GROUP_USERS_NEW SELECT GROUPS_NEW.GID, GROUP_USERS.UID ";
-    $sql .= "FROM GROUP_USERS INNER JOIN GROUPS_NEW ON (GROUPS_NEW.GID_OLD = GROUP_USERS.GID)";
+    $sql = "INSERT INTO GROUP_USERS_NEW SELECT GROUP_INFO_NEW.GID, GROUP_USERS.UID ";
+    $sql .= "FROM GROUP_USERS INNER JOIN GROUP_INFO_NEW ON (GROUP_INFO_NEW.GID_OLD = GROUP_USERS.GID)";
 
     $db->query($sql);
 
     $sql = "INSERT INTO USER_PERM SELECT DISTINCT GROUP_USERS.UID, GROUP_PERMS.FORUM, ";
     $sql .= "GROUP_PERMS.FID, BIT_OR(GROUP_PERMS.PERM) AS PERM FROM GROUP_USERS ";
     $sql .= "INNER JOIN GROUP_PERMS ON (GROUP_PERMS.GID = GROUP_USERS.GID) ";
-    $sql .= "LEFT JOIN GROUPS ON (GROUPS.GID = GROUP_USERS.GID) WHERE GROUPS.GID IS NULL ";
+    $sql .= "LEFT JOIN `GROUPS` ON (`GROUPS`.GID = GROUP_USERS.GID) WHERE `GROUPS`.GID IS NULL ";
     $sql .= "GROUP BY UID, FORUM, FID ORDER BY UID, FORUM, FID";
 
     $db->query($sql);
 
-    $sql = "DROP TABLE GROUPS";
+    $sql = "DROP TABLE `GROUPS`";
 
     $db->query($sql);
 
@@ -140,7 +140,7 @@ if (!install_table_exists($config['db_database'], 'USER_PERM')) {
 
     $db->query($sql);
 
-    $sql = "RENAME TABLE GROUPS_NEW TO GROUPS";
+    $sql = "RENAME TABLE GROUP_INFO_NEW TO GROUP_INFO";
 
     $db->query($sql);
 
@@ -152,7 +152,7 @@ if (!install_table_exists($config['db_database'], 'USER_PERM')) {
 
     $db->query($sql);
 
-    $sql = "ALTER TABLE GROUPS DROP COLUMN GID_OLD";
+    $sql = "ALTER TABLE GROUP_INFO DROP COLUMN GID_OLD";
 
     $db->query($sql);
 }

@@ -1673,15 +1673,15 @@ function forum_delete($fid)
 
     if (!$db->query($sql)) return false;
 
-    $sql = "DELETE QUICK FROM GROUPS WHERE FORUM = '$fid'";
+    $sql = "DELETE QUICK FROM GROUP_INFO WHERE FORUM = '$fid'";
 
     if (!$db->query($sql)) return false;
 
-    $sql = "DELETE QUICK FROM GROUP_USERS WHERE GID NOT IN (SELECT GID FROM GROUPS)";
+    $sql = "DELETE QUICK FROM GROUP_USERS WHERE GID NOT IN (SELECT GID FROM GROUP_INFO)";
 
     if (!$db->query($sql)) return false;
 
-    $sql = "DELETE QUICK FROM GROUP_PERMS WHERE GID NOT IN (SELECT GID FROM GROUPS)";
+    $sql = "DELETE QUICK FROM GROUP_PERMS WHERE GID NOT IN (SELECT GID FROM GROUP_INFO)";
 
     if (!$db->query($sql)) return false;
 
