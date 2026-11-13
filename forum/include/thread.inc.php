@@ -764,184 +764,42 @@ function thread_merge($tida, $tidb, $merge_type, &$error_str)
     }
 
     // Check thread B permissions
-    if (!session::check_perm(USER_PERM_FOLDER_MODERATE, $threada['FID'])) {
+    if (!session::check_perm(USER_PERM_FOLDER_MODERATE, $threadb['FID'])) {
         return thread_merge_error(THREAD_MERGE_PERMS_ERROR, $error_str);
     }
 
-    // Close thread A
-    thread_set_closed($tida, true);
-
-    // Close thread B
-    thread_set_closed($tidb, true);
+    // A thread cannot be merged with itself.
+    if ($threada['TID'] == $threadb['TID']) {
+        return thread_merge_error(THREAD_MERGE_THREAD_ERROR, $error_str);
+    }
 
     // Create new thread. Mark it as deleted so user's cannot see it.
     if (!($new_tid = post_create_thread($threada['FID'], $threada['BY_UID'], $threada['TITLE'], 'N', 'N', true, true))) {
-
-        // Unlock the threads if they weren't originally locked.
-        thread_set_closed($tida, ($threada['CLOSED'] > 0));
-        thread_set_closed($tidb, ($threadb['CLOSED'] > 0));
-
-        // Return error message.
         return thread_merge_error(THREAD_MERGE_CREATE_ERROR, $error_str);
     }
 
-    // Construct query to correctly sort the posts in the new thread.
-    switch ($merge_type) {
+    // Close both threads so no reply lands in them while their posts are
+    // being copied.
+    thread_set_closed($tida, true);
 
-        case THREAD_MERGE_BY_CREATED:
+    thread_set_closed($tidb, true);
 
-            $sql = "INSERT INTO `{$table_prefix}POST` (TID, REPLY_TO_PID, ";
-            $sql .= "FROM_UID, CREATED, APPROVED, APPROVED_BY, ";
-            $sql .= "EDITED, EDITED_BY, IPADDRESS, MOVED_TID, MOVED_PID) ";
-            $sql .= "SELECT '$new_tid', REPLY_TO_PID, FROM_UID, NULL, NOW(), ";
-            $sql .= "APPROVED, APPROVED_BY, EDITED, EDITED_BY, IPADDRESS, TID, ";
-            $sql .= "PID FROM `{$table_prefix}POST` WHERE TID IN ('$tida', '$tidb') ";
-            $sql .= "ORDER BY CREATED";
-            break;
+    try {
 
-        case THREAD_MERGE_START:
+        thread_merge_copy_posts($tida, $tidb, $new_tid, $merge_type, $table_prefix, $forum_fid);
 
-            $sql = "INSERT INTO `{$table_prefix}POST` (TID, REPLY_TO_PID, ";
-            $sql .= "FROM_UID, CREATED, APPROVED, APPROVED_BY, ";
-            $sql .= "EDITED, EDITED_BY, IPADDRESS, MOVED_TID, MOVED_PID) ";
-            $sql .= "SELECT '$new_tid', REPLY_TO_PID, FROM_UID, NULL, NOW(), ";
-            $sql .= "APPROVED, APPROVED_BY, EDITED, EDITED_BY, IPADDRESS, TID, ";
-            $sql .= "PID FROM `{$table_prefix}POST` WHERE TID IN ('$tida', '$tidb') ";
-            $sql .= "ORDER BY TID = '$tidb', CREATED";
-            break;
+    } catch (Exception $e) {
 
-        case THREAD_MERGE_END:
+        // Nothing is left half-merged: remove the partly built thread and
+        // put the two threads back as they were.
+        thread_merge_discard($new_tid, $table_prefix, $forum_fid);
 
-            $sql = "INSERT INTO `{$table_prefix}POST` (TID, REPLY_TO_PID, ";
-            $sql .= "FROM_UID, CREATED, APPROVED, APPROVED_BY, ";
-            $sql .= "EDITED, EDITED_BY, IPADDRESS, MOVED_TID, MOVED_PID) ";
-            $sql .= "SELECT '$new_tid', REPLY_TO_PID, FROM_UID, NULL, NOW(), ";
-            $sql .= "APPROVED, APPROVED_BY, EDITED, EDITED_BY, IPADDRESS, TID, ";
-            $sql .= "PID FROM `{$table_prefix}POST` WHERE TID IN ('$tida', '$tidb') ";
-            $sql .= "ORDER BY TID = '$tida', CREATED";
-            break;
-    }
-
-    // Execute the query to copy the posts.
-    if (!isset($sql) || !$db->query($sql)) {
-
-        // Unlock the threads if they weren't originally locked.
         thread_set_closed($tida, ($threada['CLOSED'] > 0));
+
         thread_set_closed($tidb, ($threadb['CLOSED'] > 0));
 
-        // Return error message.
         return thread_merge_error(THREAD_MERGE_QUERY_ERROR, $error_str);
     }
-
-    // Copy the recipients to the new posts.
-    $sql = "INSERT INTO `{$table_prefix}POST_RECIPIENT` (TID, PID, TO_UID, VIEWED) ";
-    $sql .= "SELECT POST.TID, POST.PID, POST_RECIPIENT.TO_UID, POST_RECIPIENT.VIEWED ";
-    $sql .= "FROM `{$table_prefix}POST` POST LEFT JOIN `{$table_prefix}POST_RECIPIENT` POST_RECIPIENT ";
-    $sql .= "ON (POST_RECIPIENT.TID = POST.MOVED_TID AND POST_RECIPIENT.PID = POST.MOVED_PID) ";
-    $sql .= "WHERE POST.TID = '$new_tid'";
-
-    if (!$db->query($sql)) {
-
-        // Unlock the threads if they weren't originally locked.
-        thread_set_closed($tida, ($threada['CLOSED'] > 0));
-        thread_set_closed($tidb, ($threadb['CLOSED'] > 0));
-
-        // Return error message.
-        return thread_merge_error(THREAD_MERGE_QUERY_ERROR, $error_str);
-    }
-
-    // Copy the post contents to the new thread
-    $sql = "INSERT INTO `{$table_prefix}POST_CONTENT` (TID, PID, CONTENT) ";
-    $sql .= "SELECT POST.TID, POST.PID, POST_CONTENT.CONTENT FROM `{$table_prefix}POST` POST ";
-    $sql .= "LEFT JOIN `{$table_prefix}POST_CONTENT` POST_CONTENT ";
-    $sql .= "ON (POST_CONTENT.TID = POST.MOVED_TID AND POST_CONTENT.PID = POST.MOVED_PID) ";
-    $sql .= "WHERE POST.TID = '$new_tid'";
-
-    if (!$db->query($sql)) {
-
-        // Unlock the threads if they weren't originally locked.
-        thread_set_closed($tida, ($threada['CLOSED'] > 0));
-        thread_set_closed($tidb, ($threadb['CLOSED'] > 0));
-
-        // Return error message.
-        return thread_merge_error(THREAD_MERGE_QUERY_ERROR, $error_str);
-    }
-
-    // Insert the new Sphinx Search IDs.
-    $sql = "INSERT INTO `{$table_prefix}POST_SEARCH_ID` (TID, PID) ";
-    $sql .= "SELECT $new_tid, POST.PID FROM `{$table_prefix}POST` POST ";
-    $sql .= "WHERE POST.TID = '$new_tid'";
-
-    if (!$db->query($sql)) {
-
-        // Unlock the threads if they weren't originally locked.
-        thread_set_closed($tida, ($threada['CLOSED'] > 0));
-        thread_set_closed($tidb, ($threadb['CLOSED'] > 0));
-
-        // Return error message.
-        return thread_merge_error(THREAD_MERGE_QUERY_ERROR, $error_str);
-    }
-
-    // Update the REPLY_TO_PIDs in the new thread
-    $sql = "INSERT INTO `{$table_prefix}POST` (TID, PID, REPLY_TO_PID) ";
-    $sql .= "SELECT TARGET_POST.TID, TARGET_POST.PID, SOURCE_POST.PID ";
-    $sql .= "FROM `{$table_prefix}POST` TARGET_POST ";
-    $sql .= "INNER JOIN `{$table_prefix}POST` SOURCE_POST ";
-    $sql .= "ON (SOURCE_POST.MOVED_TID = TARGET_POST.MOVED_TID ";
-    $sql .= "AND TARGET_POST.REPLY_TO_PID = SOURCE_POST.MOVED_PID) ";
-    $sql .= "WHERE TARGET_POST.TID = '$new_tid' ";
-    $sql .= "ON DUPLICATE KEY UPDATE REPLY_TO_PID = VALUES(REPLY_TO_PID) ";
-
-    if (!$db->query($sql)) {
-
-        // Unlock the threads if they weren't originally locked.
-        thread_set_closed($tida, ($threada['CLOSED'] > 0));
-        thread_set_closed($tidb, ($threadb['CLOSED'] > 0));
-
-        // Return error message.
-        return thread_merge_error(THREAD_MERGE_QUERY_ERROR, $error_str);
-    }
-
-    // Link the attachments to the new thread.
-    $sql = "INSERT INTO POST_ATTACHMENT_IDS (FID, TID, PID, AID) ";
-    $sql .= "SELECT $forum_fid, TARGET_POST.TID, TARGET_POST.PID, ";
-    $sql .= "SOURCE_POST_ATTACHMENT_IDS.AID ";
-    $sql .= "FROM `{$table_prefix}POST` TARGET_POST ";
-    $sql .= "INNER JOIN `{$table_prefix}POST` SOURCE_POST ";
-    $sql .= "ON (SOURCE_POST.MOVED_TID = TARGET_POST.MOVED_TID ";
-    $sql .= "AND TARGET_POST.REPLY_TO_PID = SOURCE_POST.MOVED_PID) ";
-    $sql .= "INNER JOIN POST_ATTACHMENT_IDS SOURCE_POST_ATTACHMENT_IDS ";
-    $sql .= "ON (SOURCE_POST_ATTACHMENT_IDS.TID = SOURCE_POST.TID ";
-    $sql .= "AND SOURCE_POST_ATTACHMENT_IDS.PID = SOURCE_POST.PID) ";
-    $sql .= "WHERE TARGET_POST.TID = '$new_tid'";
-
-    if (!$db->query($sql)) {
-
-        // Unlock the threads if they weren't originally locked.
-        thread_set_closed($tida, ($threada['CLOSED'] > 0));
-        thread_set_closed($tidb, ($threadb['CLOSED'] > 0));
-
-        // Return error message.
-        return thread_merge_error(THREAD_MERGE_QUERY_ERROR, $error_str);
-    }
-
-    // Now we unset the MOVED_TID and MOVED_PIDs for the new thread
-    // so the posts appear in the new thread.
-    $sql = "UPDATE `{$table_prefix}POST` SET MOVED_TID = NULL, ";
-    $sql .= "MOVED_PID = NULL WHERE TID = '$new_tid'";
-
-    if (!$db->query($sql)) {
-
-        // Unlock the threads if they weren't originally locked.
-        thread_set_closed($tida, ($threada['CLOSED'] > 0));
-        thread_set_closed($tidb, ($threadb['CLOSED'] > 0));
-
-        // Return error message.
-        return thread_merge_error(THREAD_MERGE_QUERY_ERROR, $error_str);
-    }
-
-    // Update the new thread length
-    thread_set_length($new_tid, $threada['LENGTH'] + $threadb['LENGTH']);
 
     // Set the original threads as moved
     thread_set_moved($tida, $new_tid);
@@ -950,7 +808,7 @@ function thread_merge($tida, $tidb, $merge_type, &$error_str)
 
     // Update the new thread so it's closed if either
     // of it's source threads were originally closed.
-    thread_set_closed($new_tid, ($threada['CLOSED'] > 0) | ($threadb['CLOSED'] > 0));
+    thread_set_closed($new_tid, ($threada['CLOSED'] > 0) || ($threadb['CLOSED'] > 0));
 
     // Undelete the thread.
     thread_undelete($new_tid);
@@ -964,6 +822,194 @@ function thread_merge($tida, $tidb, $merge_type, &$error_str)
         $new_tid,
         $threada['TITLE']
     );
+}
+
+/**
+ * Copies every post of threads $tida and $tidb into the new (still deleted)
+ * thread $new_tid, in the order $merge_type asks for, with everything that
+ * hangs off a post: content, recipients, search id, reply-to links,
+ * attachments, tags, ratings and federation origin. Subscriptions and the
+ * view count of the two threads are carried over to the new thread.
+ *
+ * Throws (via db::query()) if any step fails; thread_merge() then discards
+ * the new thread.
+ */
+function thread_merge_copy_posts($tida, $tidb, $new_tid, $merge_type, $table_prefix, $forum_fid)
+{
+    if (!$db = db::get()) throw new Exception('No database connection');
+
+    // Construct query to correctly sort the posts in the new thread.
+    switch ($merge_type) {
+
+        case THREAD_MERGE_START:
+
+            // Posts in this thread (A) at the start.
+            $order_sql = "ORDER BY TID = '$tidb', CREATED, PID";
+            break;
+
+        case THREAD_MERGE_END:
+
+            // Posts in this thread (A) at the end.
+            $order_sql = "ORDER BY TID = '$tida', CREATED, PID";
+            break;
+
+        default:
+
+            $order_sql = "ORDER BY CREATED, TID, PID";
+            break;
+    }
+
+    // Copy the posts, keeping their dates and federation origin. PIDs in the
+    // new thread are numbered 1, 2, 3 ... in the order the rows are
+    // inserted. MOVED_TID / MOVED_PID remember where each copy came from
+    // until the end of the merge.
+    $sql = "INSERT INTO `{$table_prefix}POST` (TID, REPLY_TO_PID, FROM_UID, ";
+    $sql .= "CREATED, APPROVED, APPROVED_BY, EDITED, EDITED_BY, IPADDRESS, ";
+    $sql .= "MOVED_TID, MOVED_PID, ORIGIN_INSTANCE, ORIGIN_AUTHOR, ORIGIN_REF) ";
+    $sql .= "SELECT '$new_tid', REPLY_TO_PID, FROM_UID, CREATED, APPROVED, ";
+    $sql .= "APPROVED_BY, EDITED, EDITED_BY, IPADDRESS, TID, PID, ";
+    $sql .= "ORIGIN_INSTANCE, ORIGIN_AUTHOR, ORIGIN_REF ";
+    $sql .= "FROM `{$table_prefix}POST` WHERE TID IN ('$tida', '$tidb') $order_sql";
+
+    $db->query($sql);
+
+    // Copy the recipients to the new posts.
+    $sql = "INSERT IGNORE INTO `{$table_prefix}POST_RECIPIENT` (TID, PID, TO_UID, VIEWED) ";
+    $sql .= "SELECT POST.TID, POST.PID, POST_RECIPIENT.TO_UID, POST_RECIPIENT.VIEWED ";
+    $sql .= "FROM `{$table_prefix}POST` POST INNER JOIN `{$table_prefix}POST_RECIPIENT` POST_RECIPIENT ";
+    $sql .= "ON (POST_RECIPIENT.TID = POST.MOVED_TID AND POST_RECIPIENT.PID = POST.MOVED_PID) ";
+    $sql .= "WHERE POST.TID = '$new_tid'";
+
+    $db->query($sql);
+
+    // Copy the post contents to the new thread
+    $sql = "INSERT INTO `{$table_prefix}POST_CONTENT` (TID, PID, CONTENT) ";
+    $sql .= "SELECT POST.TID, POST.PID, POST_CONTENT.CONTENT FROM `{$table_prefix}POST` POST ";
+    $sql .= "LEFT JOIN `{$table_prefix}POST_CONTENT` POST_CONTENT ";
+    $sql .= "ON (POST_CONTENT.TID = POST.MOVED_TID AND POST_CONTENT.PID = POST.MOVED_PID) ";
+    $sql .= "WHERE POST.TID = '$new_tid'";
+
+    $db->query($sql);
+
+    // Insert the new search / stable comment IDs, in post order.
+    $sql = "INSERT INTO `{$table_prefix}POST_SEARCH_ID` (TID, PID) ";
+    $sql .= "SELECT POST.TID, POST.PID FROM `{$table_prefix}POST` POST ";
+    $sql .= "WHERE POST.TID = '$new_tid' ORDER BY POST.PID";
+
+    $db->query($sql);
+
+    // Update the REPLY_TO_PIDs in the new thread: a reply to post N of
+    // thread X now points at wherever post N of thread X landed.
+    $sql = "INSERT INTO `{$table_prefix}POST` (TID, PID, REPLY_TO_PID) ";
+    $sql .= "SELECT TARGET_POST.TID, TARGET_POST.PID, SOURCE_POST.PID ";
+    $sql .= "FROM `{$table_prefix}POST` TARGET_POST ";
+    $sql .= "INNER JOIN `{$table_prefix}POST` SOURCE_POST ";
+    $sql .= "ON (SOURCE_POST.TID = TARGET_POST.TID ";
+    $sql .= "AND SOURCE_POST.MOVED_TID = TARGET_POST.MOVED_TID ";
+    $sql .= "AND SOURCE_POST.MOVED_PID = TARGET_POST.REPLY_TO_PID) ";
+    $sql .= "WHERE TARGET_POST.TID = '$new_tid' ";
+    $sql .= "ON DUPLICATE KEY UPDATE REPLY_TO_PID = VALUES(REPLY_TO_PID) ";
+
+    $db->query($sql);
+
+    // Link each copied post to its original post's attachments.
+    $sql = "INSERT IGNORE INTO POST_ATTACHMENT_IDS (FID, TID, PID, AID) ";
+    $sql .= "SELECT '$forum_fid', POST.TID, POST.PID, POST_ATTACHMENT_IDS.AID ";
+    $sql .= "FROM `{$table_prefix}POST` POST INNER JOIN POST_ATTACHMENT_IDS ";
+    $sql .= "ON (POST_ATTACHMENT_IDS.FID = '$forum_fid' ";
+    $sql .= "AND POST_ATTACHMENT_IDS.TID = POST.MOVED_TID ";
+    $sql .= "AND POST_ATTACHMENT_IDS.PID = POST.MOVED_PID) ";
+    $sql .= "WHERE POST.TID = '$new_tid'";
+
+    $db->query($sql);
+
+    // Copy the tags.
+    $sql = "INSERT IGNORE INTO `{$table_prefix}POST_TAG` (TID, PID, TAG) ";
+    $sql .= "SELECT POST.TID, POST.PID, POST_TAG.TAG FROM `{$table_prefix}POST` POST ";
+    $sql .= "INNER JOIN `{$table_prefix}POST_TAG` POST_TAG ";
+    $sql .= "ON (POST_TAG.TID = POST.MOVED_TID AND POST_TAG.PID = POST.MOVED_PID) ";
+    $sql .= "WHERE POST.TID = '$new_tid'";
+
+    $db->query($sql);
+
+    // Copy the ratings.
+    $sql = "INSERT IGNORE INTO `{$table_prefix}POST_RATING` (TID, PID, UID, RATING, CREATED) ";
+    $sql .= "SELECT POST.TID, POST.PID, POST_RATING.UID, POST_RATING.RATING, POST_RATING.CREATED ";
+    $sql .= "FROM `{$table_prefix}POST` POST INNER JOIN `{$table_prefix}POST_RATING` POST_RATING ";
+    $sql .= "ON (POST_RATING.TID = POST.MOVED_TID AND POST_RATING.PID = POST.MOVED_PID) ";
+    $sql .= "WHERE POST.TID = '$new_tid'";
+
+    $db->query($sql);
+
+    // Carry each user's interest in either thread (subscribed, high
+    // interest, ignored) over to the new thread; the higher one wins.
+    // Read positions cannot be mapped, so the new thread starts unread.
+    $current_datetime = date(MYSQL_DATETIME, time());
+
+    $sql = "INSERT IGNORE INTO `{$table_prefix}USER_THREAD` (UID, TID, LAST_READ, LAST_READ_AT, INTEREST) ";
+    $sql .= "SELECT UID, '$new_tid', 0, CAST('$current_datetime' AS DATETIME), MAX(INTEREST) ";
+    $sql .= "FROM `{$table_prefix}USER_THREAD` WHERE TID IN ('$tida', '$tidb') AND INTEREST <> 0 ";
+    $sql .= "GROUP BY UID";
+
+    $db->query($sql);
+
+    // Carry over the view count.
+    $sql = "INSERT IGNORE INTO `{$table_prefix}THREAD_STATS` (TID, VIEWCOUNT) ";
+    $sql .= "SELECT '$new_tid', SUM(VIEWCOUNT) FROM `{$table_prefix}THREAD_STATS` ";
+    $sql .= "WHERE TID IN ('$tida', '$tidb') HAVING SUM(VIEWCOUNT) IS NOT NULL";
+
+    $db->query($sql);
+
+    // Now we unset the MOVED_TID and MOVED_PIDs for the new thread
+    // so the posts appear in the new thread.
+    $sql = "UPDATE `{$table_prefix}POST` SET MOVED_TID = NULL, ";
+    $sql .= "MOVED_PID = NULL WHERE TID = '$new_tid'";
+
+    $db->query($sql);
+
+    // The new thread's length is the number of posts actually copied.
+    $sql = "SELECT COALESCE(MAX(PID), 0) FROM `{$table_prefix}POST` WHERE TID = '$new_tid'";
+
+    $result = $db->query($sql);
+
+    list($new_length) = $result->fetch_row();
+
+    if ($new_length < 1) throw new Exception('Thread merge copied no posts');
+
+    thread_set_length($new_tid, $new_length);
+}
+
+/**
+ * Removes the partly built thread left by a failed merge. Best effort: each
+ * step is attempted even if an earlier one fails.
+ */
+function thread_merge_discard($new_tid, $table_prefix, $forum_fid)
+{
+    if (!$db = db::get()) return;
+
+    if (!is_numeric($new_tid) || $new_tid < 1) return;
+
+    $sql_array = array(
+        "DELETE FROM `{$table_prefix}POST_CONTENT` WHERE TID = '$new_tid'",
+        "DELETE FROM `{$table_prefix}POST_RECIPIENT` WHERE TID = '$new_tid'",
+        "DELETE FROM `{$table_prefix}POST_SEARCH_ID` WHERE TID = '$new_tid'",
+        "DELETE FROM `{$table_prefix}POST_TAG` WHERE TID = '$new_tid'",
+        "DELETE FROM `{$table_prefix}POST_RATING` WHERE TID = '$new_tid'",
+        "DELETE FROM `{$table_prefix}USER_THREAD` WHERE TID = '$new_tid'",
+        "DELETE FROM `{$table_prefix}THREAD_STATS` WHERE TID = '$new_tid'",
+        "DELETE FROM POST_ATTACHMENT_IDS WHERE FID = '$forum_fid' AND TID = '$new_tid'",
+        "DELETE FROM `{$table_prefix}POST` WHERE TID = '$new_tid'",
+        "DELETE FROM `{$table_prefix}THREAD` WHERE TID = '$new_tid'",
+    );
+
+    foreach ($sql_array as $sql) {
+
+        try {
+            $db->query($sql);
+        } catch (Exception $e) {
+            // Carry on with the rest.
+        }
+    }
 }
 
 function thread_merge_error($error_code, &$error_str)

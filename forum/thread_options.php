@@ -749,7 +749,7 @@ if ($thread_data['DELETED'] == 'N') {
                 echo "                      </tr>\n";
                 echo "                      <tr>\n";
                 echo "                        <td align=\"left\">&nbsp;</td>\n";
-                echo "                        <td align=\"left\" class=\"posthead\">", form_radio("merge_type", THREAD_MERGE_START, gettext("Posts in this thread at end")), "</td>\n";
+                echo "                        <td align=\"left\" class=\"posthead\">", form_radio("merge_type", THREAD_MERGE_END, gettext("Posts in this thread at end")), "</td>\n";
                 echo "                      </tr>\n";
                 echo "                      <tr>\n";
                 echo "                        <td align=\"left\">&nbsp;</td>\n";
