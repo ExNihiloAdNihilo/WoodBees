@@ -56,52 +56,120 @@ function install_check()
     install_check_mysql_version();
 
     if (@file_exists('./install/index.php') && !defined("BEEHIVE_DEVELOPER_MODE")) {
-
-        install_draw_top();
-
-        echo "  <table cellpadding=\"0\" cellspacing=\"0\" width=\"400\">\n";
-        echo "    <tr>\n";
-        echo "      <td align=\"left\">\n";
-        echo "        <table class=\"box\">\n";
-        echo "          <tr>\n";
-        echo "            <td align=\"left\" class=\"posthead\">\n";
-        echo "              <table class=\"posthead\" width=\"500\">\n";
-        echo "                <tr>\n";
-        echo "                  <td align=\"left\" colspan=\"2\" class=\"subhead\">Installation Incomplete</td>\n";
-        echo "                </tr>\n";
-        echo "                <tr>\n";
-        echo "                  <td align=\"center\">\n";
-        echo "                    <table class=\"posthead\" width=\"95%\">\n";
-        echo "                      <tr>\n";
-        echo "                        <td align=\"left\">Your WoodBees forum would appear to be already installed, but you have not removed the installation files. You must delete the 'install' directory before your WoodBees forum can be used.</td>\n";
-        echo "                      </tr>\n";
-        echo "                    </table>\n";
-        echo "                  </td>\n";
-        echo "                </tr>\n";
-        echo "                <tr>\n";
-        echo "                  <td align=\"left\">&nbsp;</td>\n";
-        echo "                </tr>\n";
-        echo "              </table>\n";
-        echo "            </td>\n";
-        echo "          </tr>\n";
-        echo "        </table>\n";
-        echo "      </td>\n";
-        echo "    </tr>\n";
-        echo "  </table>\n";
-        echo "  <form accept-charset=\"utf-8\" method=\"get\" action=\"index.php\">\n";
-        echo "    <table cellpadding=\"0\" cellspacing=\"0\" width=\"500\">\n";
-        echo "      <tr>\n";
-        echo "        <td align=\"left\" width=\"500\">&nbsp;</td>\n";
-        echo "      </tr>\n";
-        echo "      <tr>\n";
-        echo "        <td align=\"center\"><input type=\"submit\" name=\"submit\" value=\"Retry\" class=\"button\" /></td>\n";
-        echo "      </tr>\n";
-        echo "    </table>\n";
-        echo "  </form>\n";
-
-        install_draw_bottom();
-        exit;
+        install_draw_incomplete("Your WoodBees forum would appear to be already installed, but you have not removed the installation files. You must delete the 'install' directory before your WoodBees forum can be used.");
     }
+
+    // The installer is unlocked on an installed forum only while this file
+    // exists (see install_check_installer_allowed()). The installer removes
+    // it when it finishes; if it could not, the forum stays closed until it
+    // is removed by hand, so the installer is never left open by mistake.
+    if (@file_exists(install_unlock_file()) && !defined("BEEHIVE_DEVELOPER_MODE")) {
+        install_draw_incomplete("The installer is unlocked: the file include/" . INSTALL_UNLOCK_FILENAME . " exists. Delete that file to use your WoodBees forum again (for example: docker compose exec web rm /var/www/html/include/" . INSTALL_UNLOCK_FILENAME . ").");
+    }
+}
+
+/**
+ * Name of the file in the include folder that unlocks the web installer on a
+ * forum that is already installed.
+ */
+define('INSTALL_UNLOCK_FILENAME', 'install.enable');
+
+function install_unlock_file()
+{
+    return BH_INCLUDE_PATH . INSTALL_UNLOCK_FILENAME;
+}
+
+/**
+ * The web installer can wipe a live forum (Reinstall drops every table) or
+ * take it over (Reconnect rewrites config.inc.php), and it asks for nothing
+ * but database details. It is therefore only available while the forum is
+ * not configured yet (include/config.inc.php is missing: a fresh copy, or a
+ * config file lost in a git pull), or while the forum's operator has
+ * unlocked it by creating include/install.enable, which needs shell or file
+ * access to the server. Anything else gets a 403 and an explanation.
+ * docker/nginx.conf applies the same rule before PHP is reached.
+ */
+function install_check_installer_allowed()
+{
+    if (!@file_exists(BH_INCLUDE_PATH . 'config.inc.php')) return;
+
+    if (@file_exists(install_unlock_file())) return;
+
+    header_status(403, 'Forbidden');
+
+    install_draw_top();
+    install_draw_message_box(
+        "Installer locked",
+        "This WoodBees forum is already installed (include/config.inc.php exists), so the installer is locked. "
+        . "To run Upgrade, Reinstall or Reconnect, create an empty file named " . INSTALL_UNLOCK_FILENAME . " in the forum's include folder "
+        . "(for example: docker compose exec web touch /var/www/html/include/" . INSTALL_UNLOCK_FILENAME . "), then reload this page. "
+        . "The installer deletes the file when it has finished."
+    );
+    install_draw_bottom();
+    exit;
+}
+
+/**
+ * Removes the installer unlock file once the installer has done its job.
+ */
+function install_remove_unlock_file()
+{
+    if (@file_exists(install_unlock_file())) {
+        @unlink(install_unlock_file());
+    }
+}
+
+function install_draw_message_box($title, $message)
+{
+    echo "  <table cellpadding=\"0\" cellspacing=\"0\" width=\"500\">\n";
+    echo "    <tr>\n";
+    echo "      <td align=\"left\">\n";
+    echo "        <table class=\"box\">\n";
+    echo "          <tr>\n";
+    echo "            <td align=\"left\" class=\"posthead\">\n";
+    echo "              <table class=\"posthead\" width=\"500\">\n";
+    echo "                <tr>\n";
+    echo "                  <td align=\"left\" colspan=\"2\" class=\"subhead\">", htmlentities($title, ENT_QUOTES, 'UTF-8'), "</td>\n";
+    echo "                </tr>\n";
+    echo "                <tr>\n";
+    echo "                  <td align=\"center\">\n";
+    echo "                    <table class=\"posthead\" width=\"95%\">\n";
+    echo "                      <tr>\n";
+    echo "                        <td align=\"left\">", htmlentities($message, ENT_QUOTES, 'UTF-8'), "</td>\n";
+    echo "                      </tr>\n";
+    echo "                    </table>\n";
+    echo "                  </td>\n";
+    echo "                </tr>\n";
+    echo "                <tr>\n";
+    echo "                  <td align=\"left\">&nbsp;</td>\n";
+    echo "                </tr>\n";
+    echo "              </table>\n";
+    echo "            </td>\n";
+    echo "          </tr>\n";
+    echo "        </table>\n";
+    echo "      </td>\n";
+    echo "    </tr>\n";
+    echo "  </table>\n";
+}
+
+function install_draw_incomplete($message)
+{
+    install_draw_top();
+    install_draw_message_box("Installation Incomplete", $message);
+
+    echo "  <form accept-charset=\"utf-8\" method=\"get\" action=\"index.php\">\n";
+    echo "    <table cellpadding=\"0\" cellspacing=\"0\" width=\"500\">\n";
+    echo "      <tr>\n";
+    echo "        <td align=\"left\" width=\"500\">&nbsp;</td>\n";
+    echo "      </tr>\n";
+    echo "      <tr>\n";
+    echo "        <td align=\"center\"><input type=\"submit\" name=\"submit\" value=\"Retry\" class=\"button\" /></td>\n";
+    echo "      </tr>\n";
+    echo "    </table>\n";
+    echo "  </form>\n";
+
+    install_draw_bottom();
+    exit;
 }
 
 function install_check_mysql_version()

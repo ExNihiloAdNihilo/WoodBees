@@ -13,3 +13,4 @@ beehive_header.swf
 /.vagrant/
 /.vscode/
 /forum/include/config.inc.php
+/forum/include/install.enable

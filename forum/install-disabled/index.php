@@ -70,6 +70,9 @@ install_check_php_extensions();
 
 install_check_php_configuration();
 
+// Refuse to run on an installed forum unless the operator has unlocked it.
+install_check_installer_allowed();
+
 if (isset($_POST['install_method'])) {
 
     install_msie_buffer_fix();
@@ -288,6 +291,11 @@ if (isset($_POST['install_method'])) {
 
                         $config_saved = true;
                     }
+                }
+
+                // Done: lock the installer again.
+                if ($config_saved) {
+                    install_remove_unlock_file();
                 }
 
                 install_draw_top("../js/lib/jquery.min.js", "../js/install.js");
