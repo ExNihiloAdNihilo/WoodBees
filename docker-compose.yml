@@ -24,9 +24,15 @@ services:
       # Compose stops here with this message instead of quietly starting a
       # stack that has no database.
       COMPOSE_FILE: ${COMPOSE_FILE:?Set COMPOSE_FILE and COMPOSE_PATH_SEPARATOR in .env to choose a database engine file (copy .env.example to .env if you have none) - see .env.example}
+      # Where the federation signing key is kept (outside the web root).
+      WOODBEES_KEY_DIR: /var/lib/woodbees/keys
     volumes:
       - ./docker/overrides.ini:/usr/local/etc/php/conf.d/99-overrides.ini
       - ./forum:/var/www/html
+      # This instance's Ed25519 federation signing key - its identity to
+      # other instances. Never delete this volume casually: a new key means
+      # every peer will reject this instance's bundles until they re-trust it.
+      - instance_keys:/var/lib/woodbees/keys
     # No depends_on: mysql - the mysql service only exists in the mariadb and
     # mysql engine files, and the app already shows its own retry-able error
     # page if the DB isn't reachable yet either way.
@@ -61,3 +67,4 @@ services:
 volumes:
   manticore_data:
   manticore_plugins:
+  instance_keys:

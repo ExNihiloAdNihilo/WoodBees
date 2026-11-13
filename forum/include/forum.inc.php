@@ -1112,6 +1112,8 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
         $sql .= "  MOVED_PID MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
         $sql .= "  INDEXED DATETIME DEFAULT NULL,";
         $sql .= "  ORIGIN_INSTANCE VARCHAR(64) DEFAULT NULL,";
+        $sql .= "  ORIGIN_AUTHOR VARCHAR(64) DEFAULT NULL,";
+        $sql .= "  ORIGIN_REF VARCHAR(64) DEFAULT NULL,";
         $sql .= "  PRIMARY KEY (TID,PID),";
         $sql .= "  KEY FROM_UID (FROM_UID),";
         $sql .= "  KEY IPADDRESS (IPADDRESS,FROM_UID),";
@@ -1119,7 +1121,8 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
         $sql .= "  KEY CREATED (CREATED),";
         $sql .= "  KEY EDITED (EDITED),";
         $sql .= "  KEY INDEXED (INDEXED),";
-        $sql .= "  KEY ORIGIN_INSTANCE (ORIGIN_INSTANCE)";
+        $sql .= "  KEY ORIGIN_INSTANCE (ORIGIN_INSTANCE),";
+        $sql .= "  KEY ORIGIN_REF (ORIGIN_INSTANCE, ORIGIN_REF)";
         $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
 
         $db->query($sql);
@@ -1189,6 +1192,23 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
         $sql .= "  PRIMARY KEY (TID),";
         $sql .= "  UNIQUE KEY TAG (TAG),";
         $sql .= "  KEY APPROVED (APPROVED),";
+        $sql .= "  KEY ORIGIN_INSTANCE (ORIGIN_INSTANCE)";
+        $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
+
+        $db->query($sql);
+
+        // Federation: one row per imported bundle, so the same bundle can't
+        // be imported twice. See docs/federation.md.
+        $sql = "CREATE TABLE `{$forum_table_prefix}IMPORT_LOG` (";
+        $sql .= "  BUNDLE_ID VARCHAR(64) NOT NULL,";
+        $sql .= "  ORIGIN_INSTANCE VARCHAR(64) NOT NULL,";
+        $sql .= "  PUBLIC_KEY VARCHAR(64) DEFAULT NULL,";
+        $sql .= "  IMPORTED DATETIME NOT NULL,";
+        $sql .= "  IMPORTED_BY MEDIUMINT(8) UNSIGNED NOT NULL,";
+        $sql .= "  THREAD_COUNT MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT 0,";
+        $sql .= "  POST_COUNT MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT 0,";
+        $sql .= "  SKIPPED_COUNT MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT 0,";
+        $sql .= "  PRIMARY KEY (BUNDLE_ID),";
         $sql .= "  KEY ORIGIN_INSTANCE (ORIGIN_INSTANCE)";
         $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
 
@@ -1708,6 +1728,7 @@ function forum_delete_tables($webtag, $database_name)
         'BANNED',
         'FOLDER',
         'FORUM_LINKS',
+        'IMPORT_LOG',
         'LINKS',
         'LINKS_COMMENT',
         'LINKS_FOLDERS',

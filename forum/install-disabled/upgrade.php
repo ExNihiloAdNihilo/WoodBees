@@ -33,6 +33,7 @@ require_once BH_INCLUDE_PATH . 'constants.inc.php';
 require_once BH_INCLUDE_PATH . 'db.inc.php';
 require_once BH_INCLUDE_PATH . 'format.inc.php';
 require_once BH_INCLUDE_PATH . 'install.inc.php';
+require_once BH_INCLUDE_PATH . 'instance_key.inc.php';
 
 @set_time_limit(0);
 
@@ -966,6 +967,39 @@ foreach ($forum_prefix_array as $forum_fid => $table_data) {
         $db->query("ALTER TABLE `{$table_data['PREFIX']}TAG` ADD KEY ORIGIN_INSTANCE (ORIGIN_INSTANCE)");
     }
 
+    // Federation import: original author name (text only - the local
+    // FROM_UID is a non-login placeholder) and the comment's id on its
+    // origin instance, used to stop the same comment being imported twice.
+    if (!install_column_exists($config['db_database'], "{$table_data['WEBTAG']}_POST", 'ORIGIN_AUTHOR')) {
+        $db->query("ALTER TABLE `{$table_data['PREFIX']}POST` ADD COLUMN ORIGIN_AUTHOR VARCHAR(64) DEFAULT NULL");
+    }
+
+    if (!install_column_exists($config['db_database'], "{$table_data['WEBTAG']}_POST", 'ORIGIN_REF')) {
+        $db->query("ALTER TABLE `{$table_data['PREFIX']}POST` ADD COLUMN ORIGIN_REF VARCHAR(64) DEFAULT NULL");
+    }
+
+    if (!install_index_exists($config['db_database'], "{$table_data['WEBTAG']}_POST", 'ORIGIN_REF')) {
+        $db->query("ALTER TABLE `{$table_data['PREFIX']}POST` ADD KEY ORIGIN_REF (ORIGIN_INSTANCE, ORIGIN_REF)");
+    }
+
+    if (!install_table_exists($config['db_database'], "{$table_data['WEBTAG']}_IMPORT_LOG")) {
+
+        $sql = "CREATE TABLE `{$table_data['PREFIX']}IMPORT_LOG` (";
+        $sql .= "  BUNDLE_ID VARCHAR(64) NOT NULL,";
+        $sql .= "  ORIGIN_INSTANCE VARCHAR(64) NOT NULL,";
+        $sql .= "  PUBLIC_KEY VARCHAR(64) DEFAULT NULL,";
+        $sql .= "  IMPORTED DATETIME NOT NULL,";
+        $sql .= "  IMPORTED_BY MEDIUMINT(8) UNSIGNED NOT NULL,";
+        $sql .= "  THREAD_COUNT MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT 0,";
+        $sql .= "  POST_COUNT MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT 0,";
+        $sql .= "  SKIPPED_COUNT MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT 0,";
+        $sql .= "  PRIMARY KEY (BUNDLE_ID),";
+        $sql .= "  KEY ORIGIN_INSTANCE (ORIGIN_INSTANCE)";
+        $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
+
+        $db->query($sql);
+    }
+
     // utf8mb4-readiness: shrink indexed VARCHAR(255) columns to widths that
     // will still fit MyISAM's 1000-byte key limit under a future utf8mb4
     // conversion. Data in these columns is always far shorter.
@@ -1206,6 +1240,29 @@ if (isset($instance_identifier) && strlen($instance_identifier) > 0) {
 
     $db->query("INSERT IGNORE INTO FORUM_SETTINGS (FID, SNAME, SVALUE) VALUES (0, 'instance_identifier', '')");
 }
+
+// Federation: pinned public keys of other instances (trust on first use).
+if (!install_table_exists($config['db_database'], 'TRUSTED_INSTANCE')) {
+
+    $sql = "CREATE TABLE TRUSTED_INSTANCE (";
+    $sql .= "  IID MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT,";
+    $sql .= "  IDENTIFIER VARCHAR(64) NOT NULL,";
+    $sql .= "  PUBLIC_KEY VARCHAR(64) NOT NULL,";
+    $sql .= "  STATUS VARCHAR(16) NOT NULL DEFAULT 'TRUSTED',";
+    $sql .= "  FIRST_SEEN DATETIME NOT NULL,";
+    $sql .= "  LAST_SEEN DATETIME DEFAULT NULL,";
+    $sql .= "  CONFIRMED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
+    $sql .= "  PRIMARY KEY (IID),";
+    $sql .= "  UNIQUE KEY IDENTIFIER (IDENTIFIER)";
+    $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
+
+    $db->query($sql);
+}
+
+// Generate this instance's federation signing key if it has none yet. An
+// existing key is never replaced: it is the instance's identity and must
+// survive instance_identifier changes. Not fatal - admin_export.php retries.
+instance_key_ensure();
 
 $sql = "DELETE FROM POST_ATTACHMENT_IDS WHERE AID NOT IN (SELECT AID FROM POST_ATTACHMENT_FILES)";
 

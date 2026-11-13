@@ -32,6 +32,7 @@ if (isset($_SERVER['SCRIPT_NAME']) && basename($_SERVER['SCRIPT_NAME']) == 'new-
 require_once BH_INCLUDE_PATH . 'constants.inc.php';
 require_once BH_INCLUDE_PATH . 'db.inc.php';
 require_once BH_INCLUDE_PATH . 'install.inc.php';
+require_once BH_INCLUDE_PATH . 'instance_key.inc.php';
 require_once BH_INCLUDE_PATH . 'forum.inc.php';
 require_once BH_INCLUDE_PATH . 'user.inc.php';
 
@@ -296,6 +297,22 @@ $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
 
 $db->query($sql);
 
+// Federation: public keys of other WoodBees instances, pinned the first time
+// one of their signed bundles is imported (trust on first use).
+$sql = "CREATE TABLE TRUSTED_INSTANCE (";
+$sql .= "  IID MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT,";
+$sql .= "  IDENTIFIER VARCHAR(64) NOT NULL,";
+$sql .= "  PUBLIC_KEY VARCHAR(64) NOT NULL,";
+$sql .= "  STATUS VARCHAR(16) NOT NULL DEFAULT 'TRUSTED',";
+$sql .= "  FIRST_SEEN DATETIME NOT NULL,";
+$sql .= "  LAST_SEEN DATETIME DEFAULT NULL,";
+$sql .= "  CONFIRMED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
+$sql .= "  PRIMARY KEY (IID),";
+$sql .= "  UNIQUE KEY IDENTIFIER (IDENTIFIER)";
+$sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
+
+$db->query($sql);
+
 $sql = "CREATE TABLE USER_FORUM (";
 $sql .= "  UID MEDIUMINT(8) UNSIGNED NOT NULL, ";
 $sql .= "  FID MEDIUMINT(8) UNSIGNED NOT NULL, ";
@@ -423,6 +440,10 @@ $sql .= "VALUES (0, 'instance_identifier', '" . $db->escape($instance_identifier
 $sql .= "ON DUPLICATE KEY UPDATE SVALUE = VALUES(SVALUE)";
 
 $db->query($sql);
+
+// Generate this instance's federation signing key (stored outside the web
+// root). Not fatal: admin_export.php retries and explains how to fix it.
+instance_key_ensure();
 
 if (!install_set_search_bots()) {
     throw new Exception('Failed to create search bot entries');

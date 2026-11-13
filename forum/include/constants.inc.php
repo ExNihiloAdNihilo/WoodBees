@@ -387,6 +387,17 @@ define('EDIT_LINK', 80);
 define('APPROVED_TAG', 81);
 define('DEAPPROVED_TAG', 82);
 define('DELETED_TAG', 83);
+define('FEDERATION_EXPORT', 84);
+define('FEDERATION_IMPORT', 85);
+define('FEDERATION_REDACT', 86);
+define('FEDERATION_TRUST', 87);
+define('FEDERATION_UNTRUST', 88);
+define('FEDERATION_FORGET', 89);
+
+// Federation: PASSWD value of the non-login placeholder accounts that own
+// imported comments. No password hash can ever equal it.
+define('USER_PLACEHOLDER_PASSWD', '!');
+define('USER_PLACEHOLDER_LOGON_PREFIX', '~FED-');
 
 // Admin log grouping
 define('ADMIN_LOG_GROUP_NONE', 0);

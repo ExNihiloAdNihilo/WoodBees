@@ -24,6 +24,17 @@ RUN docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) exif \
         intl \
         mysqli
 
+# Federation bundle signing (Ed25519) uses PHP's bundled libsodium extension;
+# fail the build early if this base image ever stops shipping it.
+RUN php -r 'exit(function_exists("sodium_crypto_sign_detached") ? 0 : 1);'
+
+# The instance signing key lives here, outside the web root, on the
+# instance_keys volume (docker-compose.yml). A fresh named volume copies this
+# directory's ownership, so php-fpm (www-data) can create and read the key.
+RUN mkdir -p /var/lib/woodbees/keys \
+    && chown www-data:www-data /var/lib/woodbees/keys \
+    && chmod 700 /var/lib/woodbees/keys
+
 FROM base as local
 
 RUN pecl install xdebug-2.9.8 \
