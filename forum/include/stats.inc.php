@@ -1482,7 +1482,7 @@ function stats_get_most_popular_birthday()
 
     $dob_data = $result->fetch_assoc();
 
-    return $dob_data;
+    return $dob_data ?: false;
 }
 
 /**
