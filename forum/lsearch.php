@@ -92,7 +92,13 @@ $max_length = 84;
 
 search_get_word_lengths($min_length, $max_length);
 
-if (isset($_POST) && sizeof($_POST) > 0) {
+// Manticore/Sphinx is the configured search engine but currently unusable
+// (unreachable, or not finished indexing) - rather than quietly falling
+// back or failing search requests with no explanation, disable the search
+// form entirely and say so.
+$search_available = search_is_available($search_unavailable_reason);
+
+if ($search_available && isset($_POST) && sizeof($_POST) > 0) {
 
     $page = 1;
 
@@ -260,9 +266,14 @@ if (isset($error_msg_array) && sizeof($error_msg_array) > 0) {
     light_html_display_error_msg(gettext("Search Returned No Results"));
 }
 
+if (!$search_available) {
+    light_html_display_error_msg(gettext("Search is not currently available. Please try again later."));
+}
+
 echo "<form accept-charset=\"utf-8\" id=\"search_form\" method=\"post\" action=\"lsearch.php\" target=\"_self\">\n";
 echo "  ", form_csrf_token_field(), "\n";
 echo form_input_hidden('webtag', htmlentities_array($webtag)), "\n";
+if (!$search_available) echo "<fieldset disabled=\"disabled\">\n";
 echo "<div class=\"search\">\n";
 echo "<h3>", gettext("Search discussions"), "</h3>\n";
 echo "<div class=\"search_inner\">\n";
@@ -274,6 +285,7 @@ echo "<div class=\"search_date\">", gettext("Posted to"), ":", light_form_dropdo
 echo "<div class=\"search_buttons\">", light_form_submit("search_submit", gettext("Find")), "</div>";
 echo "</div>";
 echo "</div>";
+if (!$search_available) echo "</fieldset>\n";
 echo "</form>";
 
 light_html_draw_bottom();

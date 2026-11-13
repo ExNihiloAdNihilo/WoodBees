@@ -70,6 +70,11 @@ services:
       - manticore_data:/var/lib/manticore
     environment:
       MANTICORE_WEBTAG: WOODBEES
+      # Passed through so entrypoint.sh can warn loudly if DB_MODE=external
+      # but MANTICORE_DB_HOST was left at its bundled-mysql default below -
+      # that combination can never reach a real DB and would otherwise just
+      # retry forever with no visible error.
+      DB_MODE: ${DB_MODE:-}
       # Defaults target the bundled mysql service. For DB_MODE=external,
       # override these in .env to point at your own server instead.
       MANTICORE_DB_HOST: ${MANTICORE_DB_HOST:-mysql}

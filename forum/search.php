@@ -144,7 +144,13 @@ $max_length = 84;
 
 search_get_word_lengths($min_length, $max_length);
 
-if (((isset($_POST) && sizeof($_POST) > 0 && !isset($_POST['search_reset'])) || isset($_GET['search_string']) || isset($_GET['logon']) || isset($_GET['tag'])) && !isset($_GET['search_error'])) {
+// Manticore/Sphinx is the configured search engine but currently unusable
+// (unreachable, or not finished indexing) - rather than quietly falling
+// back or failing search requests with no explanation, disable the search
+// form entirely and say so.
+$search_available = search_is_available($search_unavailable_reason);
+
+if ($search_available && ((isset($_POST) && sizeof($_POST) > 0 && !isset($_POST['search_reset'])) || isset($_GET['search_string']) || isset($_GET['logon']) || isset($_GET['tag'])) && !isset($_GET['search_error'])) {
 
     $page = 1;
 
@@ -470,11 +476,16 @@ if (isset($error_msg_array) && sizeof($error_msg_array) > 0) {
     html_display_warning_msg(gettext("Search Returned No Results"), '500', 'center');
 }
 
+if (!$search_available) {
+    html_display_warning_msg(gettext("Search is not currently available. Please try again later."), '500', 'center');
+}
+
 echo "<br />\n";
 echo "<div align=\"center\">\n";
 echo "<form accept-charset=\"utf-8\" id=\"search_form\" method=\"post\" action=\"search.php\" target=\"_self\">\n";
 echo "  ", form_csrf_token_field(), "\n";
 echo "  ", form_input_hidden('webtag', htmlentities_array($webtag)), "\n";
+if (!$search_available) echo "  <fieldset disabled=\"disabled\">\n";
 echo "  <table cellpadding=\"0\" cellspacing=\"0\" width=\"500\">\n";
 echo "    <tr>\n";
 echo "      <td align=\"left\">\n";
@@ -610,6 +621,7 @@ echo "    <tr>\n";
 echo "      <td align=\"center\">", form_submit('search_submit', gettext("Find")), "&nbsp;", form_submit('search_reset', gettext("Reset")), "</td>\n";
 echo "    </tr>\n";
 echo "  </table>\n";
+if (!$search_available) echo "  </fieldset>\n";
 echo "</form>\n";
 echo "</div>\n";
 

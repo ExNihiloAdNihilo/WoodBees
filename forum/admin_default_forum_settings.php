@@ -948,9 +948,14 @@ echo "                        <td align=\"left\" colspan=\"2\">\n";
 
 if (isset($forum_global_settings['sphinx_search_enabled']) && $forum_global_settings['sphinx_search_enabled'] == "Y") {
 
-    if (!sphinx_search_connect()) {
+    // A deeper check than a plain connection test: also confirms the
+    // forum's own index actually exists, so a search server that's up but
+    // never finished indexing (e.g. its own database connection is
+    // misconfigured) is reported here instead of only on the next search
+    // attempt a real user makes.
+    if (!sphinx_search_check_health($sphinx_health_reason)) {
 
-        html_display_error_msg(gettext("Cannot connect to a Manticore / Sphinx search server using the settings you have specified."), '95%', 'center');
+        html_display_error_msg(htmlentities_array($sphinx_health_reason), '95%', 'center');
     }
 }
 

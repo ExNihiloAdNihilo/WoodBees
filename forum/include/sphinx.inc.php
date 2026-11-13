@@ -51,6 +51,83 @@ function sphinx_search_connect()
     return $sphinx;
 }
 
+// Deeper check than sphinx_search_connect(): also confirms the forum's own
+// index actually exists on the search server, not just that the port is
+// open. A reachable-but-never-indexed server (e.g. DB_MODE=external with
+// MANTICORE_DB_HOST left at its bundled-mysql default) would otherwise look
+// "connected" while never returning any results. Caches the result via
+// sphinx_search_record_status() so callers that just need to know "is
+// search usable right now" (e.g. the search form) can read the cache
+// instead of connecting on every page load.
+function sphinx_search_check_health(&$reason = null)
+{
+    if (!($sphinx = sphinx_search_connect())) {
+
+        $reason = gettext("Cannot connect to the Manticore / Sphinx search server using the settings you have specified.");
+        sphinx_search_record_status(false, $reason);
+        return false;
+    }
+
+    if (!($webtag = get_webtag())) {
+
+        $forum_data = get_forum_data();
+        $webtag = (isset($forum_data['WEBTAG']) && strlen($forum_data['WEBTAG']) > 0) ? $forum_data['WEBTAG'] : false;
+    }
+
+    if (!$webtag) {
+
+        @mysqli_close($sphinx);
+        $reason = gettext("Could not determine this forum's webtag to check its search index.");
+        sphinx_search_record_status(false, $reason);
+        return false;
+    }
+
+    $index_found = false;
+
+    if (($result = @$sphinx->query("SHOW TABLES")) !== false) {
+
+        while (($row = $result->fetch_row()) !== null) {
+
+            if (isset($row[0]) && strcasecmp($row[0], $webtag) === 0) {
+                $index_found = true;
+                break;
+            }
+        }
+    }
+
+    @mysqli_close($sphinx);
+
+    if (!$index_found) {
+
+        $reason = gettext("Connected to the search server, but it has not finished indexing this forum yet. This usually means the search server's own database connection is misconfigured - check MANTICORE_DB_HOST (and related settings) in your .env file.");
+        sphinx_search_record_status(false, $reason);
+        return false;
+    }
+
+    sphinx_search_record_status(true);
+    return true;
+}
+
+// Caches the last known Manticore/Sphinx health state as global forum
+// settings, so pages that just need to decide whether to show the search
+// form don't have to open a connection on every request. Only writes when
+// the status actually changed, to avoid a DB write on every search.
+function sphinx_search_record_status($is_healthy, $reason = '')
+{
+    $new_status = $is_healthy ? 'OK' : 'DOWN';
+
+    if (forum_get_setting('sphinx_search_last_status', null, 'OK') === $new_status
+        && forum_get_setting('sphinx_search_last_status_reason', null, '') === $reason) {
+        return;
+    }
+
+    forum_save_global_settings(array(
+        'sphinx_search_last_status' => $new_status,
+        'sphinx_search_last_status_reason' => $reason,
+        'sphinx_search_last_checked' => time(),
+    ));
+}
+
 function sphinx_search_execute($search_arguments, &$error)
 {
     if (!isset($_SESSION['UID']) || !is_numeric($_SESSION['UID'])) return false;
@@ -62,6 +139,7 @@ function sphinx_search_execute($search_arguments, &$error)
     /** @var mysqli $sphinx */
     if (!($sphinx = sphinx_search_connect())) {
 
+        sphinx_search_record_status(false, gettext("Cannot connect to the Manticore / Sphinx search server using the settings you have specified."));
         $error = SEARCH_SPHINX_UNAVAILABLE;
         return false;
     }
@@ -184,8 +262,20 @@ function sphinx_search_execute($search_arguments, &$error)
     $sql = "SELECT *, WEIGHT() FROM $sphinx_search_index, $sphinx_search_index_delta ";
     $sql .= "$where_sql $group_sql $order_sql LIMIT 1000";
 
-    // Execute the query
-    if (!($result = $sphinx->query($sql))) return false;
+    // Execute the query. A query failure here (as opposed to a connection
+    // failure above) usually means the index hasn't been built yet - e.g.
+    // the search server never managed to reach its own database. Treat it
+    // as unavailable too, rather than failing the search with no error at
+    // all (the caller would otherwise see neither a Sphinx nor a MySQL
+    // fallback result).
+    if (!($result = @$sphinx->query($sql))) {
+
+        sphinx_search_record_status(false, gettext("Connected to the search server, but a search query against it failed - its index may not have been built yet."));
+        $error = SEARCH_SPHINX_UNAVAILABLE;
+        return false;
+    }
+
+    sphinx_search_record_status(true);
 
     // Check if we have any results
     if ($result->num_rows == 0) {

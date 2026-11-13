@@ -34,6 +34,24 @@ require_once BH_INCLUDE_PATH . 'sphinx.inc.php';
 require_once BH_INCLUDE_PATH . 'user.inc.php';
 // End Required includes
 
+// Cheap check for whether the search form should be offered at all - reads
+// the cached Manticore/Sphinx health status (updated by real search
+// attempts and by the admin settings page) rather than opening a connection
+// on every page load. MySQL full-text (when Sphinx is disabled) is always
+// considered available.
+function search_is_available(&$reason = null)
+{
+    if (forum_get_setting('sphinx_search_enabled', 'Y') !== true) return true;
+
+    if (forum_get_setting('sphinx_search_last_status', null, 'OK') === 'DOWN') {
+
+        $reason = forum_get_setting('sphinx_search_last_status_reason', null, '');
+        return false;
+    }
+
+    return true;
+}
+
 function search_execute($search_arguments, &$error)
 {
     if (!isset($_SESSION['UID']) || !is_numeric($_SESSION['UID'])) return false;
