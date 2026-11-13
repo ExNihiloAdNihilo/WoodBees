@@ -50,6 +50,13 @@
          and TAG) were missing from the installer's table list. New
          Install and Admin > Forums > Create now also notice those tables
          as conflicts.
+- Fixed: The MariaDB 11.4 minimum version was never enforced: the
+         check looked for "MariaDB" in a version string that had already
+         been cut down to its numbers, so every MariaDB was measured
+         against the MySQL 8.4 floor and MariaDB 10.x was accepted. New
+         db::is_mariadb(); the installer and the forum's start-up check
+         now refuse MariaDB older than 11.4 (MySQL older than 8.4 was
+         already refused).
 
 ## Date: Fri, 13 Nov 2026 (WoodBees Alpha 0.3)
 

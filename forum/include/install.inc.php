@@ -176,7 +176,10 @@ function install_check_mysql_version()
 {
     $mysql_version = db::get_version();
 
-    $min_version = ($mysql_version !== false && stripos($mysql_version, 'mariadb') !== false)
+    // get_version() drops the "-MariaDB..." suffix, so ask separately.
+    // Testing $mysql_version for "mariadb" (as this used to) never matched,
+    // which held MariaDB to the MySQL floor and let MariaDB 10.x through.
+    $min_version = db::is_mariadb()
         ? BEEHIVE_MARIADB_MIN_VERSION
         : BEEHIVE_MYSQL_MIN_VERSION;
 

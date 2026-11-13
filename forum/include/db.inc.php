@@ -32,6 +32,8 @@ class db extends mysqli
 
     protected static $connection;
 
+    protected static $version_data;
+
     public function __construct($host = null, $username = null, $password = null, $database = null, $port = null, $socket = null)
     {
         parent::__construct($host, $username, $password, $database, $port, $socket);
@@ -44,12 +46,56 @@ class db extends mysqli
         }
 
         self::$config = $config;
+
+        self::$version_data = null;
     }
 
+    /**
+     * The server's version as "major.minor.patch" (any suffix such as
+     * "-MariaDB-ubu2404" is dropped), or false. Use is_mariadb() to tell
+     * the engines apart.
+     */
     public static function get_version()
     {
+        if (!($version_data = self::get_version_data())) {
+            return false;
+        }
+
+        return self::format_version($version_data['version']);
+    }
+
+    /**
+     * True when the server is MariaDB, whose VERSION() carries "MariaDB"
+     * (e.g. "11.4.2-MariaDB-ubu2404"); false for MySQL or on error.
+     */
+    public static function is_mariadb()
+    {
+        if (!($version_data = self::get_version_data())) {
+            return false;
+        }
+
+        return (stripos($version_data['version'], 'mariadb') !== false);
+    }
+
+    protected static function get_version_data()
+    {
+        // One VERSION() query per request, shared by get_version() and
+        // is_mariadb() (install_check() calls both on every page).
+        if (isset(self::$version_data)) {
+            return self::$version_data;
+        }
+
         $db = db::get();
 
+        if (!($version_data = self::query_version_data($db))) {
+            return false;
+        }
+
+        return (self::$version_data = $version_data);
+    }
+
+    protected static function query_version_data($db)
+    {
         $sql = "SELECT VERSION() AS version";
 
         if (!($result = $db->query($sql))) {
@@ -64,10 +110,19 @@ class db extends mysqli
                 return false;
             }
 
-            $version_data = $result->fetch_assoc();
+            if (!($variable_data = $result->fetch_assoc())) {
+                return false;
+            }
+
+            $version_data = array('version' => $variable_data['Value']);
         }
 
-        $version_array = explode('.', $version_data['version']);
+        return $version_data;
+    }
+
+    protected static function format_version($version)
+    {
+        $version_array = explode('.', $version);
 
         if (!isset($version_array[0])) {
             $version_array[0] = 3;
