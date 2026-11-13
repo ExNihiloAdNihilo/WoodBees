@@ -4,9 +4,10 @@ A fork of Beehive Forum. See [docs/release.md](docs/release.md) for what's new i
 
 ## Database engine
 
-The bundled Docker setup supports either MariaDB or MySQL. It defaults to
-MariaDB 11.4; to use MySQL 8.4 instead, copy [.env.example](.env.example) to
-`.env` and uncomment the MySQL line before running `docker compose up`.
+Before running `docker compose up`, copy [.env.example](.env.example) to
+`.env` and set `DB_MODE`. There is no default - choose `mariadb` or `mysql`
+to have Docker provision that database for you, or `external` to connect
+WoodBees to a MariaDB/MySQL server you already run.
 
 [About](https://github.com/BeehiveForum/BeehiveForum/blob/master/docs/beehive.md)
 
