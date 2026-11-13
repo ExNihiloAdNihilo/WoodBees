@@ -66,6 +66,8 @@ function messages_get($tid, $pid = 1, $limit = 1)
     $sql .= "UNIX_TIMESTAMP(POST.EDITED) AS EDITED, POST.EDITED_BY, POST.IPADDRESS, POST.MOVED_TID, POST.MOVED_PID, ";
     $sql .= "UNIX_TIMESTAMP(POST.APPROVED) AS APPROVED, POST.APPROVED_BY, USER.LOGON AS FROM_LOGON, ";
     $sql .= "POST.ORIGIN_INSTANCE, POST.ORIGIN_AUTHOR, ";
+    $sql .= "(SELECT MIN(POST_SEARCH_ID.SID) FROM `{$table_prefix}POST_SEARCH_ID` POST_SEARCH_ID ";
+    $sql .= "WHERE POST_SEARCH_ID.TID = POST.TID AND POST_SEARCH_ID.PID = POST.PID) AS SID, ";
     $sql .= "COALESCE(USER_PEER.PEER_NICKNAME, USER.NICKNAME) AS FROM_NICKNAME, USER_PEER.RELATIONSHIP AS RELATIONSHIP, ";
     $sql .= "USER_PREFS_GLOBAL.ANON_LOGON, COALESCE(USER_PREFS_FORUM.AVATAR_URL, USER_PREFS_GLOBAL.AVATAR_URL) AS AVATAR_URL, ";
     $sql .= "THREAD.BY_UID AS THREAD_BY_UID, COALESCE(USER_PREFS_FORUM.AVATAR_AID, USER_PREFS_GLOBAL.AVATAR_AID) AS AVATAR_AID, ";
@@ -868,13 +870,17 @@ function message_display($tid, $message, $msg_count, $first_msg, $folder_fid, $i
 
             $title = ($message['PID'] == 1) ? "" . gettext("Permanent link to this thread") . " ($tid.1)" : "" . gettext("Link to this post");
 
+            // Comment links carry the comment's stable id so they still find
+            // it if the thread is later renumbered (see message_stable_link_param()).
+            $stable_param = ($message['PID'] > 1) ? message_stable_link_param(isset($message['SID']) ? $message['SID'] : null) : '';
+
             if ($is_preview) {
 
-                echo "<a href=\"messages.php?webtag=$webtag&amp;msg=$tid.{$message['PID']}\" target=\"_blank\" title=\"$title\">$tid.{$message['PID']}</a>";
+                echo "<a href=\"messages.php?webtag=$webtag&amp;msg=$tid.{$message['PID']}$stable_param\" target=\"_blank\" title=\"$title\">$tid.{$message['PID']}</a>";
 
             } else {
 
-                echo "<a href=\"index.php?webtag=$webtag&amp;msg=$tid.{$message['PID']}\" target=\"", html_get_top_frame_name(), "\" title=\"$title\">$tid.{$message['PID']}</a>";
+                echo "<a href=\"index.php?webtag=$webtag&amp;msg=$tid.{$message['PID']}$stable_param\" target=\"", html_get_top_frame_name(), "\" title=\"$title\">$tid.{$message['PID']}</a>";
             }
 
             if ($message['REPLY_TO_PID'] > 0) {

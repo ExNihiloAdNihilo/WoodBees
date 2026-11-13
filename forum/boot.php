@@ -146,3 +146,7 @@ if (!forum_check_guest_access_allowed()) {
 
 // Check CSRF Token
 form_check_csrf_token();
+
+// Comment links carry a stable id (c=) that survives renumbering; point
+// msg at the comment's current number.
+forum_resolve_stable_msg_link();

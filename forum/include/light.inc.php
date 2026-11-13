@@ -1860,7 +1860,9 @@ function light_message_display($tid, $message, $msg_count, $first_msg, $folder_f
         if ($in_list && $msg_count > 0) {
 
             echo "<div class=\"message_links\">\n";
-            echo "<a href=\"lmessages.php?webtag=$webtag&amp;msg=$tid.{$message['PID']}\">$tid.{$message['PID']}</a>";
+            $stable_param = ($message['PID'] > 1) ? message_stable_link_param(isset($message['SID']) ? $message['SID'] : null) : '';
+
+            echo "<a href=\"lmessages.php?webtag=$webtag&amp;msg=$tid.{$message['PID']}$stable_param\">$tid.{$message['PID']}</a>";
 
             if ($message['REPLY_TO_PID'] > 0) {
 

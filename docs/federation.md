@@ -174,14 +174,29 @@ for the origins it claims for re-shared comments. Per-comment signatures
   not read, so the imported comments show as unread. This runs under
   `LOCK TABLES`, so a reply posted at the same moment can't take a number
   mid-way.
-- **Old links to individual comments can't be redirected.** After a
-  renumbering every number in the thread is in use again, so a link made
-  earlier to, say, comment 3 can't be told apart from a new one. The
-  thread page instead shows a note: "Comments from N on were renumbered on
-  <date> ...", from the per-forum `RESEQUENCE_LOG` table. Links to the
-  thread itself, and to comments before N, are unaffected. When the
-  imported comments are all newer, nothing is renumbered and no note
-  appears. Poll threads, and installs whose database user lacks the
+- **Links to comments.**
+  - *Links the forum hands out* (the comment number link in each comment's
+    header, in normal and light mode, and notification emails) carry the
+    comment's stable id as well, e.g. `msg=12.5&c=345` (`c` =
+    `POST_SEARCH_ID.SID`, which renumbering keeps). Every request resolves
+    `msg` + `c` to the comment's current number (same thread only), so
+    these links survive any number of renumberings. Comment 1's link is the
+    thread's permanent link and stays `msg=<tid>.1`.
+  - *Links inside comment text* (in this forum) to a renumbered comment are
+    rewritten to the new number while the thread is renumbered. Links that
+    name another forum's webtag are left alone.
+  - *Links given out earlier without an id* (bookmarks, older emails,
+    links on other sites) can't be redirected automatically: after a
+    renumbering every number in the thread is in use again, so an old link
+    to comment 3 can't be told apart from a new one. The thread page shows
+    a note: "Comments from N on were renumbered on <date> ...". When a page
+    is opened by a renumbered number without an id, the note adds "If your
+    link to 12.3 was made before <date>, that comment is now 12.5", with a
+    link. That uses the old-to-new mapping stored for each renumbering
+    (`RESEQUENCE_LOG.MAPPING`), and chains through several renumberings.
+  - Links to the thread itself, and to comments before N, are unaffected.
+    When the imported comments are all newer, nothing is renumbered and no
+    note appears. Poll threads, and installs whose database user lacks the
   `LOCK TABLES` privilege, fall back to appending; the import result says
   so.
 - **Duplicates are skipped**: a comment whose `(origin, ref)` already exists
@@ -268,7 +283,8 @@ you want it kept out.
 - Per forum: `IMPORT_LOG` (primary key `BUNDLE_ID`); `REDACTION_LOG`
   (primary key `ITEM_TYPE, TID, PID`; `ITEM_TYPE` T = thread, P = comment,
   G = tag with `TID` = tag id); `RESEQUENCE_LOG` (one row per date-order
-  renumbering: thread, time, first renumbered comment, bundle, admin).
+  renumbering: thread, time, first renumbered comment, bundle, admin, and
+  `MAPPING` = the `old:new` comment number pairs).
 - Global: `TRUSTED_INSTANCE` (unique `IDENTIFIER`).
 
 New installs create these; the installer's Upgrade method adds them to an

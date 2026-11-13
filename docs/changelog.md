@@ -20,6 +20,11 @@
          (e.g. federation placeholder authors) were missing from the
          RSS feed, the sitemap and most thread-list views other than
          All/Unread Discussions.
+- Added: Comment links the forum hands out (comment number links, light
+         mode, notification emails) carry a stable comment id (c=), so
+         they keep working after a thread is renumbered. Links in comment
+         text are rewritten during renumbering, and opening a renumbered
+         number without an id shows where an older link's comment is now.
 - Changed: Importing comments that are older than ones already in a
            merged thread now renumbers the thread into date order
            instead of appending them at the end; read positions,

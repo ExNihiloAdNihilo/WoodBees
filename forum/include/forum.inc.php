@@ -1241,6 +1241,7 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
         $sql .= "  FIRST_PID MEDIUMINT(8) UNSIGNED NOT NULL,";
         $sql .= "  BUNDLE_ID VARCHAR(64) NOT NULL,";
         $sql .= "  RESEQUENCED_BY MEDIUMINT(8) UNSIGNED NOT NULL,";
+        $sql .= "  MAPPING TEXT,";
         $sql .= "  PRIMARY KEY (RID),";
         $sql .= "  KEY TID (TID)";
         $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
@@ -2364,4 +2365,83 @@ function forum_check_maintenance()
     $new_forum_settings['forum_maintenance_function'] = $forum_maintenance_function;
 
     forum_save_global_settings($new_forum_settings);
+}
+
+/* Stable comment links ------------------------------------------------
+ *
+ * A comment's number (tid.pid) is also its position, and federation
+ * imports can renumber a thread into date order. Links the forum hands out
+ * for a comment therefore also carry the comment's stable id
+ * (POST_SEARCH_ID.SID, which renumbering keeps) as "c=". At the start of
+ * every request forum_resolve_stable_msg_link() turns msg + c back into
+ * the comment's current number.
+ */
+
+/**
+ * "&c=<sid>" (HTML-escaped by default) for a comment link, or ''.
+ *
+ * @param mixed $sid
+ * @param bool  $html
+ * @return string
+ */
+function message_stable_link_param($sid, $html = true)
+{
+    if (!is_numeric($sid) || $sid < 1) return '';
+
+    return ($html ? '&amp;' : '&') . 'c=' . intval($sid);
+}
+
+/**
+ * A comment's stable id.
+ *
+ * @param int $tid
+ * @param int $pid
+ * @return int|false
+ */
+function message_get_stable_id($tid, $pid)
+{
+    if (!is_numeric($tid) || !is_numeric($pid)) return false;
+
+    if (!$db = db::get()) return false;
+
+    if (!($table_prefix = get_table_prefix())) return false;
+
+    $sql = "SELECT MIN(SID) FROM `{$table_prefix}POST_SEARCH_ID` WHERE TID = '" . intval($tid) . "' AND PID = '" . intval($pid) . "'";
+
+    if (!($result = $db->query($sql))) return false;
+
+    list($sid) = $result->fetch_row();
+
+    return is_numeric($sid) ? intval($sid) : false;
+}
+
+/**
+ * If the request has msg=<tid>.<pid> plus c=<sid>, point msg at that
+ * comment's current number (same thread only). Sets
+ * $GLOBALS['BH_MSG_LINK_STABLE'] when msg is known to be exact, so the
+ * renumbering hint on the thread page isn't needed.
+ */
+function forum_resolve_stable_msg_link()
+{
+    if (!isset($_GET['msg'], $_GET['c']) || !is_string($_GET['msg']) || !is_numeric($_GET['c'])) return;
+
+    if (!preg_match('/^(\d+)\.(\d+)$/D', $_GET['msg'], $matches)) return;
+
+    if (!$db = db::get()) return;
+
+    if (!($table_prefix = get_table_prefix())) return;
+
+    $sid = intval($_GET['c']);
+
+    $sql = "SELECT TID, PID FROM `{$table_prefix}POST_SEARCH_ID` WHERE SID = '$sid' LIMIT 1";
+
+    if (!($result = $db->query($sql)) || $result->num_rows == 0) return;
+
+    list($tid, $pid) = $result->fetch_row();
+
+    if (intval($tid) != intval($matches[1])) return;
+
+    $_GET['msg'] = $_REQUEST['msg'] = intval($tid) . '.' . intval($pid);
+
+    $GLOBALS['BH_MSG_LINK_STABLE'] = true;
 }

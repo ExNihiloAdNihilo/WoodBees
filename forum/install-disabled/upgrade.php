@@ -1027,11 +1027,16 @@ foreach ($forum_prefix_array as $forum_fid => $table_data) {
         $sql .= "  FIRST_PID MEDIUMINT(8) UNSIGNED NOT NULL,";
         $sql .= "  BUNDLE_ID VARCHAR(64) NOT NULL,";
         $sql .= "  RESEQUENCED_BY MEDIUMINT(8) UNSIGNED NOT NULL,";
+        $sql .= "  MAPPING TEXT,";
         $sql .= "  PRIMARY KEY (RID),";
         $sql .= "  KEY TID (TID)";
         $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
 
         $db->query($sql);
+    }
+
+    if (!install_column_exists($config['db_database'], "{$table_data['WEBTAG']}_RESEQUENCE_LOG", 'MAPPING')) {
+        $db->query("ALTER TABLE `{$table_data['PREFIX']}RESEQUENCE_LOG` ADD COLUMN MAPPING TEXT");
     }
 
     // utf8mb4-readiness: shrink indexed VARCHAR(255) columns to widths that

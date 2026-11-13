@@ -175,12 +175,30 @@ echo "  </tr>\n";
 // older links to individual comments in this thread may be off.
 if (($resequence = thread_get_last_resequence($tid)) !== false) {
 
-    echo "  <tr>\n";
-    echo "    <td align=\"left\" colspan=\"2\"><span class=\"smallertext\">", sprintf(
-        gettext("Comments from %s on were renumbered on %s, when comments imported from another instance were merged in date order. Links to individual comments made before then may point to a neighbouring comment."),
+    $resequence_note = sprintf(
+        gettext("Comments from %s on were renumbered on %s, when comments imported from another instance were merged in date order."),
         intval($resequence['FIRST_PID']),
         format_date_time($resequence['RESEQUENCED'])
-    ), "</span></td>\n";
+    );
+
+    // Opened by number only (no stable c= id, e.g. a link handed out before
+    // the renumbering): say where that number's comment is now.
+    $old_link_targets = empty($GLOBALS['BH_MSG_LINK_STABLE']) ? thread_resequence_old_link_targets($tid, $pid) : array();
+
+    foreach ($old_link_targets as $old_link_target) {
+
+        $now_msg = "$tid." . intval($old_link_target['NOW_PID']);
+
+        $resequence_note .= ' ' . sprintf(
+            gettext("If your link to %s was made before %s, that comment is now %s."),
+            "$tid." . intval($pid),
+            format_date_time($old_link_target['RESEQUENCED']),
+            "<a href=\"messages.php?webtag=$webtag&amp;msg=$now_msg\" target=\"_self\">$now_msg</a>"
+        );
+    }
+
+    echo "  <tr>\n";
+    echo "    <td align=\"left\" colspan=\"2\"><span class=\"smallertext\" id=\"resequence_note\">", $resequence_note, "</span></td>\n";
     echo "  </tr>\n";
 }
 

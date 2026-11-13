@@ -93,7 +93,7 @@ function email_send_notification($tid, $pid)
 
         $thread_title = word_filter_apply($email_data['THREAD_TITLE'], $email_data['UID'], true);
 
-        $message_link = htmlentities_array(html_get_forum_uri("index.php?webtag=$webtag&msg=$tid.$pid"));
+        $message_link = htmlentities_array(html_get_forum_uri("index.php?webtag=$webtag&msg=$tid.$pid" . (($pid > 1) ? message_stable_link_param(message_get_stable_id($tid, $pid), false) : '')));
 
         $forum_link = htmlentities_array(html_get_forum_uri("index.php?webtag=$webtag&final_uri=edit_email.php%3Fwebtag%3D$webtag"));
 
@@ -198,7 +198,7 @@ function email_send_thread_subscription($tid, $pid)
 
         $thread_title = word_filter_apply($email_data['THREAD_TITLE'], $email_data['UID'], true);
 
-        $message_link = htmlentities_array(html_get_forum_uri("index.php?webtag=$webtag&msg=$tid.$pid"));
+        $message_link = htmlentities_array(html_get_forum_uri("index.php?webtag=$webtag&msg=$tid.$pid" . (($pid > 1) ? message_stable_link_param(message_get_stable_id($tid, $pid), false) : '')));
 
         $message = Swift_MessageBeehive::newInstance();
 
@@ -304,7 +304,7 @@ function email_send_folder_subscription($tid, $pid)
 
         $forum_link = htmlentities_array(html_get_forum_uri("index.php?webtag=$webtag&final_uri=folder_subscriptions.php%3Fwebtag%3D$webtag"));
 
-        $message_link = htmlentities_array(html_get_forum_uri("index.php?webtag=$webtag&msg=$tid.$pid"));
+        $message_link = htmlentities_array(html_get_forum_uri("index.php?webtag=$webtag&msg=$tid.$pid" . (($pid > 1) ? message_stable_link_param(message_get_stable_id($tid, $pid), false) : '')));
 
         $message = Swift_MessageBeehive::newInstance();
 

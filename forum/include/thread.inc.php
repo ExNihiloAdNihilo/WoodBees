@@ -674,6 +674,58 @@ function thread_get_last_resequence($tid)
     return $result->fetch_assoc();
 }
 
+/**
+ * For a request that named comment <pid> of a renumbered thread without a
+ * stable id, what that number meant before each renumbering.
+ *
+ * Renumberings are applied oldest first: a link made before renumbering k
+ * used the numbering in force then, so its comment is now
+ * map_last(... map_k(pid)).
+ *
+ * @param int $tid
+ * @param int $pid
+ * @return array list of ['RESEQUENCED' => unix time, 'NOW_PID' => int], newest renumbering first
+ */
+function thread_resequence_old_link_targets($tid, $pid)
+{
+    if (!$db = db::get()) return array();
+
+    if (!($table_prefix = get_table_prefix())) return array();
+
+    $sql = "SELECT UNIX_TIMESTAMP(RESEQUENCED) AS RESEQUENCED, MAPPING FROM `{$table_prefix}RESEQUENCE_LOG` ";
+    $sql .= "WHERE TID = '" . intval($tid) . "' ORDER BY RID";
+
+    if (!($result = $db->query($sql))) return array();
+
+    $maps = array();
+
+    while (($row = $result->fetch_assoc()) !== null) {
+
+        $map = array();
+
+        foreach (explode(',', (string) $row['MAPPING']) as $pair) {
+            if (preg_match('/^(\d+):(\d+)$/D', $pair, $matches)) $map[intval($matches[1])] = intval($matches[2]);
+        }
+
+        $maps[] = array('RESEQUENCED' => intval($row['RESEQUENCED']), 'MAP' => $map);
+    }
+
+    $targets = array();
+
+    foreach ($maps as $k => $entry) {
+
+        $now = intval($pid);
+
+        for ($i = $k; $i < sizeof($maps); $i++) {
+            if (isset($maps[$i]['MAP'][$now])) $now = $maps[$i]['MAP'][$now];
+        }
+
+        if ($now != $pid) $targets[] = array('RESEQUENCED' => $entry['RESEQUENCED'], 'NOW_PID' => $now);
+    }
+
+    return array_reverse($targets);
+}
+
 function thread_merge($tida, $tidb, $merge_type, &$error_str)
 {
     if (!$db = db::get()) return false;

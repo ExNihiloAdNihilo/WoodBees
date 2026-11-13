@@ -1296,6 +1296,8 @@ function federation_thread_resequence($tid, $prev_length, $bundle_id)
 
     $uid = federation_current_uid();
 
+    $webtag = get_webtag();
+
     $current_datetime = date(MYSQL_DATETIME, time());
 
     $tables = array('POST', 'POST_CONTENT', 'POST_RATING', 'POST_RECIPIENT', 'POST_SEARCH_ID', 'POST_TAG', 'TAG', 'THREAD', 'USER_THREAD', 'REDACTION_LOG', 'RESEQUENCE_LOG');
@@ -1411,10 +1413,41 @@ function federation_thread_resequence($tid, $prev_length, $bundle_id)
             }
         }
 
+        // Links to this thread's renumbered comments inside comment text
+        // (any thread of this forum) are pointed at the new numbers.
+        $msg_like = $db->escape("msg=$tid.");
+
+        if (($result = $db->query("SELECT TID, PID, CONTENT FROM `{$table_prefix}POST_CONTENT` WHERE CONTENT LIKE '%$msg_like%'"))) {
+
+            $content_rows = array();
+
+            while (($row = $result->fetch_assoc()) !== null) $content_rows[] = $row;
+
+            foreach ($content_rows as $row) {
+
+                $rewritten = federation_rewrite_msg_links($row['CONTENT'], $tid, $changed, $webtag, $link_count);
+
+                if ($link_count == 0) continue;
+
+                $sql = "UPDATE `{$table_prefix}POST_CONTENT` SET CONTENT = '" . $db->escape($rewritten) . "' ";
+                $sql .= "WHERE TID = '" . intval($row['TID']) . "' AND PID = '" . intval($row['PID']) . "'";
+
+                $db->query($sql);
+            }
+        }
+
         $first_changed = min($changed);
 
-        $sql = "INSERT INTO `{$table_prefix}RESEQUENCE_LOG` (TID, RESEQUENCED, FIRST_PID, BUNDLE_ID, RESEQUENCED_BY) ";
-        $sql .= "VALUES ('$tid', CAST('$current_datetime' AS DATETIME), '$first_changed', '$bundle_id_escaped', '$uid')";
+        // old:new pairs, so a link given out before today can still be
+        // matched to its comment on the thread page.
+        $mapping = array();
+
+        foreach ($changed as $old_pid => $new_pid) $mapping[] = "$old_pid:$new_pid";
+
+        $mapping_escaped = $db->escape(implode(',', $mapping));
+
+        $sql = "INSERT INTO `{$table_prefix}RESEQUENCE_LOG` (TID, RESEQUENCED, FIRST_PID, BUNDLE_ID, RESEQUENCED_BY, MAPPING) ";
+        $sql .= "VALUES ('$tid', CAST('$current_datetime' AS DATETIME), '$first_changed', '$bundle_id_escaped', '$uid', '$mapping_escaped')";
 
         $db->query($sql);
 
@@ -1424,6 +1457,46 @@ function federation_thread_resequence($tid, $prev_length, $bundle_id)
 
         $db->query('UNLOCK TABLES');
     }
+}
+
+/**
+ * Point links to renumbered comments of thread $tid (msg=<tid>.<pid>, also
+ * return_msg=...) at their new numbers. A link naming another forum's
+ * webtag is left alone.
+ *
+ * @param string $content
+ * @param int    $tid
+ * @param array  $changed old pid => new pid
+ * @param string $webtag  this forum's webtag
+ * @param int    $count   links rewritten
+ * @return string
+ */
+function federation_rewrite_msg_links($content, $tid, array $changed, $webtag, &$count = 0)
+{
+    $count = 0;
+
+    if (!is_string($content) || strlen($content) == 0) return $content;
+
+    // Each URL-ish token that contains msg=<tid>.<pid>.
+    return preg_replace_callback('/[^\s"\'<>]*msg=' . intval($tid) . '\.\d+[^\s"\'<>]*/u', function ($token) use ($tid, $changed, $webtag, &$count) {
+
+        if (preg_match('/webtag=([^&\s"\'<>#]+)/i', $token[0], $webtag_match) && strcasecmp(rawurldecode($webtag_match[1]), $webtag) !== 0) {
+            return $token[0];
+        }
+
+        return preg_replace_callback('/msg=' . intval($tid) . '\.(\d+)(?!\d)/', function ($msg) use ($tid, $changed, &$count) {
+
+            $pid = intval($msg[1]);
+
+            if (!isset($changed[$pid])) return $msg[0];
+
+            $count++;
+
+            return 'msg=' . intval($tid) . '.' . $changed[$pid];
+
+        }, $token[0]);
+
+    }, $content);
 }
 
 /* ------------------------------------------------------------------ */
