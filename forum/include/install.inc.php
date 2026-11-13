@@ -113,7 +113,7 @@ function install_check_mysql_version()
         echo "                  <td align=\"center\">\n";
         echo "                    <table class=\"posthead\" width=\"95%\">\n";
         echo "                      <tr>\n";
-        echo "                        <td align=\"left\">MySQL Server Version ", BEEHIVE_MYSQL_MIN_VERSION, " or newer is required to run WoodBees. Please upgrade your MySQL installtion.</td>\n";
+        echo "                        <td align=\"left\">MySQL 8.4 or MariaDB 11.4 (or newer) is required to run WoodBees. Please upgrade your database server.</td>\n";
         echo "                      </tr>\n";
         echo "                      <tr>\n";
         echo "                        <td align=\"left\">&nbsp;</td>\n";

@@ -35,7 +35,11 @@ define('BEEHIVE_DOB', 1018220400);
 
 // Minimum requirements.
 define('BEEHIVE_PHP_MIN_VERSION', '7.4.0');
-define('BEEHIVE_MYSQL_MIN_VERSION', '5.7.0');
+// A single numeric floor, not an engine-aware check: MariaDB's VERSION()
+// output (e.g. "11.4.2-MariaDB") numerically exceeds this either way, so one
+// threshold covers both of the engines WoodBees actually tests and ships -
+// MySQL 8.4 and MariaDB 11.4. See the install.inc.php message this backs.
+define('BEEHIVE_MYSQL_MIN_VERSION', '8.4.0');
 
 // Require PHP extensions
 define('BEEHIVE_PHP_REQUIRED_EXT', 'curl,date,exif,fileinfo,gd,gettext,intl,json,mbstring,mysqli,pcre,xml');
