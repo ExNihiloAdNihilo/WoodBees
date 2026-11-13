@@ -1,5 +1,12 @@
 # Beehive Forum Change Log (Generated: Tue, 23 Aug 2016 20:25:51)
 
+## Date: Fri, 13 Nov 2026 (unreleased)
+
+- Changed: include/config.inc.php is no longer tracked by git; a
+           missing config file now sends you to the installer folder
+           (install or install-disabled). Back up your config.inc.php
+           before pulling this change - git removes it.
+
 ## Date: Fri, 13 Nov 2026
 
 - Changed: DB_MODE is now a required .env setting (mariadb, mysql, or

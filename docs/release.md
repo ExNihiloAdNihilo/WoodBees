@@ -4,6 +4,10 @@ Everything below "What's new in 1.5.2" and older is the inherited
 Beehive Forum changelog, kept as the historical record of the engine
 WoodBees is built on.
 
+## Unreleased
+
+- `forum/include/config.inc.php` is no longer tracked by git (it is now in `.gitignore`), so credentials you type into the installer can't be committed by accident. A fresh clone with no `config.inc.php` is redirected to the installer. **If you already run WoodBees from a git checkout, copy `forum/include/config.inc.php` somewhere safe before pulling this change** - git deletes the file from your working tree when it stops being tracked. Copy it back afterwards, or run the installer's Reconnect method to regenerate it.
+
 ## What's new in WoodBees Alpha 0.2 (Released 13th November 2026)
 
 Changes from Alpha 0.1:
