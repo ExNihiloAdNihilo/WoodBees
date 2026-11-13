@@ -68,6 +68,12 @@ services:
     volumes:
       - ./docker/manticore:/woodbees:ro
       - manticore_data:/var/lib/manticore
+      # The image also declares /usr/local/lib/manticore (its plugin dir) as
+      # a volume. Left unbound, Docker creates a fresh anonymous volume for
+      # it on every container recreation and never cleans up the old one -
+      # confirmed to accumulate across repeated `down`/`up` cycles. Binding
+      # it explicitly, same as the data dir above, stops the leak.
+      - manticore_plugins:/usr/local/lib/manticore
     environment:
       MANTICORE_WEBTAG: WOODBEES
       # Passed through so entrypoint.sh can warn loudly if DB_MODE=external
@@ -88,3 +94,4 @@ services:
 volumes:
   db_data:
   manticore_data:
+  manticore_plugins:
