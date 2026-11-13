@@ -1165,7 +1165,8 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
         $sql .= "  SID MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT,";
         $sql .= "  TID MEDIUMINT(8) UNSIGNED NOT NULL,";
         $sql .= "  PID MEDIUMINT(8) UNSIGNED NOT NULL,";
-        $sql .= "  PRIMARY KEY  (SID,TID,PID)";
+        $sql .= "  PRIMARY KEY  (SID,TID,PID),";
+        $sql .= "  KEY TID_PID (TID,PID)";
         $sql .= ") ENGINE=MYISAM  DEFAULT CHARSET=UTF8";
 
         $db->query($sql);

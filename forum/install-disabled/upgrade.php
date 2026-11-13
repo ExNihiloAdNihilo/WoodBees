@@ -483,7 +483,8 @@ foreach ($forum_prefix_array as $forum_fid => $table_data) {
     $sql .= "  SID MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT,";
     $sql .= "  TID MEDIUMINT(8) UNSIGNED NOT NULL,";
     $sql .= "  PID MEDIUMINT(8) UNSIGNED NOT NULL,";
-    $sql .= "  PRIMARY KEY  (SID,TID,PID)";
+    $sql .= "  PRIMARY KEY  (SID,TID,PID),";
+    $sql .= "  KEY TID_PID (TID,PID)";
     $sql .= ") ENGINE=MYISAM  DEFAULT CHARSET=UTF8";
 
     $db->query($sql);
@@ -940,6 +941,14 @@ foreach ($forum_prefix_array as $forum_fid => $table_data) {
 
     if (!install_index_exists($config['db_database'], "{$table_data['WEBTAG']}_THREAD", 'TITLE_LOOKUP')) {
         $db->query("ALTER TABLE `{$table_data['PREFIX']}THREAD` ADD KEY TITLE_LOOKUP (TITLE)");
+    }
+
+    // Lookup of a comment's stable id (SID) by thread and position, used by
+    // every thread view since Alpha 0.3. Without it each comment shown costs a
+    // full scan of POST_SEARCH_ID. (The table is rebuilt with the key above;
+    // this keeps the key in place if that rebuild is ever made conditional.)
+    if (!install_index_exists($config['db_database'], "{$table_data['WEBTAG']}_POST_SEARCH_ID", 'TID_PID')) {
+        $db->query("ALTER TABLE `{$table_data['PREFIX']}POST_SEARCH_ID` ADD KEY TID_PID (TID, PID)");
     }
 
     // Instance-of-origin marker for content imported from other forums.
