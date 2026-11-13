@@ -458,6 +458,7 @@ function install_get_table_names(&$global_tables, &$forum_tables)
             'POST_SEARCH_ID',
             'PROFILE_ITEM',
             'PROFILE_SECTION',
+            'REDACTION_LOG',
             'RSS_FEEDS',
             'RSS_HISTORY',
             'STATS',

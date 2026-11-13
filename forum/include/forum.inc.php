@@ -1214,6 +1214,24 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
 
         $db->query($sql);
 
+        // Federation: what an instance-redaction "hide" changed, so the
+        // Restore button can put back exactly that. ITEM_TYPE is T (thread),
+        // P (comment, TID.PID) or G (tag, TID = tag id).
+        $sql = "CREATE TABLE `{$forum_table_prefix}REDACTION_LOG` (";
+        $sql .= "  ITEM_TYPE CHAR(1) NOT NULL,";
+        $sql .= "  TID MEDIUMINT(8) UNSIGNED NOT NULL,";
+        $sql .= "  PID MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT 0,";
+        $sql .= "  ORIGIN_INSTANCE VARCHAR(64) NOT NULL,";
+        $sql .= "  APPROVED DATETIME DEFAULT NULL,";
+        $sql .= "  APPROVED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
+        $sql .= "  HIDDEN DATETIME NOT NULL,";
+        $sql .= "  HIDDEN_BY MEDIUMINT(8) UNSIGNED NOT NULL,";
+        $sql .= "  PRIMARY KEY (ITEM_TYPE, TID, PID),";
+        $sql .= "  KEY ORIGIN_INSTANCE (ORIGIN_INSTANCE)";
+        $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
+
+        $db->query($sql);
+
         $sql = "CREATE TABLE `{$forum_table_prefix}PROFILE_ITEM` (";
         $sql .= "  PIID MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT,";
         $sql .= "  PSID MEDIUMINT(8) UNSIGNED NOT NULL,";
@@ -1744,6 +1762,7 @@ function forum_delete_tables($webtag, $database_name)
         'POST_TAG',
         'PROFILE_ITEM',
         'PROFILE_SECTION',
+        'REDACTION_LOG',
         'RSS_FEEDS',
         'RSS_HISTORY',
         'STATS',

@@ -393,6 +393,7 @@ define('FEDERATION_REDACT', 86);
 define('FEDERATION_TRUST', 87);
 define('FEDERATION_UNTRUST', 88);
 define('FEDERATION_FORGET', 89);
+define('FEDERATION_RESTORE', 90);
 
 // Federation: PASSWD value of the non-login placeholder accounts that own
 // imported comments. No password hash can ever equal it.

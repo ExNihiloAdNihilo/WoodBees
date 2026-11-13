@@ -9,11 +9,15 @@
          threads with the same address; Admin > Instance Redaction hides
          or deletes another instance's content comment by comment. See
          docs/federation.md.
+- Added: Restore button on Admin > Instance Redaction. It puts back
+         exactly what a Hide redaction changed (threads undeleted,
+         original comment and tag approvals) and leaves alone anything a
+         moderator has dealt with since.
 - Added: Per-install Ed25519 signing key, kept outside the web root on
          the new instance_keys Docker volume (WOODBEES_KEY_DIR).
 - Changed: New POST.ORIGIN_AUTHOR / POST.ORIGIN_REF columns and
-           IMPORT_LOG / TRUSTED_INSTANCE tables; run the installer's
-           Upgrade method on existing installs.
+           IMPORT_LOG / REDACTION_LOG / TRUSTED_INSTANCE tables; run the
+           installer's Upgrade method on existing installs.
 - Fixed: Installer Upgrade method failing with an SQL syntax error
          (missing backtick in the POST_SEARCH_ID TRUNCATE).
 - Changed: Database engine is now picked by a Compose file

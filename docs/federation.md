@@ -185,9 +185,33 @@ Because merged threads mix local and imported comments, redaction works
 
 | | Hide (reversible) | Delete (permanent) |
 | --- | --- | --- |
-| Threads made up only of that origin's comments | `THREAD.DELETED = 'Y'` (undelete to restore) | purged |
-| That origin's comments in other threads | `POST.APPROVED = NULL`: shown as awaiting approval, listed in the Post Approval Queue (approve to restore) | content, author name and tags removed; the row stays as a "deleted" tombstone |
-| Tags the origin introduced (`TAG.ORIGIN_INSTANCE`) | de-approved (re-approve in the Tag Approval Queue) | deleted |
+| Threads made up only of that origin's comments | `THREAD.DELETED = 'Y'` | purged |
+| That origin's comments (all threads) | `POST.APPROVED = NULL`: shown as awaiting approval, listed in the Post Approval Queue | in mixed threads: content, author name and tags removed; the row stays as a "deleted" tombstone |
+| Tags the origin introduced (`TAG.ORIGIN_INSTANCE`) | de-approved | deleted |
+
+Hide only touches what is currently visible: comments and tags that were
+already awaiting approval, and threads already deleted, are left as they are.
+
+### Restore
+
+Every change a hide makes is recorded in the per-forum `REDACTION_LOG`
+table (item, origin, the comment's or tag's original approval time and
+approver, who hid it and when). The redaction page lists each origin with
+hidden content and its counts, with a **Restore** button (asks for
+confirmation). Restore:
+
+- undeletes the hidden threads that are still deleted;
+- gives the hidden comments and tags that are still unapproved their
+  original `APPROVED` / `APPROVED_BY` back;
+- leaves alone anything a moderator has since approved, undeleted or
+  deleted by hand, and never approves anything that was pending before
+  the hide;
+- then clears that origin's log rows, and is written to the admin log.
+
+Restore covers everything hidden for the origin, whatever the scope of
+each hide. A **delete** clears the origin's log rows (all of them, or the
+tag rows for a tags-only delete), so deleted content is never offered for
+restore.
 
 Tombstones keep `ORIGIN_INSTANCE`/`ORIGIN_REF`, which keeps thread numbering
 intact and stops a later bundle from silently re-importing those comments.
@@ -201,7 +225,9 @@ you want it kept out.
   (`VARCHAR(64)`, NULL = born here) - from Alpha 0.1.
 - `POST.ORIGIN_AUTHOR VARCHAR(64)`, `POST.ORIGIN_REF VARCHAR(64)`, key
   `ORIGIN_REF (ORIGIN_INSTANCE, ORIGIN_REF)`.
-- Per forum: `IMPORT_LOG` (primary key `BUNDLE_ID`).
+- Per forum: `IMPORT_LOG` (primary key `BUNDLE_ID`); `REDACTION_LOG`
+  (primary key `ITEM_TYPE, TID, PID`; `ITEM_TYPE` T = thread, P = comment,
+  G = tag with `TID` = tag id).
 - Global: `TRUSTED_INSTANCE` (unique `IDENTIFIER`).
 
 New installs create these; the installer's Upgrade method adds them to an

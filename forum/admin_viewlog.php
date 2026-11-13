@@ -135,6 +135,7 @@ $admin_log_type_array = array(
     FEDERATION_TRUST => gettext("Trusted Instance"),
     FEDERATION_UNTRUST => gettext("Untrusted Instance"),
     FEDERATION_FORGET => gettext("Forgot Instance Key"),
+    FEDERATION_RESTORE => gettext("Instance Restore"),
 );
 
 $admin_log_group_type_array = array(
@@ -865,6 +866,11 @@ if (sizeof($admin_log_array['admin_log_array']) > 0) {
             case FEDERATION_FORGET:
 
                 $action_text = sprintf(gettext("Forgot the pinned key of instance '%s'"), $entry_array[0]);
+                break;
+
+            case FEDERATION_RESTORE:
+
+                $action_text = sprintf(gettext("Restored hidden content from '%s': %s threads, %s comments, %s tags"), $entry_array[0], $entry_array[1], $entry_array[2], $entry_array[3]);
                 break;
 
             case APPROVED_TAG:

@@ -1000,6 +1000,24 @@ foreach ($forum_prefix_array as $forum_fid => $table_data) {
         $db->query($sql);
     }
 
+    if (!install_table_exists($config['db_database'], "{$table_data['WEBTAG']}_REDACTION_LOG")) {
+
+        $sql = "CREATE TABLE `{$table_data['PREFIX']}REDACTION_LOG` (";
+        $sql .= "  ITEM_TYPE CHAR(1) NOT NULL,";
+        $sql .= "  TID MEDIUMINT(8) UNSIGNED NOT NULL,";
+        $sql .= "  PID MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT 0,";
+        $sql .= "  ORIGIN_INSTANCE VARCHAR(64) NOT NULL,";
+        $sql .= "  APPROVED DATETIME DEFAULT NULL,";
+        $sql .= "  APPROVED_BY MEDIUMINT(8) UNSIGNED DEFAULT NULL,";
+        $sql .= "  HIDDEN DATETIME NOT NULL,";
+        $sql .= "  HIDDEN_BY MEDIUMINT(8) UNSIGNED NOT NULL,";
+        $sql .= "  PRIMARY KEY (ITEM_TYPE, TID, PID),";
+        $sql .= "  KEY ORIGIN_INSTANCE (ORIGIN_INSTANCE)";
+        $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
+
+        $db->query($sql);
+    }
+
     // utf8mb4-readiness: shrink indexed VARCHAR(255) columns to widths that
     // will still fit MyISAM's 1000-byte key limit under a future utf8mb4
     // conversion. Data in these columns is always far shorter.

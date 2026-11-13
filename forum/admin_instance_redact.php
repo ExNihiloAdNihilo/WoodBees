@@ -76,7 +76,61 @@ if (isset($_POST['cancel'])) {
     exit;
 }
 
-if ((isset($_POST['preview']) || isset($_POST['redact'])) && strlen($origin) == 0) {
+if (isset($_POST['restore']) && strlen($origin) > 0) {
+
+    if (isset($_POST['restore_confirm']) && $_POST['restore_confirm'] == 'Y') {
+
+        $error_str = null;
+
+        if (($counts = federation_restore($origin, $error_str)) !== false) {
+
+            admin_add_log_entry(FEDERATION_RESTORE, array($origin, $counts['threads'], $counts['posts'], $counts['tags']));
+
+            $_SESSION['FEDERATION_RESTORE_RESULT'] = array('origin' => $origin, 'counts' => $counts);
+
+            header_redirect("admin_instance_redact.php?webtag=$webtag&restore_success=true");
+            exit;
+        }
+
+        $error_msg_array[] = htmlentities_array($error_str);
+
+    } else {
+
+        $hidden_origins = federation_hidden_origins();
+
+        if (!isset($hidden_origins[$origin])) {
+
+            $error_msg_array[] = sprintf(gettext("Nothing from \"%s\" is currently hidden by a redaction."), htmlentities_array($origin));
+
+        } else {
+
+            $hidden = $hidden_origins[$origin];
+
+            html_draw_top(array('title' => gettext('Admin - Instance Redaction'), 'class' => 'window_title', 'main_css' => 'admin.css'));
+
+            html_display_msg(
+                gettext("Instance Redaction"),
+                sprintf(
+                    gettext("Restore what was hidden from \"%s\": %d thread(s), %d comment(s) and %d tag(s)? Items a moderator has already approved, undeleted or deleted since are left as they are."),
+                    htmlentities_array($origin),
+                    $hidden['threads'],
+                    $hidden['posts'],
+                    $hidden['tags']
+                ),
+                'admin_instance_redact.php',
+                'post',
+                array('restore' => gettext("Yes"), 'cancel' => gettext("No")),
+                array('origin' => $origin, 'restore_confirm' => 'Y'),
+                '_self',
+                'center'
+            );
+
+            html_draw_bottom();
+            exit;
+        }
+    }
+
+} else if ((isset($_POST['preview']) || isset($_POST['redact'])) && strlen($origin) == 0) {
 
     $error_msg_array[] = gettext("Enter the origin instance identifier to redact.");
 
@@ -126,7 +180,7 @@ if ((isset($_POST['preview']) || isset($_POST['redact'])) && strlen($origin) == 
     if ($action == 'delete') {
         $question = gettext("PERMANENTLY DELETE this content? This cannot be undone.");
     } else {
-        $question = gettext("Hide this content? It can be restored later (undelete the threads, approve the comments in the Post Approval Queue, re-approve the tags).");
+        $question = gettext("Hide this content? It can be put back later with the Restore button on this page.");
     }
 
     html_display_msg(
@@ -166,6 +220,19 @@ if (isset($_GET['redact_success']) && isset($_SESSION['FEDERATION_REDACT_RESULT'
         $redact_result['counts']['threads'],
         $redact_result['counts']['posts'],
         $redact_result['counts']['tags']
+    ), '86%', 'center');
+
+} else if (isset($_GET['restore_success']) && isset($_SESSION['FEDERATION_RESTORE_RESULT'])) {
+
+    $restore_result = $_SESSION['FEDERATION_RESTORE_RESULT'];
+    unset($_SESSION['FEDERATION_RESTORE_RESULT']);
+
+    html_display_success_msg(sprintf(
+        gettext("Restored from \"%s\": %d thread(s), %d comment(s), %d tag(s)."),
+        htmlentities_array($restore_result['origin']),
+        $restore_result['counts']['threads'],
+        $restore_result['counts']['posts'],
+        $restore_result['counts']['tags']
     ), '86%', 'center');
 
 } else if (sizeof($error_msg_array) > 0) {
@@ -227,6 +294,54 @@ echo "    <tr><td align=\"left\">&nbsp;</td></tr>\n";
 echo "    <tr><td align=\"center\">", form_submit('preview', gettext("Continue")), "</td></tr>\n";
 echo "  </table>\n";
 echo "</form>\n";
+
+// Content currently hidden by a redaction, with a Restore button per origin.
+$hidden_origins = federation_hidden_origins();
+
+if (sizeof($hidden_origins) > 0) {
+
+    echo "<br />\n";
+    echo "<table cellpadding=\"0\" cellspacing=\"0\" width=\"86%\">\n";
+    echo "  <tr>\n";
+    echo "    <td align=\"left\">\n";
+    echo "      <table class=\"box\" width=\"100%\">\n";
+    echo "        <tr>\n";
+    echo "          <td align=\"left\" class=\"posthead\">\n";
+    echo "            <table class=\"posthead\" width=\"100%\">\n";
+    echo "              <tr>\n";
+    echo "                <td class=\"subhead\" align=\"left\">", gettext("Hidden by redaction"), "</td>\n";
+    echo "                <td class=\"subhead\" align=\"left\">", gettext("Threads"), "</td>\n";
+    echo "                <td class=\"subhead\" align=\"left\">", gettext("Comments"), "</td>\n";
+    echo "                <td class=\"subhead\" align=\"left\">", gettext("Tags"), "</td>\n";
+    echo "                <td class=\"subhead\" align=\"left\">", gettext("Hidden"), "</td>\n";
+    echo "                <td class=\"subhead\" align=\"left\">&nbsp;</td>\n";
+    echo "              </tr>\n";
+
+    foreach ($hidden_origins as $hidden_origin => $hidden) {
+
+        echo "              <tr>\n";
+        echo "                <td align=\"left\">", htmlentities_array($hidden_origin), "</td>\n";
+        echo "                <td align=\"left\">", intval($hidden['threads']), "</td>\n";
+        echo "                <td align=\"left\">", intval($hidden['posts']), "</td>\n";
+        echo "                <td align=\"left\">", intval($hidden['tags']), "</td>\n";
+        echo "                <td align=\"left\">", ($hidden['hidden'] > 0 ? format_date_time($hidden['hidden']) : '&nbsp;'), "</td>\n";
+        echo "                <td align=\"right\">";
+        echo "<form accept-charset=\"utf-8\" name=\"f_restore\" action=\"admin_instance_redact.php\" method=\"post\" target=\"_self\" style=\"margin: 0\">";
+        echo form_csrf_token_field(), form_input_hidden('webtag', htmlentities_array($webtag)), form_input_hidden('origin', htmlentities_array($hidden_origin));
+        echo form_submit('restore', gettext("Restore")), "</form></td>\n";
+        echo "              </tr>\n";
+    }
+
+    echo "              <tr><td align=\"left\" colspan=\"6\"><span class=\"smallertext\">", gettext("Restore puts back what a Hide redaction changed: hidden threads are undeleted, and comments and tags get their original approval back. Anything a moderator has dealt with by hand since is left alone. Deleted content cannot be restored."), "</span></td></tr>\n";
+    echo "              <tr><td align=\"left\" colspan=\"6\">&nbsp;</td></tr>\n";
+    echo "            </table>\n";
+    echo "          </td>\n";
+    echo "        </tr>\n";
+    echo "      </table>\n";
+    echo "    </td>\n";
+    echo "  </tr>\n";
+    echo "</table>\n";
+}
 
 if (sizeof($origins) > 0) {
 

@@ -1331,23 +1331,47 @@ function federation_redact($origin, $scope, $action, &$error_str = null)
 
     $current_datetime = date(MYSQL_DATETIME, time());
 
-    $cutoff_datetime = forum_get_unread_cutoff_datetime();
+    $uid = federation_current_uid();
 
-    // Tags introduced by the origin.
-    $sql = "SELECT TID FROM `{$table_prefix}TAG` WHERE ORIGIN_INSTANCE = '$origin_escaped'";
+    // What a hide changes is recorded in REDACTION_LOG so that Restore can
+    // put back exactly that and nothing else (not comments or tags that were
+    // already awaiting approval, not threads a moderator had deleted).
+    $log_sql = "REPLACE INTO `{$table_prefix}REDACTION_LOG` (ITEM_TYPE, TID, PID, ORIGIN_INSTANCE, APPROVED, APPROVED_BY, HIDDEN, HIDDEN_BY) ";
+
+    // Tags introduced by the origin (hide: only those currently approved).
+    $sql = "SELECT TID, APPROVED, APPROVED_BY FROM `{$table_prefix}TAG` WHERE ORIGIN_INSTANCE = '$origin_escaped'";
+
+    if ($action == 'hide') $sql .= " AND APPROVED IS NOT NULL";
 
     if (($result = $db->query($sql))) {
 
-        while (($row = $result->fetch_row()) !== null) {
+        $tag_rows = array();
 
-            $tagid = intval($row[0]);
+        while (($row = $result->fetch_assoc()) !== null) $tag_rows[] = $row;
+
+        foreach ($tag_rows as $row) {
+
+            $tagid = intval($row['TID']);
 
             if ($action == 'hide') {
-                if (tag_deapprove($tagid, federation_current_uid())) $counts['tags']++;
+
+                $approved_by = is_numeric($row['APPROVED_BY']) ? "'" . intval($row['APPROVED_BY']) . "'" : 'NULL';
+
+                $db->query($log_sql . "VALUES ('G', '$tagid', 0, '$origin_escaped', '" . $db->escape($row['APPROVED']) . "', $approved_by, CAST('$current_datetime' AS DATETIME), '$uid')");
+
+                if (tag_deapprove($tagid, $uid)) $counts['tags']++;
+
             } else {
+
                 if (tag_delete($tagid)) $counts['tags']++;
             }
         }
+    }
+
+    if ($action == 'delete') {
+
+        // Deleted tags can't be restored any more.
+        $db->query("DELETE FROM `{$table_prefix}REDACTION_LOG` WHERE ORIGIN_INSTANCE = '$origin_escaped' AND ITEM_TYPE = 'G'");
     }
 
     if ($scope == 'tags') return $counts;
@@ -1367,16 +1391,30 @@ function federation_redact($origin, $scope, $action, &$error_str = null)
 
             $tid_list = implode(',', $whole_tids);
 
+            $sql = $log_sql . "SELECT 'T', TID, 0, '$origin_escaped', NULL, NULL, CAST('$current_datetime' AS DATETIME), '$uid' ";
+            $sql .= "FROM `{$table_prefix}THREAD` WHERE TID IN ($tid_list) AND DELETED = 'N'";
+
+            $db->query($sql);
+
             $db->query("UPDATE `{$table_prefix}THREAD` SET DELETED = 'Y' WHERE TID IN ($tid_list) AND DELETED = 'N'");
 
             $counts['threads'] = $db->affected_rows;
         }
+
+        $sql = $log_sql . "SELECT 'P', TID, PID, '$origin_escaped', APPROVED, APPROVED_BY, CAST('$current_datetime' AS DATETIME), '$uid' ";
+        $sql .= "FROM `{$table_prefix}POST` WHERE ORIGIN_INSTANCE = '$origin_escaped' AND APPROVED IS NOT NULL";
+
+        $db->query($sql);
 
         $db->query("UPDATE `{$table_prefix}POST` SET APPROVED = NULL, APPROVED_BY = NULL WHERE ORIGIN_INSTANCE = '$origin_escaped' AND APPROVED IS NOT NULL");
 
         $counts['posts'] = $db->affected_rows;
 
     } else {
+
+        // Deleted content can't be restored any more.
+        $db->query("DELETE FROM `{$table_prefix}REDACTION_LOG` WHERE ORIGIN_INSTANCE = '$origin_escaped'");
+
 
         foreach ($whole_tids as $tid) {
 
@@ -1414,15 +1452,168 @@ function federation_redact($origin, $scope, $action, &$error_str = null)
     }
 
     // Make the change visible straight away (messages-page cache).
-    $touched_tids = array_diff($touched_tids, ($action == 'delete') ? $whole_tids : array());
+    federation_touch_threads(array_diff($touched_tids, ($action == 'delete') ? $whole_tids : array()));
 
-    if (sizeof($touched_tids) > 0) {
+    return $counts;
+}
 
-        $sql = "UPDATE LOW_PRIORITY `{$table_prefix}THREAD` SET MODIFIED = IF(MODIFIED < CAST('$cutoff_datetime' AS DATETIME), ";
-        $sql .= "MODIFIED, CAST('$current_datetime' AS DATETIME)) WHERE TID IN (" . implode(',', $touched_tids) . ")";
+/**
+ * Bump THREAD.MODIFIED (within the unread cutoff) so cached message pages
+ * pick up a redaction or restore straight away.
+ *
+ * @param array $tids
+ */
+function federation_touch_threads($tids)
+{
+    $tids = array_filter(array_map('intval', (array) $tids));
 
-        $db->query($sql);
+    if (sizeof($tids) == 0) return;
+
+    if (!$db = db::get()) return;
+
+    if (!($table_prefix = get_table_prefix())) return;
+
+    $current_datetime = date(MYSQL_DATETIME, time());
+
+    $cutoff_datetime = forum_get_unread_cutoff_datetime();
+
+    $sql = "UPDATE LOW_PRIORITY `{$table_prefix}THREAD` SET MODIFIED = IF(MODIFIED < CAST('$cutoff_datetime' AS DATETIME), ";
+    $sql .= "MODIFIED, CAST('$current_datetime' AS DATETIME)) WHERE TID IN (" . implode(',', array_unique($tids)) . ")";
+
+    $db->query($sql);
+}
+
+/**
+ * Origins with content currently hidden by a redaction (and restorable).
+ *
+ * @return array origin => ['threads' => n, 'posts' => n, 'tags' => n, 'hidden' => unix time of the latest hide]
+ */
+function federation_hidden_origins()
+{
+    if (!$db = db::get()) return array();
+
+    if (!($table_prefix = get_table_prefix())) return array();
+
+    $sql = "SELECT ORIGIN_INSTANCE, ITEM_TYPE, COUNT(*) AS ITEM_COUNT, UNIX_TIMESTAMP(MAX(HIDDEN)) AS HIDDEN ";
+    $sql .= "FROM `{$table_prefix}REDACTION_LOG` GROUP BY ORIGIN_INSTANCE, ITEM_TYPE ORDER BY ORIGIN_INSTANCE";
+
+    if (!($result = $db->query($sql))) return array();
+
+    $type_keys = array('T' => 'threads', 'P' => 'posts', 'G' => 'tags');
+
+    $origins = array();
+
+    while (($row = $result->fetch_assoc()) !== null) {
+
+        if (!isset($type_keys[$row['ITEM_TYPE']])) continue;
+
+        $origin = $row['ORIGIN_INSTANCE'];
+
+        if (!isset($origins[$origin])) $origins[$origin] = array('threads' => 0, 'posts' => 0, 'tags' => 0, 'hidden' => 0);
+
+        $origins[$origin][$type_keys[$row['ITEM_TYPE']]] = intval($row['ITEM_COUNT']);
+        $origins[$origin]['hidden'] = max($origins[$origin]['hidden'], intval($row['HIDDEN']));
     }
+
+    return $origins;
+}
+
+/**
+ * Undo the "hide" redactions of an origin, using REDACTION_LOG.
+ *
+ * Only puts back what the hide changed and that is still in the state the
+ * hide left it: a thread still deleted, a comment or tag still unapproved
+ * (it gets its original approval time and approver back). Anything a
+ * moderator has since dealt with by hand is left alone. The origin's log
+ * rows are then cleared.
+ *
+ * @param string $origin
+ * @param string $error_str
+ * @return array|false counts: threads, posts, tags
+ */
+function federation_restore($origin, &$error_str = null)
+{
+    if (!$db = db::get()) return false;
+
+    if (!($table_prefix = get_table_prefix())) return false;
+
+    $origin = instance_identifier_normalise($origin);
+
+    if (strlen($origin) == 0) {
+        $error_str = gettext("Enter the origin instance identifier to restore.");
+        return false;
+    }
+
+    $origin_escaped = $db->escape($origin);
+
+    $counts = array('threads' => 0, 'posts' => 0, 'tags' => 0);
+
+    $touched_tids = array();
+
+    // Threads.
+    $sql = "SELECT TID FROM `{$table_prefix}REDACTION_LOG` WHERE ORIGIN_INSTANCE = '$origin_escaped' AND ITEM_TYPE = 'T'";
+
+    if (($result = $db->query($sql))) {
+
+        $tids = array();
+
+        while (($row = $result->fetch_row()) !== null) $tids[] = intval($row[0]);
+
+        if (sizeof($tids) > 0) {
+
+            $db->query("UPDATE `{$table_prefix}THREAD` SET DELETED = 'N' WHERE TID IN (" . implode(',', $tids) . ") AND DELETED = 'Y'");
+
+            $counts['threads'] = $db->affected_rows;
+
+            $touched_tids = array_merge($touched_tids, $tids);
+        }
+    }
+
+    // Comments.
+    $sql = "SELECT DISTINCT TID FROM `{$table_prefix}REDACTION_LOG` WHERE ORIGIN_INSTANCE = '$origin_escaped' AND ITEM_TYPE = 'P'";
+
+    if (($result = $db->query($sql))) {
+        while (($row = $result->fetch_row()) !== null) $touched_tids[] = intval($row[0]);
+    }
+
+    $sql = "UPDATE `{$table_prefix}POST` POST INNER JOIN `{$table_prefix}REDACTION_LOG` REDACTION_LOG ";
+    $sql .= "ON (REDACTION_LOG.ITEM_TYPE = 'P' AND REDACTION_LOG.TID = POST.TID AND REDACTION_LOG.PID = POST.PID) ";
+    $sql .= "SET POST.APPROVED = REDACTION_LOG.APPROVED, POST.APPROVED_BY = REDACTION_LOG.APPROVED_BY ";
+    $sql .= "WHERE REDACTION_LOG.ORIGIN_INSTANCE = '$origin_escaped' AND POST.APPROVED IS NULL";
+
+    if ($db->query($sql)) $counts['posts'] = $db->affected_rows;
+
+    // Tags.
+    $sql = "SELECT REDACTION_LOG.TID, REDACTION_LOG.APPROVED, REDACTION_LOG.APPROVED_BY FROM `{$table_prefix}REDACTION_LOG` REDACTION_LOG ";
+    $sql .= "INNER JOIN `{$table_prefix}TAG` TAG ON (TAG.TID = REDACTION_LOG.TID) ";
+    $sql .= "WHERE REDACTION_LOG.ORIGIN_INSTANCE = '$origin_escaped' AND REDACTION_LOG.ITEM_TYPE = 'G' AND TAG.APPROVED IS NULL";
+
+    if (($result = $db->query($sql))) {
+
+        $tag_rows = array();
+
+        while (($row = $result->fetch_assoc()) !== null) $tag_rows[] = $row;
+
+        foreach ($tag_rows as $row) {
+
+            $tagid = intval($row['TID']);
+
+            $approved = $db->escape($row['APPROVED']);
+
+            $approved_by = is_numeric($row['APPROVED_BY']) ? "'" . intval($row['APPROVED_BY']) . "'" : 'NULL';
+
+            if ($db->query("UPDATE `{$table_prefix}TAG` SET APPROVED = '$approved', APPROVED_BY = $approved_by WHERE TID = '$tagid' AND APPROVED IS NULL")) {
+
+                if ($db->affected_rows > 0) $counts['tags']++;
+
+                tag_touch_threads($tagid);
+            }
+        }
+    }
+
+    $db->query("DELETE FROM `{$table_prefix}REDACTION_LOG` WHERE ORIGIN_INSTANCE = '$origin_escaped'");
+
+    federation_touch_threads($touched_tids);
 
     return $counts;
 }
