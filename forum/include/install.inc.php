@@ -31,7 +31,20 @@ require_once BH_INCLUDE_PATH . 'header.inc.php';
 function install_check()
 {
     if (!file_exists(BH_INCLUDE_PATH . "config.inc.php")) {
-        header_redirect('./install/index.php');
+
+        // config.inc.php is written by the installer and is not part of the
+        // repository. The installer folder ships renamed to install-disabled
+        // so it can't be run by accident on a live forum; a missing config
+        // file is how we know a fresh copy still needs setting up.
+        foreach (array('install', 'install-disabled') as $installer_folder) {
+
+            if (file_exists(BH_INCLUDE_PATH . "../$installer_folder/index.php")) {
+                header_redirect("./$installer_folder/index.php");
+            }
+        }
+
+        header_status(500, 'Internal Server Error');
+        exit('WoodBees is not configured: include/config.inc.php is missing and no installer folder was found. Restore config.inc.php from a backup, or copy install-disabled/config.inc.php to include/config.inc.php and fill in the {placeholders}.');
     }
 
     install_check_php_version();

@@ -12,3 +12,4 @@ beehive_header.swf
 /.idea/
 /.vagrant/
 /.vscode/
+/forum/include/config.inc.php
