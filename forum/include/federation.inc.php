@@ -927,6 +927,8 @@ function federation_import(array $checked, $target_fid, &$error_str = null)
         'posts_imported' => 0,
         'posts_skipped' => 0,
         'tags_pending' => 0,
+        'threads_resequenced' => 0,
+        'threads_not_resequenced' => 0,
     );
 
     $new_tags = array();
@@ -1030,10 +1032,20 @@ function federation_import(array $checked, $target_fid, &$error_str = null)
             return ($cmp != 0) ? $cmp : ($a - $b);
         });
 
+        // Highest comment number and newest comment time before this import
+        // (merged threads only), to tell whether date order needs renumbering.
+        $prev_length = null;
+        $prev_newest = null;
+
         if (($tid = thread_get_tid_by_title($address)) !== false) {
 
             $tid = intval($tid);
             $counts['threads_merged']++;
+
+            if (($result = $db->query("SELECT MAX(PID), MAX(CREATED) FROM `{$table_prefix}POST` WHERE TID = '$tid'"))) {
+                list($prev_length, $prev_newest) = $result->fetch_row();
+                $prev_length = intval($prev_length);
+            }
 
         } else {
 
@@ -1144,6 +1156,29 @@ function federation_import(array $checked, $target_fid, &$error_str = null)
                 $counts['tags_pending']++;
             }
         }
+
+        // Merged into an existing thread: if any imported comment is older
+        // than a comment already there, renumber the thread into date order.
+        // ($order is by created time, so its first entry is the oldest.)
+        if (isset($prev_length, $prev_newest) && sizeof($pid_map) > 0 && strcmp($posts[$order[0]]['created'], $prev_newest) < 0) {
+
+            $first_changed = federation_thread_resequence($tid, $prev_length, $payload['bundle_id']);
+
+            if ($first_changed === false) {
+
+                $counts['threads_not_resequenced']++;
+
+            } else if ($first_changed > 0) {
+
+                $counts['threads_resequenced']++;
+
+                // Recompute the unread cutoff position for the new order.
+                if (($result = $db->query("SELECT MAX(PID) FROM `{$table_prefix}POST` WHERE TID = '$tid'"))) {
+                    list($length) = $result->fetch_row();
+                    post_update_thread_length($tid, intval($length));
+                }
+            }
+        }
     }
 
     return federation_import_finish($payload['bundle_id'], $counts, $new_tags, $bundle_origin, $error_str);
@@ -1210,6 +1245,185 @@ function federation_post_tag_notice($origin, array $tags)
     $content .= "<a href=\"$queue_uri\" target=\"_self\">" . gettext("Review in the Tag Approval Queue") . "</a>";
 
     return (post_create($mod_fid, $mod_tid, 0, $owner_uid, array(), $content) !== false);
+}
+
+/* ------------------------------------------------------------------ */
+/* Date-order re-sequencing of merged threads                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Put a thread's comments into date order (POST.CREATED, ties by current
+ * number) by renumbering them in place, after an import appended comments
+ * that are older than comments already in the thread.
+ *
+ * A comment's number (PID) is also its position: read tracking, paging,
+ * "In reply to" links and permalinks all use it. Everything stored against
+ * a comment number is moved with the comment: the comment, its content,
+ * ratings, recipients, tags, search id (and a Manticore re-index via
+ * INDEXED = NULL), attachment links, cached search results, redaction log
+ * rows, replies, moved-post pointers and tag sources. Members' read
+ * positions are mapped so everything they had read up to the first comment
+ * they had not read stays read, and the imported comments show as unread.
+ * Links already given out to individual comments (tid.pid) can't be
+ * redirected - after renumbering every number is in use again - so the
+ * thread page shows a note (RESEQUENCE_LOG) about which numbers changed.
+ *
+ * Runs under LOCK TABLES so a reply posted at the same moment can't take a
+ * number mid-way. Poll threads are left alone (comment 1 is the poll).
+ *
+ * @param int    $tid
+ * @param int    $prev_length highest comment number before this import's comments were appended
+ * @param string $bundle_id
+ * @return int|false first renumbered comment number, 0 if already in date order, false if skipped/failed
+ */
+function federation_thread_resequence($tid, $prev_length, $bundle_id)
+{
+    if (!$db = db::get()) return false;
+
+    if (!($table_prefix = get_table_prefix())) return false;
+
+    if (!($forum_fid = get_forum_fid())) return false;
+
+    $tid = intval($tid);
+    $prev_length = intval($prev_length);
+    $bundle_id_escaped = $db->escape($bundle_id);
+
+    if (!($result = $db->query("SELECT POLL_FLAG FROM `{$table_prefix}THREAD` WHERE TID = '$tid'")) || $result->num_rows == 0) return false;
+
+    list($poll_flag) = $result->fetch_row();
+
+    if ($poll_flag == 'Y') return false;
+
+    $uid = federation_current_uid();
+
+    $current_datetime = date(MYSQL_DATETIME, time());
+
+    $tables = array('POST', 'POST_CONTENT', 'POST_RATING', 'POST_RECIPIENT', 'POST_SEARCH_ID', 'POST_TAG', 'TAG', 'THREAD', 'USER_THREAD', 'REDACTION_LOG', 'RESEQUENCE_LOG');
+
+    $lock = array();
+
+    foreach ($tables as $table) $lock[] = "`{$table_prefix}$table` WRITE";
+
+    $lock[] = 'POST_ATTACHMENT_IDS WRITE';
+    $lock[] = 'SEARCH_RESULTS WRITE';
+
+    if (!$db->query('LOCK TABLES ' . implode(', ', $lock))) return false;
+
+    try {
+
+        if (!($result = $db->query("SELECT PID FROM `{$table_prefix}POST` WHERE TID = '$tid' ORDER BY CREATED, PID"))) return false;
+
+        $map = array();
+
+        $position = 0;
+
+        while (($row = $result->fetch_row()) !== null) $map[intval($row[0])] = ++$position;
+
+        $changed = array();
+
+        foreach ($map as $old_pid => $new_pid) {
+            if ($old_pid != $new_pid) $changed[$old_pid] = $new_pid;
+        }
+
+        if (sizeof($changed) == 0) return 0;
+
+        // Temporary range above any real comment number (MEDIUMINT UNSIGNED
+        // holds up to 16777215), so the moves never collide.
+        $offset = 8000000;
+
+        if (max(array_keys($map)) >= $offset) return false;
+
+        $old_list = implode(',', array_keys($changed));
+
+        $case = function ($column, $add) use ($changed) {
+            $sql = "CASE $column";
+            foreach ($changed as $old_pid => $new_pid) $sql .= " WHEN $old_pid THEN " . ($new_pid + $add);
+            return "$sql ELSE $column END";
+        };
+
+        // Rows keyed by (TID, PID): two passes via the temporary range.
+        $keyed = array(
+            "`{$table_prefix}POST`" => "TID = '$tid'",
+            "`{$table_prefix}POST_CONTENT`" => "TID = '$tid'",
+            "`{$table_prefix}POST_RATING`" => "TID = '$tid'",
+            "`{$table_prefix}POST_RECIPIENT`" => "TID = '$tid'",
+            "`{$table_prefix}POST_SEARCH_ID`" => "TID = '$tid'",
+            "`{$table_prefix}POST_TAG`" => "TID = '$tid'",
+            "`{$table_prefix}REDACTION_LOG`" => "ITEM_TYPE = 'P' AND TID = '$tid'",
+            "POST_ATTACHMENT_IDS" => "FID = '$forum_fid' AND TID = '$tid'",
+            "SEARCH_RESULTS" => "FORUM = '$forum_fid' AND TID = '$tid'",
+        );
+
+        foreach ($keyed as $table => $where) {
+            if (!$db->query("UPDATE $table SET PID = " . $case('PID', $offset) . " WHERE $where AND PID IN ($old_list)")) return false;
+        }
+
+        foreach ($keyed as $table => $where) {
+            if (!$db->query("UPDATE $table SET PID = PID - $offset WHERE $where AND PID > $offset")) return false;
+        }
+
+        // References to comment numbers.
+        $db->query("UPDATE `{$table_prefix}POST` SET REPLY_TO_PID = " . $case('REPLY_TO_PID', 0) . " WHERE TID = '$tid' AND REPLY_TO_PID IN ($old_list)");
+        $db->query("UPDATE `{$table_prefix}POST` SET MOVED_PID = " . $case('MOVED_PID', 0) . " WHERE MOVED_TID = '$tid' AND MOVED_PID IN ($old_list)");
+        $db->query("UPDATE `{$table_prefix}TAG` SET SOURCE_PID = " . $case('SOURCE_PID', 0) . " WHERE SOURCE_TID = '$tid' AND SOURCE_PID IN ($old_list)");
+
+        // Re-index the moved comments (Manticore's delta index wins over the
+        // main index for the same search id).
+        $db->query("UPDATE `{$table_prefix}POST` SET INDEXED = NULL WHERE TID = '$tid' AND PID IN (" . implode(',', $changed) . ")");
+
+        // Read positions: a member had read 1..L in the old numbering. Unread
+        // now = this import's comments plus old comments after L; the new
+        // read position is just before the first of those.
+        $imported_first = PHP_INT_MAX;
+        $existing_new = array();
+
+        foreach ($map as $old_pid => $new_pid) {
+            if ($old_pid > $prev_length) {
+                $imported_first = min($imported_first, $new_pid);
+            } else {
+                $existing_new[$old_pid] = $new_pid;
+            }
+        }
+
+        if (($result = $db->query("SELECT DISTINCT LAST_READ FROM `{$table_prefix}USER_THREAD` WHERE TID = '$tid'"))) {
+
+            $read_case = array();
+
+            while (($row = $result->fetch_row()) !== null) {
+
+                $last_read = intval($row[0]);
+
+                if ($last_read < 1) continue;
+
+                $first_unread = $imported_first;
+
+                foreach ($existing_new as $old_pid => $new_pid) {
+                    if ($old_pid > $last_read) $first_unread = min($first_unread, $new_pid);
+                }
+
+                $new_last_read = ($first_unread == PHP_INT_MAX) ? $last_read : $first_unread - 1;
+
+                if ($new_last_read != $last_read) $read_case[] = "WHEN $last_read THEN $new_last_read";
+            }
+
+            if (sizeof($read_case) > 0) {
+                $db->query("UPDATE `{$table_prefix}USER_THREAD` SET LAST_READ = CASE LAST_READ " . implode(' ', $read_case) . " ELSE LAST_READ END WHERE TID = '$tid'");
+            }
+        }
+
+        $first_changed = min($changed);
+
+        $sql = "INSERT INTO `{$table_prefix}RESEQUENCE_LOG` (TID, RESEQUENCED, FIRST_PID, BUNDLE_ID, RESEQUENCED_BY) ";
+        $sql .= "VALUES ('$tid', CAST('$current_datetime' AS DATETIME), '$first_changed', '$bundle_id_escaped', '$uid')";
+
+        $db->query($sql);
+
+        return $first_changed;
+
+    } finally {
+
+        $db->query('UNLOCK TABLES');
+    }
 }
 
 /* ------------------------------------------------------------------ */

@@ -651,6 +651,29 @@ function thread_undelete($tid)
     return true;
 }
 
+/**
+ * The latest time this thread was renumbered into date order after a
+ * federation import (see federation_thread_resequence()).
+ *
+ * @param int $tid
+ * @return array|false RESEQUENCED (unix time), FIRST_PID
+ */
+function thread_get_last_resequence($tid)
+{
+    if (!is_numeric($tid)) return false;
+
+    if (!$db = db::get()) return false;
+
+    if (!($table_prefix = get_table_prefix())) return false;
+
+    $sql = "SELECT UNIX_TIMESTAMP(RESEQUENCED) AS RESEQUENCED, FIRST_PID FROM `{$table_prefix}RESEQUENCE_LOG` ";
+    $sql .= "WHERE TID = '" . intval($tid) . "' ORDER BY RID DESC LIMIT 1";
+
+    if (!($result = $db->query($sql)) || $result->num_rows == 0) return false;
+
+    return $result->fetch_assoc();
+}
+
 function thread_merge($tida, $tidb, $merge_type, &$error_str)
 {
     if (!$db = db::get()) return false;

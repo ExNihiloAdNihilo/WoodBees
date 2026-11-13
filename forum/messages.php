@@ -170,6 +170,20 @@ messages_social_links($tid);
 
 echo "    </td>\n";
 echo "  </tr>\n";
+
+// Federation: comments were renumbered into date order after an import, so
+// older links to individual comments in this thread may be off.
+if (($resequence = thread_get_last_resequence($tid)) !== false) {
+
+    echo "  <tr>\n";
+    echo "    <td align=\"left\" colspan=\"2\"><span class=\"smallertext\">", sprintf(
+        gettext("Comments from %s on were renumbered on %s, when comments imported from another instance were merged in date order. Links to individual comments made before then may point to a neighbouring comment."),
+        intval($resequence['FIRST_PID']),
+        format_date_time($resequence['RESEQUENCED'])
+    ), "</span></td>\n";
+    echo "  </tr>\n";
+}
+
 echo "</table>\n";
 
 if (isset($_GET['markasread']) && is_numeric($_GET['markasread'])) {

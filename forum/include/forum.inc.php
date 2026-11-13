@@ -1232,6 +1232,21 @@ function forum_create($webtag, $forum_name, $owner_uid, $database_name, $access,
 
         $db->query($sql);
 
+        // Federation: threads renumbered into date order after an import
+        // (comments from FIRST_PID on changed number); shown on the thread.
+        $sql = "CREATE TABLE `{$forum_table_prefix}RESEQUENCE_LOG` (";
+        $sql .= "  RID MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT,";
+        $sql .= "  TID MEDIUMINT(8) UNSIGNED NOT NULL,";
+        $sql .= "  RESEQUENCED DATETIME NOT NULL,";
+        $sql .= "  FIRST_PID MEDIUMINT(8) UNSIGNED NOT NULL,";
+        $sql .= "  BUNDLE_ID VARCHAR(64) NOT NULL,";
+        $sql .= "  RESEQUENCED_BY MEDIUMINT(8) UNSIGNED NOT NULL,";
+        $sql .= "  PRIMARY KEY (RID),";
+        $sql .= "  KEY TID (TID)";
+        $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
+
+        $db->query($sql);
+
         $sql = "CREATE TABLE `{$forum_table_prefix}PROFILE_ITEM` (";
         $sql .= "  PIID MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT,";
         $sql .= "  PSID MEDIUMINT(8) UNSIGNED NOT NULL,";
@@ -1763,6 +1778,7 @@ function forum_delete_tables($webtag, $database_name)
         'PROFILE_ITEM',
         'PROFILE_SECTION',
         'REDACTION_LOG',
+        'RESEQUENCE_LOG',
         'RSS_FEEDS',
         'RSS_HISTORY',
         'STATS',

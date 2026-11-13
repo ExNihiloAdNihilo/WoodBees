@@ -1018,6 +1018,22 @@ foreach ($forum_prefix_array as $forum_fid => $table_data) {
         $db->query($sql);
     }
 
+    if (!install_table_exists($config['db_database'], "{$table_data['WEBTAG']}_RESEQUENCE_LOG")) {
+
+        $sql = "CREATE TABLE `{$table_data['PREFIX']}RESEQUENCE_LOG` (";
+        $sql .= "  RID MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT,";
+        $sql .= "  TID MEDIUMINT(8) UNSIGNED NOT NULL,";
+        $sql .= "  RESEQUENCED DATETIME NOT NULL,";
+        $sql .= "  FIRST_PID MEDIUMINT(8) UNSIGNED NOT NULL,";
+        $sql .= "  BUNDLE_ID VARCHAR(64) NOT NULL,";
+        $sql .= "  RESEQUENCED_BY MEDIUMINT(8) UNSIGNED NOT NULL,";
+        $sql .= "  PRIMARY KEY (RID),";
+        $sql .= "  KEY TID (TID)";
+        $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
+
+        $db->query($sql);
+    }
+
     // utf8mb4-readiness: shrink indexed VARCHAR(255) columns to widths that
     // will still fit MyISAM's 1000-byte key limit under a future utf8mb4
     // conversion. Data in these columns is always far shorter.

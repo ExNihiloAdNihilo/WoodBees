@@ -269,7 +269,13 @@ if (isset($_GET['import_done']) && isset($_SESSION['FEDERATION_IMPORT_RESULT']))
             $counts['threads_merged'],
             $counts['posts_skipped'],
             $counts['tags_pending']
-        ), '86%', 'center');
+        ) . (!empty($counts['threads_resequenced']) ? ' ' . sprintf(
+            gettext("%d existing thread(s) were renumbered so their comments are in date order."),
+            $counts['threads_resequenced']
+        ) : '') . (!empty($counts['threads_not_resequenced']) ? ' ' . sprintf(
+            gettext("%d thread(s) could not be put into date order (poll thread, or the database user may not LOCK TABLES); their imported comments were added at the end."),
+            $counts['threads_not_resequenced']
+        ) : ''), '86%', 'center');
 
     } else {
 

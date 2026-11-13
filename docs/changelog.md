@@ -13,6 +13,19 @@
          exactly what a Hide redaction changed (threads undeleted,
          original comment and tag approvals) and leaves alone anything a
          moderator has dealt with since.
+- Fixed: A thread page's meta description/keywords were taken from
+         comment 1 even when it was awaiting approval (or hidden by an
+         instance redaction); they now use the first approved comment.
+- Fixed: Threads started by a user with no forum-level permission row
+         (e.g. federation placeholder authors) were missing from the
+         RSS feed, the sitemap and most thread-list views other than
+         All/Unread Discussions.
+- Changed: Importing comments that are older than ones already in a
+           merged thread now renumbers the thread into date order
+           instead of appending them at the end; read positions,
+           replies, tags, ratings and search ids move with their
+           comments, and the thread shows a note that its comment
+           numbers changed. New RESEQUENCE_LOG table (run Upgrade).
 - Changed: Imported comments show "author @ instance" in the thread
            list, search results, threads RSS feed and Post Approval
            Queue too; federation placeholder accounts are left out of

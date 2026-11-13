@@ -160,9 +160,30 @@ for the origins it claims for re-shared comments. Per-comment signatures
   keeps its folder, title, tags and moderation state. Otherwise a new thread
   is created in the folder chosen on the review page, with `ORIGIN_INSTANCE`
   set to the thread's origin.
-- Comments are appended in timestamp order and keep their original
-  `CREATED` time. (They get new local PIDs after any existing comments; a
-  thread is not re-numbered to interleave them.)
+- Comments keep their original `CREATED` time and are added in timestamp
+  order. **If any imported comment is older than the newest comment
+  already in a merged thread, the thread is renumbered in place into date
+  order** (by `CREATED`, ties by current number), so imported comments sit
+  between the local ones where they belong. A comment's number is also its
+  position (read tracking, paging, "In reply to"), so everything stored
+  against a comment number moves with it: content, ratings, recipients,
+  tags and tag sources, search ids, attachment links, cached search
+  results, redaction-log rows, replies and moved-post pointers. Moved
+  comments are re-indexed by Manticore on its next delta pass. Members'
+  read positions are kept up to just before the first comment they had
+  not read, so the imported comments show as unread. This runs under
+  `LOCK TABLES`, so a reply posted at the same moment can't take a number
+  mid-way.
+- **Old links to individual comments can't be redirected.** After a
+  renumbering every number in the thread is in use again, so a link made
+  earlier to, say, comment 3 can't be told apart from a new one. The
+  thread page instead shows a note: "Comments from N on were renumbered on
+  <date> ...", from the per-forum `RESEQUENCE_LOG` table. Links to the
+  thread itself, and to comments before N, are unaffected. When the
+  imported comments are all newer, nothing is renumbered and no note
+  appears. Poll threads, and installs whose database user lacks the
+  `LOCK TABLES` privilege, fall back to appending; the import result says
+  so.
 - **Duplicates are skipped**: a comment whose `(origin, ref)` already exists
   anywhere in the forum (`POST.ORIGIN_INSTANCE` + `POST.ORIGIN_REF`), and any
   comment whose origin is this instance (its own content coming back).
@@ -246,7 +267,8 @@ you want it kept out.
   `ORIGIN_REF (ORIGIN_INSTANCE, ORIGIN_REF)`.
 - Per forum: `IMPORT_LOG` (primary key `BUNDLE_ID`); `REDACTION_LOG`
   (primary key `ITEM_TYPE, TID, PID`; `ITEM_TYPE` T = thread, P = comment,
-  G = tag with `TID` = tag id).
+  G = tag with `TID` = tag id); `RESEQUENCE_LOG` (one row per date-order
+  renumbering: thread, time, first renumbered comment, bundle, admin).
 - Global: `TRUSTED_INSTANCE` (unique `IDENTIFIER`).
 
 New installs create these; the installer's Upgrade method adds them to an
