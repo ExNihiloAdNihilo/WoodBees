@@ -208,11 +208,9 @@ function sphinx_search_execute($search_arguments, &$error)
         // Sphinx doesn't like -- in MATCH. Don't know if it's because it
         // thinks it is a MySQL-style comment or a bug. We have no choice
         // but to strip it out.
-        $search_string = $sphinx->real_escape_string(str_replace('--', '', $search_arguments['search_string']));
+        $match_string = str_replace('--', '', $search_arguments['search_string']);
 
         search_save_arguments($search_arguments);
-
-        $where_sql .= "AND MATCH('$search_string')";
 
     } else {
 
@@ -260,20 +258,53 @@ function sphinx_search_execute($search_arguments, &$error)
     // Prepend _DELTA to the end of the index name.
     $sphinx_search_index_delta = sprintf('%s_DELTA', $sphinx_search_index);
 
-    // Build query including main and delta indexes.
-    $sql = "SELECT *, WEIGHT() FROM $sphinx_search_index, $sphinx_search_index_delta ";
-    $sql .= "$where_sql $group_sql $order_sql LIMIT 1000";
+    // The search string is first passed to the search server as typed, so
+    // its query syntax ("exact phrase", -exclude, a | b ...) works. If the
+    // server rejects it (a stray quote, a lone minus, unbalanced brackets),
+    // it is tried once more with those operators escaped as plain text.
+    $match_attempts = array(null);
 
-    // Execute the query. A query failure here (as opposed to a connection
-    // failure above) usually means the index hasn't been built yet - e.g.
-    // the search server never managed to reach its own database. Treat it
-    // as unavailable too, rather than failing the search with no error at
-    // all (the caller would otherwise see neither a Sphinx nor a MySQL
-    // fallback result).
-    if (!($result = @$sphinx->query($sql))) {
+    if (isset($match_string)) {
 
-        sphinx_search_record_status(false, gettext("Connected to the search server, but a search query against it failed - its index may not have been built yet."));
-        $error = SEARCH_SPHINX_UNAVAILABLE;
+        $match_attempts = array($match_string);
+
+        if (($match_string_escaped = sphinx_search_escape_match($match_string)) !== $match_string) {
+            $match_attempts[] = $match_string_escaped;
+        }
+    }
+
+    $result = false;
+
+    foreach ($match_attempts as $match_attempt) {
+
+        // Build query including main and delta indexes.
+        $sql = "SELECT *, WEIGHT() FROM $sphinx_search_index, $sphinx_search_index_delta $where_sql ";
+
+        if ($match_attempt !== null) {
+            $sql .= "AND MATCH('" . $sphinx->real_escape_string($match_attempt) . "') ";
+        }
+
+        $sql .= "$group_sql $order_sql LIMIT 1000";
+
+        if (($result = @$sphinx->query($sql)) !== false) break;
+
+        // Only a lost connection or a missing index means the search server
+        // is unavailable (that status is shared by every user until it is
+        // re-checked). A query the server merely cannot parse is the
+        // searcher's problem, not an outage.
+        if (sphinx_search_query_failure_is_outage($sphinx, array($sphinx_search_index, $sphinx_search_index_delta))) {
+
+            sphinx_search_record_status(false, gettext("Connected to the search server, but a search query against it failed - its index may not have been built yet."));
+            $error = SEARCH_SPHINX_UNAVAILABLE;
+            return false;
+        }
+    }
+
+    if ($result === false) {
+
+        // The search server is up, but could not make sense of the search
+        // even with its operators treated as plain text.
+        $error = SEARCH_NO_MATCHES;
         return false;
     }
 
@@ -310,6 +341,42 @@ function sphinx_search_execute($search_arguments, &$error)
     }
 
     return true;
+}
+
+// Escapes the Manticore / Sphinx full-text operators in a search string so
+// that it is matched as plain words.
+function sphinx_search_escape_match($string)
+{
+    return preg_replace('/([\\\\()|\\-!@~"&\\/^$=<>\'])/u', '\\\\$1', $string);
+}
+
+// Decides whether a failed search query means the search server is not
+// usable (connection lost, index missing) rather than that the query itself
+// was rejected. Errors numbered 2000 and above are client-side (lost or
+// broken connection). For anything else the index list is checked directly.
+function sphinx_search_query_failure_is_outage($sphinx, array $index_names)
+{
+    $errno = intval($sphinx->errno);
+
+    if ($errno == 0 || $errno >= 2000) return true;
+
+    if (preg_match('/unknown (local )?(table|index)|no such (table|index)|no enabled (local )?(tables|indexes)/i', $sphinx->error)) {
+        return true;
+    }
+
+    if (!($result = @$sphinx->query("SHOW TABLES"))) return true;
+
+    $tables_found = array();
+
+    while (($row = $result->fetch_row()) !== null) {
+        if (isset($row[0])) $tables_found[mb_strtolower($row[0])] = true;
+    }
+
+    foreach ($index_names as $index_name) {
+        if (!isset($tables_found[mb_strtolower($index_name)])) return true;
+    }
+
+    return false;
 }
 
 function sphinx_search_date_range($from, $to)
