@@ -35,11 +35,13 @@ define('BEEHIVE_DOB', 1018220400);
 
 // Minimum requirements.
 define('BEEHIVE_PHP_MIN_VERSION', '7.4.0');
-// A single numeric floor, not an engine-aware check: MariaDB's VERSION()
-// output (e.g. "11.4.2-MariaDB") numerically exceeds this either way, so one
-// threshold covers both of the engines WoodBees actually tests and ships -
-// MySQL 8.4 and MariaDB 11.4. See the install.inc.php message this backs.
+// Separate floors per engine - the only two WoodBees tests and ships. A
+// single numeric floor isn't enough: MariaDB's version numbers (10.x, 11.x)
+// sit numerically above MySQL's, so an 8.4.0 floor alone would wave through
+// an untested MariaDB 10.x. install_check_mysql_version() picks the floor by
+// looking for "MariaDB" in VERSION() (e.g. "11.4.2-MariaDB-ubu2404").
 define('BEEHIVE_MYSQL_MIN_VERSION', '8.4.0');
+define('BEEHIVE_MARIADB_MIN_VERSION', '11.4.0');
 
 // Require PHP extensions
 define('BEEHIVE_PHP_REQUIRED_EXT', 'curl,date,exif,fileinfo,gd,gettext,intl,json,mbstring,mysqli,pcre,xml');
@@ -155,6 +157,10 @@ define('SEARCH_USER_NOT_FOUND', 1);
 define('SEARCH_NO_MATCHES', 2);
 define('SEARCH_FREQUENCY_TOO_GREAT', 3);
 define('SEARCH_SPHINX_UNAVAILABLE', 4);
+
+// How long (seconds) a cached "Manticore/Sphinx is down" status is trusted
+// before search_is_available() re-checks the search server live.
+define('SEARCH_SPHINX_RECHECK_INTERVAL', 60);
 
 // Constants for Search date range
 define('SEARCH_DATE_RANGE_ARRAY', 0);

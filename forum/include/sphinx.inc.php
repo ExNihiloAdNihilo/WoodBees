@@ -110,14 +110,16 @@ function sphinx_search_check_health(&$reason = null)
 
 // Caches the last known Manticore/Sphinx health state as global forum
 // settings, so pages that just need to decide whether to show the search
-// form don't have to open a connection on every request. Only writes when
-// the status actually changed, to avoid a DB write on every search.
+// form don't have to open a connection on every request. An unchanged OK
+// is not re-written, to avoid a DB write on every successful search. A DOWN
+// is always re-written, because its timestamp is what search_is_available()
+// uses to decide when to re-check - skipping the write would make every
+// page load after the re-check interval open a fresh connection.
 function sphinx_search_record_status($is_healthy, $reason = '')
 {
     $new_status = $is_healthy ? 'OK' : 'DOWN';
 
-    if (forum_get_setting('sphinx_search_last_status', null, 'OK') === $new_status
-        && forum_get_setting('sphinx_search_last_status_reason', null, '') === $reason) {
+    if ($is_healthy && forum_get_setting('sphinx_search_last_status', null, 'OK') === 'OK') {
         return;
     }
 

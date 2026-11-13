@@ -95,7 +95,11 @@ function install_check_mysql_version()
 {
     $mysql_version = db::get_version();
 
-    if ($mysql_version === false || version_compare($mysql_version, BEEHIVE_MYSQL_MIN_VERSION, "<")) {
+    $min_version = ($mysql_version !== false && stripos($mysql_version, 'mariadb') !== false)
+        ? BEEHIVE_MARIADB_MIN_VERSION
+        : BEEHIVE_MYSQL_MIN_VERSION;
+
+    if ($mysql_version === false || version_compare($mysql_version, $min_version, "<")) {
 
         install_draw_top();
 

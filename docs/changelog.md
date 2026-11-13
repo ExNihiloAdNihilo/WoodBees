@@ -9,6 +9,18 @@
          scripts/switch-db-engine.sh / switch-db-engine.ps1 helper
          scripts, for safely switching DB engine or mode without
          losing data or leaving orphaned containers behind.
+- Added: Admin warning and user-facing grey-out of the search form
+         when the Manticore search server is unreachable or has not
+         indexed the forum, instead of searches failing silently.
+- Fixed: Search staying disabled indefinitely after Manticore was
+         briefly unavailable - a cached "down" status is now re-checked
+         live after 60 seconds instead of waiting for an admin to open
+         the settings page.
+- Changed: Minimum supported database is now MySQL 8.4 or MariaDB
+           11.4 (was MySQL 5.7). Older external database servers are
+           refused by the installer.
+- Fixed: Manticore container leaking an anonymous Docker volume every
+         time it was recreated.
 
 ## Date: Thu, 12 Nov 2026
 

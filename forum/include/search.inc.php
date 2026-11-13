@@ -39,17 +39,27 @@ require_once BH_INCLUDE_PATH . 'user.inc.php';
 // attempts and by the admin settings page) rather than opening a connection
 // on every page load. MySQL full-text (when Sphinx is disabled) is always
 // considered available.
+//
+// A cached DOWN is re-checked live once it is older than
+// SEARCH_SPHINX_RECHECK_INTERVAL. Without this the status would latch:
+// while DOWN no search runs, so nothing on the user path would ever record
+// OK again, and search would stay disabled until an admin happened to open
+// the settings page - e.g. after one search made before Manticore finished
+// its first index build on a fresh install.
 function search_is_available(&$reason = null)
 {
     if (forum_get_setting('sphinx_search_enabled', 'Y') !== true) return true;
 
-    if (forum_get_setting('sphinx_search_last_status', null, 'OK') === 'DOWN') {
+    if (forum_get_setting('sphinx_search_last_status', null, 'OK') !== 'DOWN') return true;
 
-        $reason = forum_get_setting('sphinx_search_last_status_reason', null, '');
-        return false;
+    $last_checked = forum_get_setting('sphinx_search_last_checked', 'is_numeric', 0);
+
+    if ((time() - $last_checked) >= SEARCH_SPHINX_RECHECK_INTERVAL) {
+        return sphinx_search_check_health($reason);
     }
 
-    return true;
+    $reason = forum_get_setting('sphinx_search_last_status_reason', null, '');
+    return false;
 }
 
 function search_execute($search_arguments, &$error)
