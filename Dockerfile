@@ -1,5 +1,11 @@
 FROM php:7.4-fpm-alpine as base
 
+# php:7.4-fpm-alpine is pinned to Alpine 3.16 (no more rebuilds, PHP 7.4 is EOL),
+# so its baked-in CA bundle predates a cert-chain rotation on Alpine's CDN and
+# apk's HTTPS fetches fail with "unable to get local issuer certificate". apk
+# packages are signed independent of TLS, so fetching over plain HTTP is safe.
+RUN sed -i 's/https/http/' /etc/apk/repositories
+
 RUN apk --no-cache update \
     && apk --no-cache upgrade \
     && apk add --no-cache $PHPIZE_DEPS \

@@ -9,7 +9,12 @@ services:
     depends_on:
       - web
   web:
-    build: .
+    # Testing target: the default (last-stage) build adds xdebug via pecl,
+    # which hits the same stale-CA problem (now against pecl.php.net) as the
+    # apk fetches above. xdebug is only for local debugging, not needed here.
+    build:
+      context: .
+      target: base
     volumes:
       - ./docker/overrides.ini:/usr/local/etc/php/conf.d/99-overrides.ini
       - ./forum:/var/www/html
