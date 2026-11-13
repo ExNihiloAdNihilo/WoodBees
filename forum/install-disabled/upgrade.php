@@ -487,7 +487,7 @@ foreach ($forum_prefix_array as $forum_fid => $table_data) {
 
     $db->query($sql);
 
-    $sql = "TRUNCATE `{$table_data['PREFIX']}POST_SEARCH_ID";
+    $sql = "TRUNCATE `{$table_data['PREFIX']}POST_SEARCH_ID`";
 
     $db->query($sql);
 
