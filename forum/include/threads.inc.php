@@ -355,7 +355,7 @@ function threads_get_unread_to_me($uid, $folder, $page = 1)
     $sql .= "AND POST_RECIPIENT.TO_UID = '$uid' AND POST_RECIPIENT.VIEWED IS NULL ";
     $sql .= "AND THREAD.DELETED = 'N' AND THREAD.LENGTH > 0 ";
     $sql .= "AND (THREAD.APPROVED IS NOT NULL OR THREAD.BY_UID = '$uid') ";
-    $sql .= "AND (USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
+    $sql .= "AND (USER_PERM.PERM IS NULL OR USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
     $sql .= "ORDER BY THREAD.STICKY DESC, THREAD.MODIFIED DESC ";
     $sql .= "LIMIT $offset, 50";
 
@@ -409,7 +409,7 @@ function threads_get_by_days($uid, $folder, $page = 1, $days = 1)
         $sql .= "AND THREAD.MODIFIED >= CAST('$threads_modified_datetime' AS DATETIME) ";
         $sql .= "AND THREAD.DELETED = 'N' AND THREAD.LENGTH > 0 ";
         $sql .= "AND (THREAD.APPROVED IS NOT NULL OR THREAD.BY_UID = '$uid') ";
-        $sql .= "AND (USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
+        $sql .= "AND (USER_PERM.PERM IS NULL OR USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
         $sql .= "ORDER BY THREAD.STICKY DESC, THREAD.MODIFIED DESC ";
         $sql .= "LIMIT $offset, 50";
 
@@ -446,7 +446,7 @@ function threads_get_by_days($uid, $folder, $page = 1, $days = 1)
         $sql .= "AND (USER_FOLDER.INTEREST IS NULL OR USER_FOLDER.INTEREST > -1) ";
         $sql .= "AND THREAD.DELETED = 'N' AND THREAD.LENGTH > 0 ";
         $sql .= "AND (THREAD.APPROVED IS NOT NULL OR THREAD.BY_UID = '$uid') ";
-        $sql .= "AND (USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
+        $sql .= "AND (USER_PERM.PERM IS NULL OR USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
         $sql .= "ORDER BY THREAD.STICKY DESC, THREAD.MODIFIED DESC ";
         $sql .= "LIMIT $offset, 50";
     }
@@ -511,7 +511,7 @@ function threads_get_by_interest($uid, $folder, $page = 1, $interest = THREAD_IN
     $sql .= "AND (USER_FOLDER.INTEREST IS NULL OR USER_FOLDER.INTEREST > -1) ";
     $sql .= "AND THREAD.DELETED = 'N' AND THREAD.LENGTH > 0 ";
     $sql .= "AND (THREAD.APPROVED IS NOT NULL OR THREAD.BY_UID = '$uid') ";
-    $sql .= "AND (USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
+    $sql .= "AND (USER_PERM.PERM IS NULL OR USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
     $sql .= "ORDER BY THREAD.STICKY DESC, THREAD.MODIFIED DESC ";
     $sql .= "LIMIT $offset, 50";
 
@@ -579,7 +579,7 @@ function threads_get_unread_by_interest($uid, $folder, $page = 1, $interest = TH
     $sql .= "AND (USER_FOLDER.INTEREST IS NULL OR USER_FOLDER.INTEREST > -1) ";
     $sql .= "AND THREAD.DELETED = 'N' AND THREAD.LENGTH > 0 ";
     $sql .= "AND (THREAD.APPROVED IS NOT NULL OR THREAD.BY_UID = '$uid') ";
-    $sql .= "AND (USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
+    $sql .= "AND (USER_PERM.PERM IS NULL OR USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
     $sql .= "ORDER BY THREAD.STICKY DESC, THREAD.MODIFIED DESC ";
     $sql .= "LIMIT $offset, 50";
 
@@ -644,7 +644,7 @@ function threads_get_recently_viewed($uid, $folder, $page = 1)
     $sql .= "AND (USER_FOLDER.INTEREST IS NULL OR USER_FOLDER.INTEREST > -1) ";
     $sql .= "AND THREAD.DELETED = 'N' AND THREAD.LENGTH > 0 ";
     $sql .= "AND (THREAD.APPROVED IS NOT NULL OR THREAD.BY_UID = '$uid') ";
-    $sql .= "AND (USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
+    $sql .= "AND (USER_PERM.PERM IS NULL OR USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
     $sql .= "ORDER BY THREAD.MODIFIED DESC ";
     $sql .= "LIMIT $offset, 50";
 
@@ -702,7 +702,7 @@ function threads_get_by_relationship($uid, $folder, $page = 1, $relationship = U
     $sql .= "AND (USER_FOLDER.INTEREST IS NULL OR USER_FOLDER.INTEREST > -1) ";
     $sql .= "AND THREAD.DELETED = 'N' AND THREAD.LENGTH > 0 ";
     $sql .= "AND (THREAD.APPROVED IS NOT NULL OR THREAD.BY_UID = '$uid') ";
-    $sql .= "AND (USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
+    $sql .= "AND (USER_PERM.PERM IS NULL OR USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
     $sql .= "ORDER BY THREAD.STICKY DESC, THREAD.MODIFIED DESC ";
     $sql .= "LIMIT $offset, 50";
 
@@ -764,7 +764,7 @@ function threads_get_unread_by_relationship($uid, $folder, $page = 1, $relations
     $sql .= "AND (USER_FOLDER.INTEREST IS NULL OR USER_FOLDER.INTEREST > -1) ";
     $sql .= "AND THREAD.DELETED = 'N' AND THREAD.LENGTH > 0 ";
     $sql .= "AND (THREAD.APPROVED IS NOT NULL OR THREAD.BY_UID = '$uid') ";
-    $sql .= "AND (USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
+    $sql .= "AND (USER_PERM.PERM IS NULL OR USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
     $sql .= "ORDER BY THREAD.STICKY DESC, THREAD.MODIFIED DESC ";
     $sql .= "LIMIT $offset, 50";
 
@@ -826,7 +826,7 @@ function threads_get_polls($uid, $folder, $page = 1)
     $sql .= "AND (USER_FOLDER.INTEREST IS NULL OR USER_FOLDER.INTEREST > -1) ";
     $sql .= "AND THREAD.DELETED = 'N' AND THREAD.LENGTH > 0 ";
     $sql .= "AND (THREAD.APPROVED IS NOT NULL OR THREAD.BY_UID = '$uid') ";
-    $sql .= "AND (USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
+    $sql .= "AND (USER_PERM.PERM IS NULL OR USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
     $sql .= "ORDER BY THREAD.STICKY DESC, THREAD.MODIFIED DESC ";
     $sql .= "LIMIT $offset, 50";
 
@@ -888,7 +888,7 @@ function threads_get_sticky($uid, $folder, $page = 1)
     $sql .= "AND (USER_FOLDER.INTEREST IS NULL OR USER_FOLDER.INTEREST > -1) ";
     $sql .= "AND THREAD.DELETED = 'N' AND THREAD.LENGTH > 0  ";
     $sql .= "AND (THREAD.APPROVED IS NOT NULL OR THREAD.BY_UID = '$uid') ";
-    $sql .= "AND (USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
+    $sql .= "AND (USER_PERM.PERM IS NULL OR USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
     $sql .= "ORDER BY THREAD.MODIFIED DESC ";
     $sql .= "LIMIT $offset, 50";
 
@@ -954,7 +954,7 @@ function threads_get_longest_unread($uid, $folder, $page = 1)
     $sql .= "AND (USER_FOLDER.INTEREST IS NULL OR USER_FOLDER.INTEREST > -1) ";
     $sql .= "AND THREAD.DELETED = 'N' AND THREAD.LENGTH > 0  ";
     $sql .= "AND (THREAD.APPROVED IS NOT NULL OR THREAD.BY_UID = '$uid') ";
-    $sql .= "AND (USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
+    $sql .= "AND (USER_PERM.PERM IS NULL OR USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
     $sql .= "ORDER BY T_LENGTH DESC, THREAD.STICKY DESC, THREAD.MODIFIED DESC ";
     $sql .= "LIMIT $offset, 50";
 
@@ -1011,7 +1011,7 @@ function threads_get_folder($uid, $folder, $page = 1)
     $sql .= "AND (USER_THREAD.INTEREST IS NULL OR USER_THREAD.INTEREST > -1) ";
     $sql .= "AND THREAD.DELETED = 'N' AND THREAD.LENGTH > 0  ";
     $sql .= "AND (THREAD.APPROVED IS NOT NULL OR THREAD.BY_UID = '$uid') ";
-    $sql .= "AND (USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
+    $sql .= "AND (USER_PERM.PERM IS NULL OR USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
     $sql .= "ORDER BY THREAD.STICKY DESC, THREAD.MODIFIED DESC ";
     $sql .= "LIMIT $offset, 50";
 
@@ -1072,7 +1072,7 @@ function threads_get_deleted($uid, $folder, $page = 1)
     $sql .= "AND (USER_FOLDER.INTEREST IS NULL OR USER_FOLDER.INTEREST > -1) ";
     $sql .= "AND THREAD.DELETED = 'Y' AND THREAD.LENGTH > 0 ";
     $sql .= "AND (THREAD.APPROVED IS NOT NULL OR THREAD.BY_UID = '$uid') ";
-    $sql .= "AND (USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
+    $sql .= "AND (USER_PERM.PERM IS NULL OR USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
     $sql .= "ORDER BY THREAD.STICKY DESC, THREAD.MODIFIED DESC ";
     $sql .= "LIMIT $offset, 50";
 
@@ -1142,7 +1142,7 @@ function threads_get_unread_by_days($uid, $folder, $page = 1, $days = 0)
     $sql .= "AND THREAD.MODIFIED >= CAST('$threads_modified_datetime' AS DATETIME) ";
     $sql .= "AND THREAD.DELETED = 'N' AND THREAD.LENGTH > 0 ";
     $sql .= "AND (THREAD.APPROVED IS NOT NULL OR THREAD.BY_UID = '$uid') ";
-    $sql .= "AND (USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
+    $sql .= "AND (USER_PERM.PERM IS NULL OR USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
     $sql .= "ORDER BY THREAD.STICKY DESC, THREAD.MODIFIED DESC ";
     $sql .= "LIMIT $offset, 50";
 
@@ -1214,7 +1214,7 @@ function threads_get_most_recent($uid, $limit = 10, $fid = false, $creation_orde
     $sql .= "AND (USER_FOLDER.INTEREST IS NULL OR USER_FOLDER.INTEREST > -1) ";
     $sql .= "AND THREAD.DELETED = 'N' AND THREAD.LENGTH > 0 ";
     $sql .= "AND (THREAD.APPROVED IS NOT NULL OR THREAD.BY_UID = '$uid') ";
-    $sql .= "AND (USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
+    $sql .= "AND (USER_PERM.PERM IS NULL OR USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
     $sql .= "ORDER BY $order_by ";
     $sql .= "LIMIT 0, $limit";
 
@@ -1411,7 +1411,7 @@ function threads_any_unread($uid)
     $sql .= "AND (USER_FOLDER.INTEREST IS NULL OR USER_FOLDER.INTEREST > -1) ";
     $sql .= "AND THREAD.DELETED = 'N' AND THREAD.LENGTH > 0 ";
     $sql .= "AND (THREAD.APPROVED IS NOT NULL OR THREAD.BY_UID = '$uid') ";
-    $sql .= "AND (USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
+    $sql .= "AND (USER_PERM.PERM IS NULL OR USER_PERM.PERM & ${user_perm_wormed} = 0 OR THREAD.BY_UID = '$uid') ";
 
     if (!($result = $db->query($sql))) return false;
 

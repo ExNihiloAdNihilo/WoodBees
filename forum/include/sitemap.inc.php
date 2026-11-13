@@ -67,7 +67,7 @@ function sitemap_forum_get_threads($forum_fid)
     $sql .= "WHERE FOLDER.PERM & $user_perm_guest_access > 0 ";
     $sql .= "AND THREAD.DELETED = 'N' AND THREAD.LENGTH > 0 ";
     $sql .= "AND THREAD.APPROVED IS NOT NULL ";
-    $sql .= "AND USER_PERM.PERM & ${user_perm_wormed} = 0 ";
+    $sql .= "AND (USER_PERM.PERM IS NULL OR USER_PERM.PERM & ${user_perm_wormed} = 0) ";
     $sql .= "ORDER BY THREAD.TID ";
 
     if (!($result = $db->query($sql))) return false;
