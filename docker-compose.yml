@@ -16,11 +16,11 @@ services:
     depends_on:
       - mysql
   mysql:
-    image: mysql:5.7
+    image: mysql:8.4
     ports:
       - "3306:3306"
     volumes:
-      - mysql:/var/lib/mysql
+      - mysql84_data:/var/lib/mysql
     environment:
       MYSQL_DATABASE: beehiveforum
       MYSQL_USER: beehiveforum
@@ -49,5 +49,5 @@ services:
     depends_on:
       - mysql
 volumes:
-  mysql:
+  mysql84_data:
   manticore_data:
