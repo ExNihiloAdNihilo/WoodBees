@@ -62,4 +62,35 @@ $(document).ready(function () {
 
         return true;
     });
+
+    $('.docker_copy_button').bind('click', function () {
+
+        var $button = $(this);
+        var copy_text = $button.attr('data-copy-text');
+        var original_label = $button.text();
+
+        function show_copied() {
+
+            $button.text('Copied!');
+
+            window.setTimeout(function () {
+                $button.text(original_label);
+            }, 1500);
+        }
+
+        function fall_back() {
+            window.prompt('Copy this (select all, then Ctrl+C / Cmd+C):', copy_text);
+        }
+
+        if (window.navigator.clipboard && window.navigator.clipboard.writeText) {
+
+            window.navigator.clipboard.writeText(copy_text).then(show_copied, fall_back);
+
+        } else {
+
+            fall_back();
+        }
+
+        return false;
+    });
 });
