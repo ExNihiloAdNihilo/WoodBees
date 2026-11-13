@@ -41,6 +41,15 @@
          end" option worked as "at start". Merging also checked the
          moderator's permission on the first thread's folder twice
          instead of on both threads' folders.
+- Fixed: The installer's Reinstall method never worked. It dropped the
+         old tables and then stopped with "Selected database contains
+         tables which conflict", leaving an empty forum; run again, it
+         failed with "Table 'PM_RECIPIENT' already exists" because nine
+         tables (PM_RECIPIENT, PM_TYPE, SFS_CACHE, USER_TOKEN and the
+         per-forum POLL_QUESTIONS, POST_RATING, POST_RECIPIENT, POST_TAG
+         and TAG) were missing from the installer's table list. New
+         Install and Admin > Forums > Create now also notice those tables
+         as conflicts.
 
 ## Date: Fri, 13 Nov 2026 (WoodBees Alpha 0.3)
 

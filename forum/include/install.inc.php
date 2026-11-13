@@ -478,6 +478,12 @@ function install_get_table_names(&$global_tables, &$forum_tables)
 
     static $forum_tables_store = false;
 
+    // These lists must name every table the installer creates: the global
+    // ones in install-disabled/new-install.php and the per-forum ones in
+    // forum_create() (include/forum.inc.php, the same list as
+    // forum_delete_tables()). A table missing here survives Reinstall's
+    // "remove conflicts" step and then makes the reinstall fail with
+    // "Table ... already exists", leaving a half-empty database.
     if (!is_array($global_tables_store)) {
 
         $global_tables_store = array(
@@ -490,12 +496,15 @@ function install_get_table_names(&$global_tables, &$forum_tables)
             'PM_ATTACHMENT_IDS',
             'PM_CONTENT',
             'PM_FOLDERS',
+            'PM_RECIPIENT',
             'PM_SEARCH_RESULTS',
+            'PM_TYPE',
             'POST_ATTACHMENT_FILES',
             'POST_ATTACHMENT_IDS',
             'SEARCH_ENGINE_BOTS',
             'SEARCH_RESULTS',
             'SESSIONS',
+            'SFS_CACHE',
             'TIMEZONES',
             'TRUSTED_INSTANCE',
             'USER',
@@ -503,6 +512,7 @@ function install_get_table_names(&$global_tables, &$forum_tables)
             'USER_HISTORY',
             'USER_PERM',
             'USER_PREFS',
+            'USER_TOKEN',
             'VISITOR_LOG'
         );
     }
@@ -520,10 +530,14 @@ function install_get_table_names(&$global_tables, &$forum_tables)
             'LINKS_FOLDERS',
             'LINKS_VOTE',
             'POLL',
+            'POLL_QUESTIONS',
             'POLL_VOTES',
             'POST',
             'POST_CONTENT',
+            'POST_RATING',
+            'POST_RECIPIENT',
             'POST_SEARCH_ID',
+            'POST_TAG',
             'PROFILE_ITEM',
             'PROFILE_SECTION',
             'REDACTION_LOG',
@@ -531,6 +545,7 @@ function install_get_table_names(&$global_tables, &$forum_tables)
             'RSS_FEEDS',
             'RSS_HISTORY',
             'STATS',
+            'TAG',
             'THREAD',
             'THREAD_STATS',
             'THREAD_TRACK',
@@ -581,6 +596,10 @@ function install_check_table_conflicts($database_name, $webtag, $check_forum_tab
 
         $sql = sprintf('DROP TABLE IF EXISTS `%s`', implode('`, `', array_map(array($db, 'escape'), $conflicting_tables_array)));
         $db->query($sql);
+
+        // The conflicts are gone now. Reporting them anyway (as this used to)
+        // made every Reinstall stop right after dropping the old tables.
+        return false;
     }
 
     return sizeof($conflicting_tables_array) > 0 ? $conflicting_tables_array : false;
