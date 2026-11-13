@@ -4,6 +4,27 @@ Everything below "What's new in 1.5.2" and older is the inherited
 Beehive Forum changelog, kept as the historical record of the engine
 WoodBees is built on.
 
+## What's new in WoodBees Alpha 0.3.1 (Unreleased)
+
+Changes from Alpha 0.3:
+
+### Before you upgrade
+
+- **The installer is now locked on an installed forum.** To run the installer's Upgrade method, first create an empty file named `install.enable` in `forum/include/` (on the host, or `docker compose exec web touch /var/www/html/include/install.enable`), then open `/install-disabled/`. The installer deletes the file when it finishes; until it is gone the forum shows a reminder instead of its pages. A fresh copy with no `config.inc.php` still goes straight to the installer, as before.
+- **Restart nginx after pulling** (`docker compose restart nginx`) so it picks up the new `docker/nginx.conf`.
+- **Run the installer's Upgrade method** to add the new `POST_SEARCH_ID` index (it is added automatically; there is nothing else to do).
+- **Internet-facing installs: don't keep the default database password.** The bundled engine files still use the password `password` and publish port 3306 on the host. The installer lock closes the one-request wipe, but on a public server stop publishing 3306 and use your own password (it is set in the engine file you picked and must match `config.inc.php`).
+
+### Fixes
+
+- **Thread views no longer slow down as the forum grows.** Since Alpha 0.3 every comment shown looked up its stable comment id with a full scan of `POST_SEARCH_ID`; at 52,000 comments that capped a 16-core test box at about 14 page views per second. A new `TID_PID` index fixes it (about 10x faster in the same test); Upgrade adds it automatically.
+- **Comments are no longer silently lost.** A second comment from the same user within the same second (two tabs, a browser extension or script posting quickly) was thrown away while the page returned to the thread as if it had worked. Each post, poll and private message form now carries its own random double-submit key. A form submitted twice, even at the same moment (a double-click), still creates one comment, and the repeat says "This comment has already been posted" instead of pretending.
+- **The web installer can no longer wipe a live forum.** `/install-disabled/` was reachable by anyone on a finished install, and its Reinstall method drops every table given only the (published default) database details. It is now locked whenever `include/config.inc.php` exists, unless `include/install.enable` exists (see above); `docker/nginx.conf` enforces the same rule.
+- **Folder subscriptions work.** Folder subscription emails were never sent: every posting path passed the folder id and thread id where the function expected the thread id and comment id.
+- **"Ignored Completely" now stops thread subscription emails.** The check was inverted: subscribers who had the poster on Ignored Completely were emailed and subscribers who had them as a Friend were not. Now subscribers with the poster on Ignored or Ignored Completely get no email, and everyone else (Friends included) does.
+- **A stray quote or minus in a search no longer switches search off for everyone.** Manticore rejecting a search's syntax was treated as the search server being down, which greys out search for all users for a minute. Such a search is now retried with the operators treated as plain text (so `-pickles` searches for "pickles"); phrase, OR and exclude searches that Manticore accepts work as before. Only a lost connection or a missing index marks search as unavailable.
+- **Merge Thread works.** All three merge types failed with an SQL error (HTTP 500) and left both threads closed and an empty deleted thread behind. Merges now keep each comment's date, reply links, tags, attachments, ratings and federation origin ("author @ instance"), carry over subscriptions and the view count, and number the comments 1, 2, 3... in the chosen order. If a merge fails, both threads are left exactly as they were. "Posts in this thread at end" was sending "at start". The moderator check now covers both threads' folders.
+
 ## What's new in WoodBees Alpha 0.3 (Released 13th November 2026)
 
 Changes from Alpha 0.2:

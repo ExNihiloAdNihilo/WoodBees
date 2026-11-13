@@ -1,5 +1,47 @@
 # Beehive Forum Change Log (Generated: Tue, 23 Aug 2016 20:25:51)
 
+## Unreleased (WoodBees Alpha 0.3.1)
+
+- Fixed: Thread views slowed down as the forum grew: since Alpha 0.3
+         every comment shown looked up its stable comment id with a
+         full scan of POST_SEARCH_ID. New TID_PID index on
+         POST_SEARCH_ID(TID, PID); the installer's Upgrade method adds
+         it to existing forums automatically.
+- Fixed: A second comment from the same user within the same second
+         was silently thrown away (the page returned to the thread as if
+         it had been posted). Every post, poll and PM form now carries
+         its own random double-submit key, and a form submitted twice,
+         even at the same moment, creates one comment; the repeat shows
+         "This comment has already been posted".
+- Fixed: The web installer could be run by anyone on a finished
+         install, and its Reinstall method drops every table. It now
+         only runs while include/config.inc.php is missing (a fresh
+         copy) or while the file include/install.enable exists, which
+         the operator creates to run Upgrade, Reinstall or Reconnect and
+         the installer deletes when it is done. docker/nginx.conf
+         applies the same rule. The forum shows a reminder while the
+         file exists.
+- Fixed: Folder subscription emails were never sent (the thread and
+         post ids were passed in the wrong order).
+- Fixed: Thread subscription emails were sent to subscribers who had
+         the poster on "Ignored Completely", and were not sent to
+         subscribers who had them as a Friend. Subscribers with the
+         poster on Ignored or Ignored Completely now get no email.
+- Fixed: A search string Manticore could not parse (a stray quote, a
+         lone minus, unbalanced brackets, @, ~, ^ or $) switched search
+         off for every user for a minute. Such a search is now retried
+         with those characters treated as plain text; only a lost
+         connection or a missing index marks the search server as down.
+- Fixed: Moderator Merge Thread failed with an SQL error for every merge
+         type, leaving both threads closed and an empty deleted thread
+         behind. Merged threads now keep the comments' dates, reply
+         links, tags, attachments, ratings and federation origin, and
+         carry over subscriptions and the view count; a failed merge
+         leaves both threads as they were. The "Posts in this thread at
+         end" option worked as "at start". Merging also checked the
+         moderator's permission on the first thread's folder twice
+         instead of on both threads' folders.
+
 ## Date: Fri, 13 Nov 2026 (WoodBees Alpha 0.3)
 
 - Changed: Version bump to WoodBees Alpha 0.3.
