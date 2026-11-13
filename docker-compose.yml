@@ -17,44 +17,19 @@ services:
       context: .
       target: base
     environment:
-      # Not read by the PHP app (config.inc.php is static, not env-driven) -
-      # this exists only to force an explicit choice. Copy .env.example to
-      # .env and set DB_MODE before running `docker compose up`; there is no
-      # default. UNTESTED as of 2026-11-12 - see woodbees-db-engine-support
-      # memory for the test plan before relying on this.
-      DB_MODE: ${DB_MODE:?Set DB_MODE in .env to mariadb, mysql, or external - see .env.example}
+      # Guard, not a setting (the PHP app never reads it): this file holds only
+      # the services every install shares. The database lives in an engine file
+      # (docker-compose.mariadb.yml / .mysql.yml / .external.yml) layered on top
+      # of this one through COMPOSE_FILE in .env. With COMPOSE_FILE unset,
+      # Compose stops here with this message instead of quietly starting a
+      # stack that has no database.
+      COMPOSE_FILE: ${COMPOSE_FILE:?Copy .env.example to .env and choose a database engine file (COMPOSE_FILE) - see .env.example}
     volumes:
       - ./docker/overrides.ini:/usr/local/etc/php/conf.d/99-overrides.ini
       - ./forum:/var/www/html
-    # No depends_on: mysql - mysql doesn't exist at all in "external" mode
-    # (see the mysql service's `profiles` below), and the app already shows
-    # its own retry-able error page if the DB isn't reachable yet either way.
-  mysql:
-    # Only started when DB_MODE is mariadb or mysql - .env must also set
-    # COMPOSE_PROFILES=db to activate this profile (Compose has no way to
-    # derive profile activation from DB_MODE's value directly - both must be
-    # set together, see .env.example). Not started at all for DB_MODE=external;
-    # point forum/include/config.inc.php's $db_server/$db_port/etc at your own
-    # server instead (the installer's "Reconnect" method rewrites this file
-    # for you without touching your data).
-    profiles: ["db"]
-    # Can't be ${DB_IMAGE:?err} - Compose evaluates required-variable checks
-    # for every service at parse time regardless of `profiles`, which broke
-    # DB_MODE=external (where this service never runs) even parsing. DB_MODE
-    # above is the one Compose-enforced gate; leaving DB_IMAGE unset while
-    # COMPOSE_PROFILES=db is active fails at `up` time with a less friendly
-    # "invalid reference format" error instead of a custom message - a known
-    # gap, not cross-validated against DB_MODE by Compose itself.
-    image: ${DB_IMAGE:-}
-    ports:
-      - "3306:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-    environment:
-      MYSQL_DATABASE: beehiveforum
-      MYSQL_USER: beehiveforum
-      MYSQL_PASSWORD: password
-      MYSQL_ROOT_PASSWORD: password
+    # No depends_on: mysql - the mysql service only exists in the mariadb and
+    # mysql engine files, and the app already shows its own retry-able error
+    # page if the DB isn't reachable yet either way.
   # Full-text search server (Manticore, the maintained Sphinx successor).
   # Optional: the forum only uses it once the Manticore host/port are filled in
   # under Admin > Global Forum Settings; otherwise search falls back to MySQL
@@ -76,22 +51,13 @@ services:
       - manticore_plugins:/usr/local/lib/manticore
     environment:
       MANTICORE_WEBTAG: WOODBEES
-      # Passed through so entrypoint.sh can warn loudly if DB_MODE=external
-      # but MANTICORE_DB_HOST was left at its bundled-mysql default below -
-      # that combination can never reach a real DB and would otherwise just
-      # retry forever with no visible error.
-      DB_MODE: ${DB_MODE:-}
-      # Defaults target the bundled mysql service. For DB_MODE=external,
-      # override these in .env to point at your own server instead.
-      MANTICORE_DB_HOST: ${MANTICORE_DB_HOST:-mysql}
-      MANTICORE_DB_PORT: ${MANTICORE_DB_PORT:-3306}
-      MANTICORE_DB_USER: ${MANTICORE_DB_USER:-beehiveforum}
-      MANTICORE_DB_PASS: ${MANTICORE_DB_PASS:-password}
-      MANTICORE_DB_NAME: ${MANTICORE_DB_NAME:-beehiveforum}
+      # DB_MODE and MANTICORE_DB_HOST/_PORT/_USER/_PASS/_NAME come from the
+      # engine file you picked in .env: the bundled engines point them at the
+      # bundled `mysql` service, the external one requires you to supply your
+      # own server's details.
     # No depends_on: mysql - entrypoint.sh already polls for the DB itself
     # (up to 5 minutes) before building its initial index, and mysql doesn't
-    # exist as a compose service at all in "external" mode.
+    # exist as a compose service at all with the external engine file.
 volumes:
-  db_data:
   manticore_data:
   manticore_plugins:

@@ -2,6 +2,10 @@
 
 ## Date: Fri, 13 Nov 2026 (unreleased)
 
+- Changed: Database engine is now picked by a Compose file
+           (docker-compose.mariadb.yml / .mysql.yml / .external.yml)
+           via COMPOSE_FILE in .env, replacing DB_MODE, DB_IMAGE and
+           COMPOSE_PROFILES. Update your .env; see .env.example.
 - Changed: include/config.inc.php is no longer tracked by git; a
            missing config file now sends you to the installer folder
            (install or install-disabled). Back up your config.inc.php

@@ -623,10 +623,10 @@ echo "                          <p>", gettext("For new installations please sele
 echo "                          <p>", gettext("If you are performing a <b>Reinstall</b>, please enter a webtag as above. Any existing WoodBees tables will be automatically removed and all data within them will be permanently deleted."), "</p>\n";
 echo "                          <p>", gettext("For <b>Reconnections</b>, the database portion of the setup is skipped and the installation simply rewrites your config.inc.php file. Use this when you need to change your config.inc.php without reinstalling your WoodBees forum."), "</p>\n";
 echo "                          <p>", gettext("Finally, for <b>Upgrades</b> please select the correct upgrade path. The webtag field is also ignored when using this option. Selecting the wrong option here can have dire consequences for your forum if you have not backed-up."), "</p>\n";
-echo "                          <p>", gettext("<b>Running via the bundled docker-compose.yml?</b> Two Docker-level things to watch for when changing <code>DB_MODE</code>/<code>DB_IMAGE</code> in <code>.env</code> - see the \"Database engine\" section of the readme and <code>.env.example</code> for background. Use the Copy buttons below to grab the exact commands to run in your terminal."), "</p>\n";
+echo "                          <p>", gettext("<b>Running via the bundled docker-compose.yml?</b> Two Docker-level things to watch for when changing the database engine file (<code>COMPOSE_FILE</code>) in <code>.env</code> - see the \"Database engine\" section of the readme and <code>.env.example</code> for background. Use the Copy buttons below to grab the exact commands to run in your terminal."), "</p>\n";
 echo "                          <table cellpadding=\"2\" cellspacing=\"0\" width=\"100%\">\n";
 echo "                            <tr>\n";
-echo "                              <td align=\"left\" width=\"260\" valign=\"top\" class=\"postbody\">", gettext("Switching <code>DB_IMAGE</code> (MariaDB &lt;-&gt; MySQL):"), "</td>\n";
+echo "                              <td align=\"left\" width=\"260\" valign=\"top\" class=\"postbody\">", gettext("Switching engine file (MariaDB &lt;-&gt; MySQL):"), "</td>\n";
 echo "                              <td align=\"left\" class=\"postbody\">\n";
 echo "                                <code>docker compose down -v<br />docker compose up -d</code><br />\n";
 echo "                                <button type=\"button\" class=\"docker_copy_button\" data-copy-text='docker compose down -v\ndocker compose up -d'>", gettext("Copy commands"), "</button>\n";
@@ -634,7 +634,7 @@ echo "                                <p>", gettext("This permanently deletes th
 echo "                              </td>\n";
 echo "                            </tr>\n";
 echo "                            <tr>\n";
-echo "                              <td align=\"left\" width=\"260\" valign=\"top\" class=\"postbody\">", gettext("Switching <code>DB_MODE</code> (bundled &lt;-&gt; external):"), "</td>\n";
+echo "                              <td align=\"left\" width=\"260\" valign=\"top\" class=\"postbody\">", gettext("Switching engine file (bundled &lt;-&gt; external):"), "</td>\n";
 echo "                              <td align=\"left\" class=\"postbody\">\n";
 echo "                                <code>docker compose down --remove-orphans</code><br />\n";
 echo "                                <button type=\"button\" class=\"docker_copy_button\" data-copy-text='docker compose down --remove-orphans'>", gettext("Copy command"), "</button>\n";

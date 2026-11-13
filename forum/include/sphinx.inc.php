@@ -53,7 +53,7 @@ function sphinx_search_connect()
 
 // Deeper check than sphinx_search_connect(): also confirms the forum's own
 // index actually exists on the search server, not just that the port is
-// open. A reachable-but-never-indexed server (e.g. DB_MODE=external with
+// open. A reachable-but-never-indexed server (e.g. the external engine file with
 // MANTICORE_DB_HOST left at its bundled-mysql default) would otherwise look
 // "connected" while never returning any results. Caches the result via
 // sphinx_search_record_status() so callers that just need to know "is

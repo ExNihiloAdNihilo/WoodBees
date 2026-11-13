@@ -1,0 +1,31 @@
+# MariaDB 11.4 as the bundled database. Layered over docker-compose.yml via
+# COMPOSE_FILE in .env - see .env.example. Picking this file *is* picking the
+# engine; there is no separate image or profile setting to keep in sync.
+#
+# The data lives in the db_data volume. MariaDB and MySQL don't share an
+# on-disk format, so after switching between this file and the other bundled
+# engine file, wipe it first: docker compose down -v
+services:
+  mysql:
+    # Service name stays "mysql" for both engines: it is the hostname
+    # config.inc.php and Manticore connect to.
+    image: mariadb:11.4
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: beehiveforum
+      MYSQL_USER: beehiveforum
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: password
+  manticore:
+    environment:
+      DB_MODE: mariadb
+      MANTICORE_DB_HOST: mysql
+      MANTICORE_DB_PORT: 3306
+      MANTICORE_DB_USER: beehiveforum
+      MANTICORE_DB_PASS: password
+      MANTICORE_DB_NAME: beehiveforum
+volumes:
+  db_data:

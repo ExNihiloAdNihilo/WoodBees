@@ -8,6 +8,8 @@ WoodBees is built on.
 
 - `forum/include/config.inc.php` is no longer tracked by git (it is now in `.gitignore`), so credentials you type into the installer can't be committed by accident. A fresh clone with no `config.inc.php` is redirected to the installer. **If you already run WoodBees from a git checkout, copy `forum/include/config.inc.php` somewhere safe before pulling this change** - git deletes the file from your working tree when it stops being tracked. Copy it back afterwards, or run the installer's Reconnect method to regenerate it.
 
+- **Per-engine Docker Compose files.** The database engine is now chosen by which compose file you layer over `docker-compose.yml`: `docker-compose.mariadb.yml`, `docker-compose.mysql.yml` or `docker-compose.external.yml`. This replaces the three separate `.env` settings (`DB_MODE`, `DB_IMAGE`, `COMPOSE_PROFILES`) that had to be kept in sync by hand. **If you have an existing `.env`, replace those three lines with a `COMPOSE_FILE` line** as shown in the updated `.env.example` (and keep `COMPOSE_PATH_SEPARATOR=:`); with `COMPOSE_FILE` unset, Compose stops with a message saying so. Your existing `db_data` volume is unchanged and is picked up by the MariaDB/MySQL files as before. With the external file, `MANTICORE_DB_HOST`/`_USER`/`_PASS`/`_NAME` are now required in `.env` instead of silently defaulting to the bundled database. Needs Docker Compose v2.
+
 ## What's new in WoodBees Alpha 0.2 (Released 13th November 2026)
 
 Changes from Alpha 0.1:

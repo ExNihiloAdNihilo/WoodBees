@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Helper for switching docker-compose.yml's DB_MODE/DB_IMAGE safely.
+# Helper for switching the docker-compose engine file (COMPOSE_FILE in .env) safely.
 #
 # Two things need care when you change .env and bring the stack back up:
-#   - switching DB_IMAGE between MariaDB and MySQL re-uses the same db_data
+#   - switching between the MariaDB and MySQL engine files re-uses the same db_data
 #     volume, and the two engines don't share an on-disk format, so the
 #     volume needs wiping first;
-#   - switching DB_MODE between a bundled engine and "external" leaves an
+#   - switching between a bundled engine file and the external one leaves an
 #     old database container running unnoticed unless you pass
 #     --remove-orphans, since Compose doesn't remove a container just
-#     because it dropped out of the active profile.
+#     because it dropped out of the active file set.
 #
 # This script always does the --remove-orphans stop, optionally wipes
 # db_data, then brings the stack back up with whatever .env currently says.
@@ -18,12 +18,12 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 if [ ! -f .env ]; then
-    echo "No .env found. Copy .env.example to .env and set DB_MODE (and DB_IMAGE/COMPOSE_PROFILES if needed) first." >&2
+    echo "No .env found. Copy .env.example to .env and choose an engine file (COMPOSE_FILE) first." >&2
     exit 1
 fi
 
 echo "Current .env:"
-grep -E '^(DB_MODE|DB_IMAGE|COMPOSE_PROFILES)=' .env || true
+grep -E '^(COMPOSE_FILE|COMPOSE_PATH_SEPARATOR)=' .env || true
 echo
 
 read -r -p "Stop the stack now (docker compose down --remove-orphans)? [Y/n] " ans
@@ -59,7 +59,7 @@ if [[ "$wipe" =~ ^[Yy] ]]; then
 fi
 
 echo
-echo "Make sure .env now has the DB_MODE/DB_IMAGE/COMPOSE_PROFILES you want."
+echo "Make sure .env now has the COMPOSE_FILE you want."
 read -r -p "Press Enter to run 'docker compose up -d' (or Ctrl+C to edit .env first): "
 
 docker compose up -d

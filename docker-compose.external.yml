@@ -1,0 +1,17 @@
+# Your own MariaDB/MySQL server instead of a bundled one. Layered over
+# docker-compose.yml via COMPOSE_FILE in .env - see .env.example. No database
+# container is started.
+#
+# Point forum/include/config.inc.php at your server by running the installer
+# (its "Reconnect" method rewrites that file without touching existing data).
+# Manticore, which runs alongside the forum, connects to the same server
+# straight from its container, so give it the same details in .env.
+services:
+  manticore:
+    environment:
+      DB_MODE: external
+      MANTICORE_DB_HOST: ${MANTICORE_DB_HOST:?Set MANTICORE_DB_HOST (and _PORT/_USER/_PASS/_NAME) in .env to your own database server - see .env.example}
+      MANTICORE_DB_PORT: ${MANTICORE_DB_PORT:-3306}
+      MANTICORE_DB_USER: ${MANTICORE_DB_USER:?Set MANTICORE_DB_USER in .env}
+      MANTICORE_DB_PASS: ${MANTICORE_DB_PASS:?Set MANTICORE_DB_PASS in .env}
+      MANTICORE_DB_NAME: ${MANTICORE_DB_NAME:?Set MANTICORE_DB_NAME in .env}

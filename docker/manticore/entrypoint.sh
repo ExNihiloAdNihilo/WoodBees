@@ -75,8 +75,8 @@ if [ "$index_built" -eq 0 ]; then
          "could not reach the database at ${DB_HOST}:${DB_PORT} as ${DB_USER}." \
          "Search will stay empty/unavailable until this is fixed. Double-check" \
          "MANTICORE_DB_HOST/_PORT/_USER/_PASS/_NAME in your .env file (common" \
-         "cause: DB_MODE=external without overriding these from their" \
-         "bundled-mysql defaults), then restart this container. Retrying in" \
+         "cause: external database details that are wrong or still pointing" \
+         "at the bundled mysql host), then restart this container. Retrying in" \
          "the background in the meantime."
 fi
 

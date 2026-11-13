@@ -5,9 +5,17 @@ A fork of Beehive Forum. See [docs/release.md](docs/release.md) for what's new i
 ## Database engine
 
 Before running `docker compose up`, copy [.env.example](.env.example) to
-`.env` and set `DB_MODE`. There is no default - choose `mariadb` or `mysql`
-to have Docker provision that database for you, or `external` to connect
-WoodBees to a MariaDB/MySQL server you already run.
+`.env` and uncomment one `COMPOSE_FILE` line. There is no default. The file
+you pick is the database engine:
+
+- `docker-compose.yml:docker-compose.mariadb.yml` - Docker provisions MariaDB 11.4.
+- `docker-compose.yml:docker-compose.mysql.yml` - Docker provisions MySQL 8.4.
+- `docker-compose.yml:docker-compose.external.yml` - connect WoodBees to a
+  MariaDB/MySQL server you already run (no database container is started;
+  also fill in the `MANTICORE_DB_*` lines in `.env`).
+
+`docker-compose.yml` on its own holds only the services every install
+shares (web server, PHP, Manticore search). Needs Docker Compose v2.
 
 ### Switching engines or modes later
 
@@ -15,7 +23,7 @@ The install wizard (New Install/Reinstall/Reconnect page) shows these same
 two warnings with Copy buttons next to each command, so you can grab the
 exact text without retyping it.
 
-- **Switching `DB_IMAGE` (MariaDB ↔ MySQL)** re-uses the same `db_data`
+- **Switching between the MariaDB and MySQL engine files** re-uses the same `db_data`
   volume, and the two engines don't share an on-disk format. Stop the stack
   and remove its volumes before starting the other engine:
   ```
@@ -26,12 +34,11 @@ exact text without retyping it.
   the Manticore search index, which is rebuilt automatically (and would be
   stale after a database wipe anyway). Other Docker projects' volumes are
   not touched. Run the installer again afterwards.
-- **Switching `DB_MODE` between a bundled engine and `external`** changes
-  which services are active (the `mysql` service only runs behind the `db`
-  Compose profile), but Compose doesn't remove a container just because it
-  dropped out of the active profile - the old database container can keep
-  running, unnoticed, in the background. Run `docker compose down
-  --remove-orphans` before switching to clean it up.
+- **Switching between a bundled engine file and the external one** changes
+  which services exist (only the bundled files define `mysql`), but Compose
+  doesn't remove a container just because it dropped out of the file set -
+  the old database container can keep running, unnoticed, in the background.
+  Run `docker compose down --remove-orphans` after switching to clean it up.
 
 **Prefer one command?** [scripts/switch-db-engine.sh](scripts/switch-db-engine.sh)
 (macOS/Linux/WSL/git-bash) and
