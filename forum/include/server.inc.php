@@ -455,6 +455,77 @@ function unregister_globals()
     }
 }
 
+/**
+ * Replaces every 4-byte UTF-8 character (U+10000 and up: emoji, CJK
+ * Extension B, ...) with U+FFFD REPLACEMENT CHARACTER, in a string or,
+ * recursively, in the values of an array.
+ *
+ * The forum's tables are 3-byte utf8 (utf8mb3; see docs/utf8mb4-migration.md),
+ * which cannot hold these characters, and the two engines fail differently:
+ * MariaDB stores "????" in their place, but MySQL 8.4 silently cuts the text
+ * off at the first one, so "Hello <emoji> world" was saved as "Hello " and an
+ * address starting with one became empty. Replacing them before they reach
+ * the database keeps the rest of the text on both engines. Remove this once
+ * the tables are utf8mb4.
+ *
+ * Only well-formed 4-byte sequences are touched; other bytes are left alone.
+ *
+ * @param mixed $value
+ * @return mixed
+ */
+function utf8_replace_supplementary($value)
+{
+    if (is_array($value)) {
+
+        foreach ($value as $key => $item) {
+            $value[$key] = utf8_replace_supplementary($item);
+        }
+
+        return $value;
+    }
+
+    if (!is_string($value) || !preg_match('/[\xF0-\xF4]/', $value)) {
+        return $value;
+    }
+
+    return preg_replace(
+        '/\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2}/',
+        "\xEF\xBF\xBD",
+        $value
+    );
+}
+
+/**
+ * Applies utf8_replace_supplementary() to the request input: GET, POST and
+ * cookie values and uploaded file names. Password fields (pw, user_password,
+ * new_passwd, ...) are left exactly as typed: they are only ever hashed, never
+ * stored as text, and changing them would lock out anyone whose password
+ * already contains such a character.
+ */
+function request_replace_supplementary()
+{
+    foreach (array('_GET', '_POST', '_COOKIE', '_REQUEST') as $super_global) {
+
+        if (!isset($GLOBALS[$super_global]) || !is_array($GLOBALS[$super_global])) {
+            continue;
+        }
+
+        foreach ($GLOBALS[$super_global] as $key => $value) {
+
+            if (preg_match('/(^|_)c?passw(or)?d$|^[cno]?pw$/Di', $key)) continue;
+
+            $GLOBALS[$super_global][$key] = utf8_replace_supplementary($value);
+        }
+    }
+
+    foreach ($_FILES as $field => $file) {
+
+        if (is_array($file) && isset($file['name'])) {
+            $_FILES[$field]['name'] = utf8_replace_supplementary($file['name']);
+        }
+    }
+}
+
 function set_server_protocol()
 {
     if (!isset($_SERVER['SERVER_PROTOCOL']) || !in_array($_SERVER['SERVER_PROTOCOL'], array('HTTP/1.0', 'HTTP/1.1'))) {

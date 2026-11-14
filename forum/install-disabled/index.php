@@ -58,6 +58,10 @@ $error_html = null;
 
 unregister_globals();
 
+// See utf8_replace_supplementary(): the forum and admin names typed here
+// would otherwise be cut short on MySQL.
+request_replace_supplementary();
+
 set_server_protocol();
 
 cache_disable_aol();

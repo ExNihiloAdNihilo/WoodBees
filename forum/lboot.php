@@ -76,6 +76,10 @@ require_once BH_INCLUDE_PATH . 'word_filter.inc.php';
 // Disable PHP's register_globals
 unregister_globals();
 
+// Emoji and other 4-byte characters don't fit the utf8mb3 tables (MySQL
+// would cut the text off at the first one), so swap them for U+FFFD.
+request_replace_supplementary();
+
 // Correctly set server protocol
 set_server_protocol();
 

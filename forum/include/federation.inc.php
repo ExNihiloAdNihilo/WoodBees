@@ -913,7 +913,10 @@ function federation_import(array $checked, $target_fid, &$error_str = null)
 
     $target_fid = intval($target_fid);
 
-    $payload = $checked['payload'];
+    // Same treatment as request input (see utf8_replace_supplementary()):
+    // a bundle from an instance that can store emoji would otherwise have
+    // its comments, addresses and author names cut short on MySQL.
+    $payload = utf8_replace_supplementary($checked['payload']);
 
     $bundle_origin = $checked['origin'];
 

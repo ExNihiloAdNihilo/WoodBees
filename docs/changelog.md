@@ -57,6 +57,17 @@
          db::is_mariadb(); the installer and the forum's start-up check
          now refuse MariaDB older than 11.4 (MySQL older than 8.4 was
          already refused).
+- Fixed: On MySQL, an emoji or other 4-byte character (U+10000 and up,
+         e.g. CJK Extension B) cut the rest of the text off: "Hello
+         <emoji> world" was saved as "Hello ", two addresses differing
+         after an emoji landed in the same thread, and an address
+         starting with one was saved empty. (MariaDB stored "????"
+         instead.) The tables are 3-byte utf8 and cannot hold these
+         characters, so they are now replaced with U+FFFD before they
+         reach the database, in form input, cookies, upload file names
+         and federation imports, on both engines. Password fields are
+         left as typed. Real emoji support needs the utf8mb4 migration
+         (docs/utf8mb4-migration.md).
 
 ## Date: Fri, 13 Nov 2026 (WoodBees Alpha 0.3)
 
