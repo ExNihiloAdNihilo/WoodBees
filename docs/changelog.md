@@ -2,6 +2,16 @@
 
 ## Date: Sat, 14 Nov 2026 (WoodBees Alpha 0.3.2)
 
+- Fixed: Admin > Users > "Delete all posts by user" blanked the comments
+         but kept their attachment files, rows and quota. It now deletes
+         the attachments with the comments, like deleting a comment does.
+- Changed: The installer's Upgrade replaces the USER.LOGON index with
+         one ALTER TABLE (drop and add together), so a refused unique
+         index can no longer leave the table without a LOGON index.
+- Changed: Expired LOGON_THROTTLE rows are also deleted on one failed
+         attempt in fifty, not only after a successful logon.
+- Changed: While the installer is unlocked (include/install.enable
+         exists) the forum sends HTTP 503 with Retry-After, not 200.
 - Fixed: The installer's Upgrade method stopped with "Could not locate
          attachment directory" on a forum that had never used
          attachments (forum/attachments is not in the checkout and is

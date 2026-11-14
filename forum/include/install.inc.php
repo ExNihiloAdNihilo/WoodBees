@@ -64,6 +64,8 @@ function install_check()
     // it when it finishes; if it could not, the forum stays closed until it
     // is removed by hand, so the installer is never left open by mistake.
     if (@file_exists(install_unlock_file()) && !defined("BEEHIVE_DEVELOPER_MODE")) {
+        header_status(503, 'Service Unavailable');
+        if (!headers_sent()) header('Retry-After: 300');
         install_draw_incomplete("The installer is unlocked: the file include/" . INSTALL_UNLOCK_FILENAME . " exists. Delete that file to use your WoodBees forum again (for example: docker compose exec web rm /var/www/html/include/" . INSTALL_UNLOCK_FILENAME . ").");
     }
 }

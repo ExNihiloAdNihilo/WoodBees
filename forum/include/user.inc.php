@@ -676,6 +676,13 @@ function user_logon_throttle_reserve($logon, $scope = 'logon')
 
     try {
 
+        // Expired windows are also swept here (one attempt in 50), not only
+        // after a successful logon, so the table can't pile up on a forum
+        // where nobody logs on while it is being guessed at.
+        if (mt_rand(1, 50) == 1) {
+            $db->query("DELETE FROM LOGON_THROTTLE WHERE WINDOW_START < CAST('$cutoff' AS DATETIME)");
+        }
+
         foreach ($keys as $key => $max_attempts) {
 
             $key = $db->escape($key);

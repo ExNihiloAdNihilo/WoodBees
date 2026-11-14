@@ -1620,11 +1620,34 @@ function admin_delete_users_posts($uid)
 
     if (!is_numeric($uid)) return false;
 
+    if (!($forum_fid = get_forum_fid())) return false;
+
+    // The posts that have attachments, found before their content goes.
+    $sql = "SELECT PAI.TID, PAI.PID FROM POST_ATTACHMENT_IDS PAI ";
+    $sql .= "INNER JOIN `{$table_prefix}POST` POST ON (POST.TID = PAI.TID AND POST.PID = PAI.PID) ";
+    $sql .= "WHERE PAI.FID = '$forum_fid' AND POST.FROM_UID = '$uid'";
+
+    if (!($result = $db->query($sql))) return false;
+
+    $attachment_posts = array();
+
+    while (($row = $result->fetch_row()) !== null) {
+        $attachment_posts[] = array($row[0], $row[1]);
+    }
+
     $sql = "INSERT INTO `{$table_prefix}POST_CONTENT` (TID, PID, CONTENT) ";
     $sql .= "SELECT TID, PID, NULL FROM `{$table_prefix}POST` WHERE FROM_UID = '$uid' ";
     $sql .= "ON DUPLICATE KEY UPDATE CONTENT = VALUES(CONTENT)";
 
     if (!$db->query($sql)) return false;
+
+    // The comments are gone for good, so their attachments go with them
+    // (a file shared with another comment stays until that one goes too).
+    require_once BH_INCLUDE_PATH . 'attachments.inc.php';
+
+    foreach ($attachment_posts as $attachment_post) {
+        attachments_delete_for_post($attachment_post[0], $attachment_post[1]);
+    }
 
     return true;
 }

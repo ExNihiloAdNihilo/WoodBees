@@ -522,11 +522,12 @@ if (!$logon_key_unique) {
 
     } else {
 
+        // One statement, so the table is never left without a LOGON index.
         if (install_index_exists($config['db_database'], 'USER', 'LOGON')) {
-            $db->query("ALTER TABLE USER DROP KEY LOGON");
+            $db->query("ALTER TABLE USER DROP KEY LOGON, ADD UNIQUE KEY LOGON (LOGON)");
+        } else {
+            $db->query("ALTER TABLE USER ADD UNIQUE KEY LOGON (LOGON)");
         }
-
-        $db->query("ALTER TABLE USER ADD UNIQUE KEY LOGON (LOGON)");
     }
 }
 
