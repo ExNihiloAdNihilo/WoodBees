@@ -522,6 +522,27 @@ function user_delete_all_tokens($uid)
     return (bool) $db->query("DELETE QUICK FROM USER_TOKEN WHERE UID = '" . intval($uid) . "'");
 }
 
+/**
+ * "Log out all devices": end every session of a user and every "remember me"
+ * token, so no browser of theirs stays logged on. The caller ends the
+ * session of the request it is running in (session::end()).
+ *
+ * @param int $uid
+ * @return bool
+ */
+function user_logout_everywhere($uid)
+{
+    if (!is_numeric($uid) || $uid < 1) return false;
+
+    if (!$db = db::get()) return false;
+
+    if (!$db->query("DELETE FROM SESSIONS WHERE UID = '" . intval($uid) . "'")) return false;
+
+    user_delete_all_tokens($uid);
+
+    return true;
+}
+
 function user_prune_expired_tokens()
 {
     if (!$db = db::get()) return false;
@@ -657,7 +678,7 @@ function user_password_rehash($uid, $password, $old_passhash)
  * $GLOBALS['BH_LOGON_THROTTLED'] is set so the logon pages can say why.
  *
  * Fails open if the LOGON_THROTTLE table is missing (code pulled, Upgrade
- * not run yet).
+ * not run yet) or damaged (see user_throttle_hit()).
  *
  * @param string $logon
  * @return bool true if the attempt may be checked
@@ -666,11 +687,36 @@ function user_logon_throttle_reserve($logon, $scope = 'logon')
 {
     $GLOBALS['BH_LOGON_THROTTLED'] = false;
 
+    if (!user_throttle_hit(user_logon_throttle_keys($logon, $scope), LOGON_THROTTLE_WINDOW)) {
+
+        $GLOBALS['BH_LOGON_THROTTLED'] = true;
+
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Count one hit against each key in LOGON_THROTTLE (key => attempts allowed
+ * per $window seconds, checked in order) and say whether it is within all
+ * of them. Once a key is over its limit the later keys are left alone, so
+ * one client address cannot use up an account's budget.
+ *
+ * A missing LOGON_THROTTLE table, or one that MyISAM reports as crashed
+ * (the server repairs it when it can; see the myisam-recover-options in the
+ * bundled MySQL file), lets the attempt through instead of taking logons and
+ * password resets down with it; a crashed table is logged.
+ *
+ * @param array $keys   throttle key => attempts allowed
+ * @param int   $window seconds
+ * @return bool true if the hit is within the limits
+ */
+function user_throttle_hit(array $keys, $window)
+{
     if (!$db = db::get()) return true;
 
-    $keys = user_logon_throttle_keys($logon, $scope);
-
-    $cutoff = date(MYSQL_DATETIME, time() - LOGON_THROTTLE_WINDOW);
+    $cutoff = date(MYSQL_DATETIME, time() - $window);
 
     $now = date(MYSQL_DATETIME, time());
 
@@ -680,7 +726,10 @@ function user_logon_throttle_reserve($logon, $scope = 'logon')
         // after a successful logon, so the table can't pile up on a forum
         // where nobody logs on while it is being guessed at.
         if (mt_rand(1, 50) == 1) {
-            $db->query("DELETE FROM LOGON_THROTTLE WHERE WINDOW_START < CAST('$cutoff' AS DATETIME)");
+
+            $sweep_cutoff = date(MYSQL_DATETIME, time() - THROTTLE_SWEEP_AGE);
+
+            $db->query("DELETE FROM LOGON_THROTTLE WHERE WINDOW_START < CAST('$sweep_cutoff' AS DATETIME)");
         }
 
         foreach ($keys as $key => $max_attempts) {
@@ -698,22 +747,36 @@ function user_logon_throttle_reserve($logon, $scope = 'logon')
 
             list($attempts) = $result->fetch_row();
 
-            // Over the limit: refuse, and don't spend the next key's budget
-            // (one client address must not be able to lock out an account).
-            if ($attempts > $max_attempts) {
-
-                $GLOBALS['BH_LOGON_THROTTLED'] = true;
-
-                return false;
-            }
+            if ($attempts > $max_attempts) return false;
         }
 
     } catch (Exception $e) {
 
-        if ($e->getCode() != MYSQL_ERROR_NO_SUCH_TABLE) throw $e;
+        if (!user_throttle_error_ignorable($e)) throw $e;
     }
 
     return true;
+}
+
+/**
+ * Is this exception a LOGON_THROTTLE table that is missing or damaged, which
+ * the throttle works round instead of failing? (Logs the damaged case.)
+ *
+ * @param Exception $e
+ * @return bool
+ */
+function user_throttle_error_ignorable(Exception $e)
+{
+    if ($e->getCode() == MYSQL_ERROR_NO_SUCH_TABLE) return true;
+
+    if (in_array($e->getCode(), explode(',', MYSQL_ERRORS_CRASHED_TABLE))) {
+
+        @error_log('WoodBees: LOGON_THROTTLE is damaged, throttling is off until it is repaired: ' . $e->getMessage());
+
+        return true;
+    }
+
+    return false;
 }
 
 /**
@@ -736,16 +799,79 @@ function user_logon_throttle_clear($logon, $scope = 'logon')
         $db->query("DELETE FROM LOGON_THROTTLE WHERE THROTTLE_KEY = '" . $db->escape($keys[1]) . "'");
 
         // Housekeeping: expired windows.
-        $cutoff = date(MYSQL_DATETIME, time() - LOGON_THROTTLE_WINDOW);
+        $cutoff = date(MYSQL_DATETIME, time() - THROTTLE_SWEEP_AGE);
 
         $db->query("DELETE FROM LOGON_THROTTLE WHERE WINDOW_START < CAST('$cutoff' AS DATETIME)");
 
     } catch (Exception $e) {
 
-        if ($e->getCode() != MYSQL_ERROR_NO_SUCH_TABLE) throw $e;
+        if (!user_throttle_error_ignorable($e)) throw $e;
     }
 }
 
+/**
+ * Limit how often emails with a one-time link can be requested (password
+ * reset, confirmation email resend): per client address and per account name
+ * or number within LINK_EMAIL_THROTTLE_WINDOW. The two limits are global
+ * settings (link_email_limit_address, link_email_limit_account; 0 turns a
+ * limit off). Sets $GLOBALS['BH_LINK_EMAIL_BLOCKED'] to 'limit' when refused.
+ *
+ * @param string $subject the account name typed, or the user id
+ * @param string $purpose USER_ACTION_TOKEN_PW_RESET or USER_ACTION_TOKEN_EMAIL
+ * @return bool true if a link email may be made
+ */
+function user_link_email_reserve($subject, $purpose)
+{
+    $GLOBALS['BH_LINK_EMAIL_BLOCKED'] = '';
+
+    $limit_address = intval(forum_get_global_setting('link_email_limit_address', 'is_numeric', LINK_EMAIL_DEFAULT_LIMIT_ADDRESS));
+
+    $limit_account = intval(forum_get_global_setting('link_email_limit_account', 'is_numeric', LINK_EMAIL_DEFAULT_LIMIT_ACCOUNT));
+
+    $keys = array();
+
+    if ($limit_address > 0) {
+        $keys['LNK:' . $purpose . ':IP:' . substr(ip_get_throttle_address(get_ip_address()), 0, 50)] = $limit_address;
+    }
+
+    if ($limit_account > 0) {
+        $keys['LNK:' . $purpose . ':U:' . md5(mb_strtoupper(trim((string) $subject)))] = $limit_account;
+    }
+
+    if (sizeof($keys) == 0) return true;
+
+    if (!user_throttle_hit($keys, LINK_EMAIL_THROTTLE_WINDOW)) {
+
+        $GLOBALS['BH_LINK_EMAIL_BLOCKED'] = 'limit';
+
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * With the setting pw_reset_keep_pending on, a password reset link that has
+ * not expired yet is not replaced by a new request (so nobody can keep
+ * invalidating somebody else's link); the request is refused instead and
+ * $GLOBALS['BH_LINK_EMAIL_BLOCKED'] is set to 'pending'.
+ *
+ * @param int    $uid
+ * @param string $purpose
+ * @return bool true if the request must be refused
+ */
+function user_link_email_pending_blocks($uid, $purpose)
+{
+    if ($purpose !== USER_ACTION_TOKEN_PW_RESET) return false;
+
+    if (!forum_get_global_setting('pw_reset_keep_pending', 'Y')) return false;
+
+    if (!user_action_token_pending($uid, $purpose)) return false;
+
+    $GLOBALS['BH_LINK_EMAIL_BLOCKED'] = 'pending';
+
+    return true;
+}
 /**
  * @param string $logon
  * @param string $scope 'logon' (password) or 'token' (remember-me cookie)
@@ -877,6 +1003,40 @@ function user_action_token_valid($uid, $purpose, $token)
     $sql = "SELECT UID FROM USER_ACTION_TOKEN WHERE UID = '" . intval($uid) . "' ";
     $sql .= "AND PURPOSE = '$purpose' AND TOKEN_HASH = '$token_hash' ";
     $sql .= "AND EXPIRES > CAST('$now' AS DATETIME)";
+
+    try {
+
+        if (!($result = $db->query($sql))) return false;
+
+    } catch (Exception $e) {
+
+        if ($e->getCode() != MYSQL_ERROR_NO_SUCH_TABLE) throw $e;
+
+        return false;
+    }
+
+    return ($result->num_rows > 0);
+}
+
+/**
+ * Is there an emailed link for this user and purpose that has not expired?
+ *
+ * @param int    $uid
+ * @param string $purpose
+ * @return bool
+ */
+function user_action_token_pending($uid, $purpose)
+{
+    if (!is_numeric($uid)) return false;
+
+    if (!in_array($purpose, array(USER_ACTION_TOKEN_PW_RESET, USER_ACTION_TOKEN_EMAIL), true)) return false;
+
+    if (!$db = db::get()) return false;
+
+    $now = date(MYSQL_DATETIME, time());
+
+    $sql = "SELECT UID FROM USER_ACTION_TOKEN WHERE UID = '" . intval($uid) . "' ";
+    $sql .= "AND PURPOSE = '$purpose' AND EXPIRES > CAST('$now' AS DATETIME)";
 
     try {
 

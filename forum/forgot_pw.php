@@ -55,7 +55,18 @@ if (isset($_POST['request'])) {
 
         } else {
 
-            $error_msg_array[] = gettext("Could not send password reminder. Please contact the forum owner.");
+            if (isset($GLOBALS['BH_LINK_EMAIL_BLOCKED']) && $GLOBALS['BH_LINK_EMAIL_BLOCKED'] == 'limit') {
+
+                $error_msg_array[] = gettext("Too many password reset requests. Please wait a while before trying again.");
+
+            } else if (isset($GLOBALS['BH_LINK_EMAIL_BLOCKED']) && $GLOBALS['BH_LINK_EMAIL_BLOCKED'] == 'pending') {
+
+                $error_msg_array[] = gettext("A password reset email was sent recently and its link is still valid. Please check your inbox (and spam folder), or try again once the link has expired.");
+
+            } else {
+
+                $error_msg_array[] = gettext("Could not send password reminder. Please contact the forum owner.");
+            }
         }
 
     } else {

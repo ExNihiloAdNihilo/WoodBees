@@ -35,17 +35,27 @@ require_once BH_INCLUDE_PATH . 'user.inc.php';
 $uid = null;
 $key = null;
 
-if (isset($_GET['uid']) && is_numeric($_GET['uid'])) {
+$confirm_post = (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['confirm']));
+
+if ($confirm_post && isset($_POST['u']) && is_numeric($_POST['u'])) {
+    $uid = intval($_POST['u']);
+} else if (isset($_GET['uid']) && is_numeric($_GET['uid'])) {
     $uid = intval($_GET['uid']);
 } else if (isset($_GET['u']) && is_numeric($_GET['u'])) {
     $uid = intval($_GET['u']);
 }
 
-if (isset($_GET['h']) && is_string($_GET['h'])) {
+if ($confirm_post && isset($_POST['h']) && is_string($_POST['h'])) {
+    $key = $_POST['h'];
+} else if (isset($_GET['h']) && is_string($_GET['h'])) {
     $key = $_GET['h'];
 }
 
 if (isset($_GET['resend']) && isset($uid)) {
+
+    if (!user_link_email_reserve($uid, USER_ACTION_TOKEN_EMAIL)) {
+        html_draw_error(gettext("Too many confirmation email requests. Please wait a while before trying again."));
+    }
 
     if (email_send_user_confirmation($uid)) {
 
@@ -68,6 +78,22 @@ if (!isset($uid) || !isset($key)) {
 }
 
 $frame_top_target = html_get_top_frame_name();
+
+// Opening the link only shows a button: the address is confirmed when it is
+// pressed (a POST), so a mail scanner that fetches the link can't use it up.
+if (!$confirm_post && user_action_token_valid($uid, USER_ACTION_TOKEN_EMAIL, $key)) {
+
+    html_draw_top(
+        array(
+            'title' => gettext('Email confirmation'),
+            'class' => 'window_title'
+        )
+    );
+
+    html_display_msg(gettext("Email confirmation"), gettext("Press the button below to confirm your email address."), 'confirm_email.php', 'post', array('confirm' => gettext("Confirm")), array('u' => $uid, 'h' => $key), $frame_top_target, 'center');
+    html_draw_bottom();
+    exit;
+}
 
 if (user_action_token_valid($uid, USER_ACTION_TOKEN_EMAIL, $key)) {
 

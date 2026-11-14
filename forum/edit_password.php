@@ -51,6 +51,21 @@ $t_new_pass = null;
 $t_confirm_pass = null;
 $t_old_pass = null;
 
+// "Log out all devices": end every session and "remember me" token of this
+// user, including this browser's, and send them to the logon page.
+if (isset($_POST['logout_all'])) {
+
+    user_logout_everywhere($_SESSION['UID']);
+
+    session::end();
+
+    html_set_cookie("user_logon", "", time() - YEAR_IN_SECONDS);
+    html_set_cookie("user_token", "", time() - YEAR_IN_SECONDS);
+
+    header_redirect("index.php?webtag=$webtag&final_uri=logon.php%3Fwebtag%3D$webtag%26logout_success%3Dtrue");
+    exit;
+}
+
 // Submit code
 if (isset($_POST['save'])) {
 
@@ -201,6 +216,49 @@ echo "      <td align=\"left\">&nbsp;</td>\n";
 echo "    </tr>\n";
 echo "    <tr>\n";
 echo "      <td align=\"center\">", form_submit("save", gettext("Save")), "</td>\n";
+echo "    </tr>\n";
+echo "  </table>\n";
+echo "</form>\n";
+
+echo "<br />\n";
+echo "<form accept-charset=\"utf-8\" name=\"logout_all_form\" action=\"edit_password.php\" method=\"post\" target=\"_self\">\n";
+echo "  ", form_csrf_token_field(), "\n";
+echo "  ", form_input_hidden('webtag', htmlentities_array($webtag)), "\n";
+echo "  <table cellpadding=\"0\" cellspacing=\"0\" width=\"700\">\n";
+echo "    <tr>\n";
+echo "      <td align=\"left\">\n";
+echo "        <table class=\"box\" width=\"100%\">\n";
+echo "          <tr>\n";
+echo "            <td align=\"left\" class=\"posthead\">\n";
+echo "              <table class=\"posthead\" width=\"100%\">\n";
+echo "                <tr>\n";
+echo "                  <td align=\"left\" class=\"subhead\" colspan=\"2\">", gettext("Log out all devices"), "</td>\n";
+echo "                </tr>\n";
+echo "              </table>\n";
+echo "              <table class=\"posthead\" width=\"100%\">\n";
+echo "                <tr>\n";
+echo "                  <td align=\"center\">\n";
+echo "                    <table class=\"posthead\" width=\"95%\">\n";
+echo "                      <tr>\n";
+echo "                        <td align=\"left\">", gettext("Ends your session on every browser and device you are logged on with, including this one, and cancels all \"remember me\" logons. You will have to log on again everywhere. Use this if you lost a device or think somebody else has your session."), "</td>\n";
+echo "                      </tr>\n";
+echo "                      <tr>\n";
+echo "                        <td align=\"left\">&nbsp;</td>\n";
+echo "                      </tr>\n";
+echo "                    </table>\n";
+echo "                  </td>\n";
+echo "                </tr>\n";
+echo "              </table>\n";
+echo "            </td>\n";
+echo "          </tr>\n";
+echo "        </table>\n";
+echo "      </td>\n";
+echo "    </tr>\n";
+echo "    <tr>\n";
+echo "      <td align=\"left\">&nbsp;</td>\n";
+echo "    </tr>\n";
+echo "    <tr>\n";
+echo "      <td align=\"center\">", form_submit("logout_all", gettext("Log out all devices")), "</td>\n";
 echo "    </tr>\n";
 echo "  </table>\n";
 echo "</form>\n";

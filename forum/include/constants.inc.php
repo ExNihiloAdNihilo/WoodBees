@@ -148,6 +148,22 @@ define('LOGON_THROTTLE_MAX_TOKEN_PER_USER', 20);
 // MySQL / MariaDB error number for a violated unique key.
 define('MYSQL_ERROR_DUPLICATE_ENTRY', 1062);
 
+// MyISAM table damaged (crashed, or its files are broken): handler errors
+// 126/130/144/145 and the server errors that wrap them.
+define('MYSQL_ERRORS_CRASHED_TABLE', '126,130,144,145,1033,1034,1194,1195');
+
+// Expired LOGON_THROTTLE rows older than this are deleted (it must be at
+// least as long as the longest throttle window).
+define('THROTTLE_SWEEP_AGE', 3600);
+
+// Requests for an emailed link (password reset, confirmation email resend):
+// window, and the defaults of the two limits an admin can change under
+// Admin > Global Forum Settings (and in the installer's Advanced Options):
+// link_email_limit_account and link_email_limit_address (0 = no limit).
+define('LINK_EMAIL_THROTTLE_WINDOW', 3600);
+define('LINK_EMAIL_DEFAULT_LIMIT_ACCOUNT', 3);
+define('LINK_EMAIL_DEFAULT_LIMIT_ADDRESS', 10);
+
 // MySQL date, time and datetime formatting constants for PHP's date function
 define('MYSQL_DATE', 'Y-m-d');
 define('MYSQL_TIME', 'H:i:s');

@@ -1603,6 +1603,11 @@ function admin_delete_user($uid, $delete_content = false)
 
         if (!$db->query($sql)) return false;
 
+        // Sessions, "remember me" tokens and emailed links of the deleted user.
+        user_logout_everywhere($uid);
+
+        user_action_token_clear($uid);
+
         // Add a log entry to show what we've done.
         admin_add_log_entry(DELETE_USER, array($user_logon));
 

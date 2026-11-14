@@ -249,6 +249,24 @@ if (isset($_POST['save']) || isset($_POST['confirm_unread_cutoff']) || isset($_P
         $new_forum_settings['require_email_confirmation'] = "N";
     }
 
+    if (isset($_POST['link_email_limit_account']) && is_numeric($_POST['link_email_limit_account'])) {
+        $new_forum_settings['link_email_limit_account'] = max(0, min(1000, intval($_POST['link_email_limit_account'])));
+    } else {
+        $new_forum_settings['link_email_limit_account'] = LINK_EMAIL_DEFAULT_LIMIT_ACCOUNT;
+    }
+
+    if (isset($_POST['link_email_limit_address']) && is_numeric($_POST['link_email_limit_address'])) {
+        $new_forum_settings['link_email_limit_address'] = max(0, min(1000, intval($_POST['link_email_limit_address'])));
+    } else {
+        $new_forum_settings['link_email_limit_address'] = LINK_EMAIL_DEFAULT_LIMIT_ADDRESS;
+    }
+
+    if (isset($_POST['pw_reset_keep_pending']) && $_POST['pw_reset_keep_pending'] == "Y") {
+        $new_forum_settings['pw_reset_keep_pending'] = "Y";
+    } else {
+        $new_forum_settings['pw_reset_keep_pending'] = "N";
+    }
+
     if (isset($_POST['forum_rules_enabled']) && $_POST['forum_rules_enabled'] == "Y") {
         $new_forum_settings['forum_rules_enabled'] = "Y";
     } else {
@@ -1021,6 +1039,18 @@ echo "                        <td align=\"left\" width=\"250\">", gettext("Requi
 echo "                        <td align=\"left\">", form_radio("require_email_confirmation", "Y", gettext("Yes"), (isset($forum_global_settings['require_email_confirmation']) && $forum_global_settings['require_email_confirmation'] == 'Y')), "&nbsp;", form_radio("require_email_confirmation", "N", gettext("No"), (isset($forum_global_settings['require_email_confirmation']) && $forum_global_settings['require_email_confirmation'] == 'N') || !isset($forum_global_settings['require_email_confirmation'])), "</td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
+echo "                        <td align=\"left\" width=\"270\">", gettext("Emailed link requests allowed per account"), ":</td>\n";
+echo "                        <td align=\"left\">", sprintf(gettext("%s per hour"), form_input_text("link_email_limit_account", (isset($forum_global_settings['link_email_limit_account']) && is_numeric($forum_global_settings['link_email_limit_account'])) ? htmlentities_array($forum_global_settings['link_email_limit_account']) : LINK_EMAIL_DEFAULT_LIMIT_ACCOUNT, 4, 4)), "</td>\n";
+echo "                      </tr>\n";
+echo "                      <tr>\n";
+echo "                        <td align=\"left\" width=\"270\">", gettext("Emailed link requests allowed per address"), ":</td>\n";
+echo "                        <td align=\"left\">", sprintf(gettext("%s per hour"), form_input_text("link_email_limit_address", (isset($forum_global_settings['link_email_limit_address']) && is_numeric($forum_global_settings['link_email_limit_address'])) ? htmlentities_array($forum_global_settings['link_email_limit_address']) : LINK_EMAIL_DEFAULT_LIMIT_ADDRESS, 4, 4)), "</td>\n";
+echo "                      </tr>\n";
+echo "                      <tr>\n";
+echo "                        <td align=\"left\" width=\"270\">", gettext("Keep a pending password reset link"), ":</td>\n";
+echo "                        <td align=\"left\">", form_radio("pw_reset_keep_pending", "Y", gettext("Yes"), (isset($forum_global_settings['pw_reset_keep_pending']) && $forum_global_settings['pw_reset_keep_pending'] == 'Y')), "&nbsp;", form_radio("pw_reset_keep_pending", "N", gettext("No"), (isset($forum_global_settings['pw_reset_keep_pending']) && $forum_global_settings['pw_reset_keep_pending'] == 'N') || !isset($forum_global_settings['pw_reset_keep_pending'])), "</td>\n";
+echo "                      </tr>\n";
+echo "                      <tr>\n";
 echo "                        <td align=\"left\" width=\"270\">", gettext("Require user to agree to forum rules"), ":</td>\n";
 echo "                        <td align=\"left\">", form_radio("forum_rules_enabled", "Y", gettext("Yes"), ((isset($forum_global_settings['forum_rules_enabled']) && $forum_global_settings['forum_rules_enabled'] == 'Y') || !isset($forum_global_settings['forum_rules_enabled']))), "&nbsp;", form_radio("forum_rules_enabled", "N", gettext("No"), (isset($forum_global_settings['forum_rules_enabled']) && $forum_global_settings['forum_rules_enabled'] == 'N')), "</td>\n";
 echo "                      </tr>\n";
@@ -1040,6 +1070,7 @@ echo "                        <td align=\"left\" colspan=\"2\">\n";
 echo "                          <p>", gettext("<b>Allow new user registrations</b> allows or disallows the creation of new user accounts. Setting the option to no completely disables the registration form."), "</p>\n";
 echo "                          <p>", gettext("<b>Prevent use of duplicate email addresses</b> forces WoodBees to check the user accounts against the email address the user is registering with and prompts them to use another if it is already in use."), "</p>\n";
 echo "                          <p>", gettext("<b>Require email confirmation</b> when enabled will send an email to each new user with a link that can be used to confirm their email address. Until they confirm their email address they will not be able to post unless their user permissions are changed manually by an admin."), "</p>\n";
+echo "                          <p>", gettext("<b>Emailed link requests</b> limits how often the emails that carry a one-time link (\"forgot password\" and \"resend confirmation email\") can be requested, per account name and per client address, in any hour. It stops people flooding somebody's mailbox. Enter 0 for no limit. <b>Keep a pending password reset link</b> refuses a new reset request while the last link is still valid (2 hours) instead of replacing it, so nobody can keep cancelling another member's link; the member then has to wait for the link to expire if they lose the email."), "</p>\n";
 echo "                          <p>", gettext("<b>Require user approval by admin</b> allows you to restrict access by new users until they have been approved by a moderator or admin. Without approval a user cannot access any area of the WoodBees installation including individual forums, PM inbox and My Forums sections."), "</p>\n";
 echo "                        </td>\n";
 echo "                      </tr>\n";

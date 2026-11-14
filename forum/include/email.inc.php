@@ -465,7 +465,13 @@ function email_send_pw_reminder($logon)
 {
     if (!is_string($logon)) return false;
 
+    // Requests are limited per client address and per account name (see
+    // user_link_email_reserve()); counted whether or not the name exists.
+    if (!user_link_email_reserve($logon, USER_ACTION_TOKEN_PW_RESET)) return false;
+
     if (!($to_user = user_get_by_logon($logon))) return false;
+
+    if (user_link_email_pending_blocks($to_user['UID'], USER_ACTION_TOKEN_PW_RESET)) return false;
 
     if (!($transport = Swift_TransportFactory::get())) return false;
 

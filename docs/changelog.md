@@ -2,6 +2,34 @@
 
 ## Date: Sat, 14 Nov 2026 (WoodBees Alpha 0.3.2)
 
+- Added: "Log out all devices" button on the Change Password page
+         (edit_password.php): deletes every SESSIONS row and every
+         USER_TOKEN of the user (user_logout_everywhere()), including the
+         current browser, and returns to the logon page. Deleting a user
+         does the same.
+- Fixed: get_attachment.php served every attachment inline with its stored
+         type; with no allowed-types list an uploaded HTML or SVG file ran
+         with the forum's origin. Only JPEG, PNG, GIF, WebP, BMP and
+         text/plain are inline now; everything else is sent as an
+         attachment, and all responses carry Content-Security-Policy:
+         sandbox. Filenames in the header are stripped of quotes and
+         control characters.
+- Added: Limits on requests for emailed links (forgot password, resend
+         confirmation email) per account name and per client address
+         (LOGON_THROTTLE keys LNK:..., window one hour). Settings
+         link_email_limit_account (default 3), link_email_limit_address
+         (default 10), 0 = no limit, and pw_reset_keep_pending (refuse a
+         new reset request while the last link is valid), set in the
+         installer's Advanced Options and Admin > Global Forum Settings.
+         confirm_email.php?resend is rate limited too.
+- Changed: confirm_email.php shows a Confirm button; the address is
+         confirmed by the POST, not by opening the link.
+- Changed: The nginx installer rule is case-insensitive.
+- Fixed: A damaged (crashed) LOGON_THROTTLE table made every logon and
+         password reset fail; it is now logged and the throttle is
+         skipped (like a missing table).
+- Fixed: Deleting a user left their sessions, USER_TOKEN rows and
+         USER_ACTION_TOKEN rows behind.
 - Fixed: Admin > Users > "Delete all posts by user" blanked the comments
          but kept their attachment files, rows and quota. It now deletes
          the attachments with the comments, like deleting a comment does.

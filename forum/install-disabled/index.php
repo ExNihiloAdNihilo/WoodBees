@@ -219,6 +219,32 @@ if (isset($_POST['install_method'])) {
 
     $cleanup_attachments = (isset($_POST['cleanup_attachments']) && $_POST['cleanup_attachments'] == 'Y');
 
+    // Limits on emailed-link requests (forgot password, resend confirmation).
+    // Optional: a blank field leaves the current setting (or the default).
+    $link_settings = array();
+
+    foreach (array('link_email_limit_account', 'link_email_limit_address') as $link_setting_name) {
+
+        if (isset($_POST[$link_setting_name]) && strlen(trim($_POST[$link_setting_name])) > 0) {
+
+            $link_setting_value = trim($_POST[$link_setting_name]);
+
+            if (preg_match('/^[0-9]{1,4}$/D', $link_setting_value) && intval($link_setting_value) <= 1000) {
+
+                $link_settings[$link_setting_name] = intval($link_setting_value);
+
+            } else {
+
+                $error_array[] = "The emailed link request limits must be whole numbers from 0 to 1000 (0 means no limit).\n";
+                $valid = false;
+            }
+        }
+    }
+
+    if (isset($_POST['pw_reset_keep_pending']) && in_array($_POST['pw_reset_keep_pending'], array('Y', 'N'), true)) {
+        $link_settings['pw_reset_keep_pending'] = $_POST['pw_reset_keep_pending'];
+    }
+
     if (isset($_POST['remove_conflicts']) && $_POST['remove_conflicts'] == 'Y') {
         $remove_conflicts = true;
     } else {
@@ -277,6 +303,19 @@ if (isset($_POST['install_method'])) {
                     $remove_conflicts = ($install_method == 1);
 
                     include_once("new-install.php");
+                }
+
+                // Emailed-link limits chosen on this page (not for Reconnect,
+                // which leaves the database alone).
+                if ($install_method != 2) {
+
+                    foreach ($link_settings as $link_setting_name => $link_setting_value) {
+
+                        $sql = "INSERT INTO FORUM_SETTINGS (FID, SNAME, SVALUE) VALUES (0, '" . $db->escape($link_setting_name) . "', '" . $db->escape($link_setting_value) . "') ";
+                        $sql .= "ON DUPLICATE KEY UPDATE SVALUE = VALUES(SVALUE)";
+
+                        $db->query($sql);
+                    }
                 }
 
                 $config_file = '';
@@ -824,6 +863,15 @@ echo "                      <tr>\n";
 echo "                        <td align=\"left\" class=\"postbody\"><span class=\"install_checkbox\"><input type=\"checkbox\" name=\"cleanup_attachments\" id=\"cleanup_attachments\" value=\"Y\" tabindex=\"13\"", (!empty($cleanup_attachments) ? " checked=\"checked\"" : ''), " /><label for=\"cleanup_attachments\">Upgrade only: delete attachments that nothing uses any more.</label></span></td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
+echo "                        <td align=\"left\" class=\"postbody\">Emailed link requests allowed per account, per hour: <input type=\"text\" name=\"link_email_limit_account\" size=\"4\" maxlength=\"4\" value=\"", (isset($_POST['link_email_limit_account']) ? htmlentities($_POST['link_email_limit_account'], ENT_QUOTES, 'UTF-8') : ''), "\" tabindex=\"13\" /> (blank: keep the current setting; default 3; 0: no limit)</td>\n";
+echo "                      </tr>\n";
+echo "                      <tr>\n";
+echo "                        <td align=\"left\" class=\"postbody\">Emailed link requests allowed per client address, per hour: <input type=\"text\" name=\"link_email_limit_address\" size=\"4\" maxlength=\"4\" value=\"", (isset($_POST['link_email_limit_address']) ? htmlentities($_POST['link_email_limit_address'], ENT_QUOTES, 'UTF-8') : ''), "\" tabindex=\"13\" /> (blank: keep the current setting; default 10; 0: no limit)</td>\n";
+echo "                      </tr>\n";
+echo "                      <tr>\n";
+echo "                        <td align=\"left\" class=\"postbody\">Pending password reset link: <select name=\"pw_reset_keep_pending\" tabindex=\"13\"><option value=\"\">Keep the current setting (default: replace)</option><option value=\"N\"", (isset($_POST['pw_reset_keep_pending']) && $_POST['pw_reset_keep_pending'] == 'N' ? " selected=\"selected\"" : ''), ">A new request replaces the link</option><option value=\"Y\"", (isset($_POST['pw_reset_keep_pending']) && $_POST['pw_reset_keep_pending'] == 'Y' ? " selected=\"selected\"" : ''), ">Refuse new requests while a link is still valid</option></select></td>\n";
+echo "                      </tr>\n";
+echo "                      <tr>\n";
 echo "                        <td align=\"left\" class=\"postbody\"><span class=\"install_checkbox\"><input type=\"checkbox\" name=\"enable_error_reports\" id=\"enable_error_reports\" value=\"Y\" tabindex=\"14\"", (isset($enable_error_reports) && $enable_error_reports == 'Y' ? " checked=\"checked\"" : ''), " /><label for=\"enable_error_reports\">Send error reports to Admin email address.</label></span></td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
@@ -831,6 +879,7 @@ echo "                        <td colspan=\"2\">\n";
 echo "                          <p>", gettext("<b>Caution!</b> These options are recommended for advanced users only. There use can have a detrimental effect on the functionality of your WoodBees forum AND other software you may have installed."), "</p>\n";
 echo "                          <p>", gettext("<b>Automatically remove tables</b> permanently removes tables that would have conflicted with those used by WoodBees. If other tables exist which conflict with those used by the WoodBees software then enabling this option may cause any other scripts or software which rely on them to fail."), "</p>\n";
 echo "                          <p>", gettext("<b>Delete attachments that nothing uses any more</b> (Upgrade only) permanently deletes attachment files, and their database rows, that no comment or private message links to: leftovers of deleted and rejected comments, of deleted threads and of uploads that were never posted (files younger than a day are kept). Avatars and profile pictures are kept. Before this release deleting a comment never deleted its attachment, so an older forum may have a lot of them. Make a backup first; this cannot be undone."), "</p>\n";
+echo "                          <p>", gettext("<b>Emailed link requests</b> limits how often the emails that carry a one-time link (\"forgot password\" and \"resend confirmation email\") can be requested, per account name and per client address, in any hour, to stop mailbox flooding. <b>Pending password reset link</b> chooses whether a new reset request replaces a link that is still valid (anybody can then keep cancelling another member's link) or is refused until that link expires (2 hours). Leave the fields blank to keep the current values on an Upgrade, or the defaults on a new install. Everything here can be changed later under Admin > Global Forum Settings."), "</p>\n";
 echo "                          <p>", gettext("<b>Enable error reports</b> enables verbose error reporting for your WoodBees forum and sends these reports to the Admin User's Email Address. This option is only available when performing a new installation. To enable post-install please see readme.txt for instructions."), "</p>\n";
 echo "                        </td>\n";
 echo "                      </tr>\n";

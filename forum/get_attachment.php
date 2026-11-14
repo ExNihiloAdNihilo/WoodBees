@@ -113,11 +113,22 @@ $file_size = filesize($file_path);
 // Last Modified Header for cache control
 cache_check_last_modified(filemtime($file_path), md5_file($file_path));
 
+// Only pictures and plain text are shown in the browser. Anything else
+// (HTML, SVG, PDF, scripts, unknown types...) is sent as a download: a file
+// that runs as a page would run with this forum's origin and the logged-in
+// member's session. The sandbox policy is a second line of defence.
+$inline_mime_types = array('image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'text/plain');
+
+$disposition = in_array(mb_strtolower(trim($attachment_details['mimetype'])), $inline_mime_types, true) ? 'inline' : 'attachment';
+
+$header_file_name = str_replace(array('"', '\\'), '', preg_replace('/[\x00-\x1F\x7F]+/', '', $file_name));
+
 // Send remaining headers for length and filename.
 header("Content-length: $file_size");
 header("Content-type: {$attachment_details['mimetype']}");
 header("X-Content-Type-Options: nosniff");
-header("Content-disposition: inline; filename=\"$file_name\"");
+header("Content-Security-Policy: sandbox");
+header("Content-disposition: $disposition; filename=\"$header_file_name\"");
 
 // Output the file directly to the browser.
 readfile($file_path);
