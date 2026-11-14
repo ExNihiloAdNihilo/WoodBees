@@ -52,7 +52,11 @@ if (($attachment_dir = forum_get_global_setting('attachment_dir', null, false)) 
     if (!($attachment_real_path = realpath($attachment_dir))) {
 
         if (!($attachment_real_path = realpath(__DIR__ . '/../' . $attachment_dir))) {
-            throw new Exception("Could not locate attachment directory");
+
+            // The directory only exists once attachments have been enabled and
+            // used (it is not part of the checkout). A forum without one has no
+            // attachment files to tidy up, so carry on without it.
+            $attachment_real_path = null;
         }
     }
 }
@@ -526,7 +530,20 @@ if (!$logon_key_unique) {
     }
 }
 
+// The attachment permission check (get_attachment.php) looks attachments up by
+// AID and avatars by AVATAR_AID / PIC_AID on every download; without these
+// indexes each one scans the whole table.
+install_add_missing_indexes($config['db_database'], 'POST_ATTACHMENT_IDS', array('AID' => 'AID'));
+
+install_add_missing_indexes($config['db_database'], 'PM_ATTACHMENT_IDS', array('AID' => 'AID'));
+
+install_add_missing_indexes($config['db_database'], 'USER_PREFS', array('AVATAR_AID' => 'AVATAR_AID', 'PIC_AID' => 'PIC_AID'));
+
 foreach ($forum_prefix_array as $forum_fid => $table_data) {
+
+    if (install_column_exists($table_data['DATABASE_NAME'], "{$table_data['WEBTAG']}_USER_PREFS", 'AVATAR_AID')) {
+        install_add_missing_indexes($table_data['DATABASE_NAME'], "{$table_data['WEBTAG']}_USER_PREFS", array('AVATAR_AID' => 'AVATAR_AID', 'PIC_AID' => 'PIC_AID'));
+    }
 
     if (!install_column_exists($config['db_database'], "{$table_data['WEBTAG']}_THREAD", 'APPROVED')) {
 

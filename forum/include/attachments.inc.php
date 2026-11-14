@@ -431,9 +431,7 @@ function attachments_user_can_read($attachment)
     // Linked to a post of this forum.
     if (($table_prefix = get_table_prefix()) && ($forum_fid = get_forum_fid())) {
 
-        $readable_folders = folder_get_available_array();
-
-        $readable_folders = is_array($readable_folders) ? array_map('intval', $readable_folders) : array();
+        $readable_folders = null;
 
         $sql = "SELECT THREAD.FID, THREAD.DELETED, THREAD.APPROVED AS THREAD_APPROVED, ";
         $sql .= "POST.APPROVED AS POST_APPROVED, POST_CONTENT.CONTENT ";
@@ -449,6 +447,13 @@ function attachments_user_can_read($attachment)
             while (($link = $result->fetch_assoc()) !== null) {
 
                 $folder_fid = intval($link['FID']);
+
+                if ($readable_folders === null) {
+
+                    $readable_folders = folder_get_available_array();
+
+                    $readable_folders = is_array($readable_folders) ? array_map('intval', $readable_folders) : array();
+                }
 
                 if (!in_array($folder_fid, $readable_folders, true)) continue;
 

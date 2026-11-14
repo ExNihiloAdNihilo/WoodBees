@@ -264,6 +264,14 @@ if (isset($_POST['install_method'])) {
 
                     include_once("upgrade.php");
 
+                } else if ($install_method == 2) {
+
+                    // Reconnect: leave the database alone and only rewrite config.inc.php
+                    // (below), but only if the selected database really holds a forum.
+                    if (!install_table_exists($config['db_database'], 'FORUMS')) {
+                        throw new Exception("No WoodBees forum was found in the selected database, so there is nothing to reconnect to. Use New Install for an empty database.");
+                    }
+
                 } else if (@file_exists('new-install.php')) {
 
                     $remove_conflicts = ($install_method == 1);

@@ -130,7 +130,8 @@ $db->query($sql);
 $sql = "CREATE TABLE PM_ATTACHMENT_IDS (";
 $sql .= "  MID MEDIUMINT(8) UNSIGNED NOT NULL,";
 $sql .= "  AID MEDIUMINT(8) UNSIGNED NOT NULL,";
-$sql .= "  PRIMARY KEY (MID,AID)";
+$sql .= "  PRIMARY KEY (MID,AID),";
+$sql .= "  KEY AID (AID)";
 $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
 
 $db->query($sql);
@@ -203,7 +204,8 @@ $sql .= "  FID MEDIUMINT(8) UNSIGNED NOT NULL,";
 $sql .= "  TID MEDIUMINT(8) UNSIGNED NOT NULL,";
 $sql .= "  PID MEDIUMINT(8) UNSIGNED NOT NULL,";
 $sql .= "  AID MEDIUMINT(8) UNSIGNED NOT NULL,";
-$sql .= "  PRIMARY KEY (FID,TID,PID,AID)";
+$sql .= "  PRIMARY KEY (FID,TID,PID,AID),";
+$sql .= "  KEY AID (AID)";
 $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
 
 $db->query($sql);
@@ -424,7 +426,9 @@ $sql .= "  ENABLE_TAGS CHAR(1) NOT NULL DEFAULT 'Y',";
 $sql .= "  AUTO_SCROLL_MESSAGES CHAR(1) NOT NULL DEFAULT 'Y',";
 $sql .= "  PRIMARY KEY (UID),";
 $sql .= "  KEY DOB (DOB),";
-$sql .= "  KEY DOB_DISPLAY (DOB_DISPLAY)";
+$sql .= "  KEY DOB_DISPLAY (DOB_DISPLAY),";
+$sql .= "  KEY AVATAR_AID (AVATAR_AID),";
+$sql .= "  KEY PIC_AID (PIC_AID)";
 $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
 
 $db->query($sql);

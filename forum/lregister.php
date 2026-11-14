@@ -350,9 +350,13 @@ if (isset($_POST['register'])) {
             // Display final success / confirmation page.
             if (forum_get_setting('require_email_confirmation', 'Y')) {
 
-                if (email_send_user_confirmation($new_uid)) {
+                // The account counts as unconfirmed from now on, whether or not the
+                // email below can be sent: a mail server that is down (or an address
+                // that cannot be mailed) must not turn into a way round the
+                // confirmation.
+                perm_user_apply_email_confirmation($new_uid);
 
-                    perm_user_apply_email_confirmation($new_uid);
+                if (email_send_user_confirmation($new_uid)) {
 
                     light_html_draw_top(
                         array(

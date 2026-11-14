@@ -558,6 +558,35 @@ function install_column_exists($database_name, $table_name, $column_name)
     return ($result->num_rows > 0);
 }
 
+/**
+ * Adds every index in $indexes (name => column) that the table does not have
+ * yet, with a single ALTER TABLE.
+ *
+ * @param string $database_name
+ * @param string $table_name
+ * @param array  $indexes index name => column name
+ * @return bool true if the table has all of them afterwards
+ */
+function install_add_missing_indexes($database_name, $table_name, array $indexes)
+{
+    if (!$db = db::get()) return false;
+
+    $add_array = array();
+
+    foreach ($indexes as $index_name => $column_name) {
+
+        if (!install_index_exists($database_name, $table_name, $index_name)) {
+            $add_array[] = sprintf('ADD KEY `%s` (`%s`)', $index_name, $column_name);
+        }
+    }
+
+    if (sizeof($add_array) == 0) return true;
+
+    $db->query(sprintf('ALTER TABLE `%s`.`%s` %s', $database_name, $table_name, implode(', ', $add_array)));
+
+    return true;
+}
+
 function install_index_exists($database_name, $table_name, $index_name)
 {
     if (!$db = db::get()) return false;
