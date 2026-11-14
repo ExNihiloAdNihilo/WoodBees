@@ -4,7 +4,7 @@ Everything below "What's new in 1.5.2" and older is the inherited
 Beehive Forum changelog, kept as the historical record of the engine
 WoodBees is built on.
 
-## What's new in WoodBees Alpha 0.3.1 (Unreleased)
+## What's new in WoodBees Alpha 0.3.1 (Released 13th November 2026)
 
 Changes from Alpha 0.3:
 
@@ -13,7 +13,8 @@ Changes from Alpha 0.3:
 - **The installer is now locked on an installed forum.** To run the installer's Upgrade method, first create an empty file named `install.enable` in `forum/include/` (on the host, or `docker compose exec web touch /var/www/html/include/install.enable`), then open `/install-disabled/`. The installer deletes the file when it finishes; until it is gone the forum shows a reminder instead of its pages. A fresh copy with no `config.inc.php` still goes straight to the installer, as before.
 - **Restart nginx after pulling** (`docker compose restart nginx`) so it picks up the new `docker/nginx.conf`. With the bundled MySQL, also run `docker compose up -d mysql` so the database container picks up its new crash-recovery setting.
 - **External MariaDB 10.x servers are now refused.** The MariaDB 11.4 minimum from Alpha 0.2 is now actually checked, on every page as well as in the installer. Upgrade the server to MariaDB 11.4 (or MySQL 8.4) first. The bundled engine files already use those versions.
-- **Run the installer's Upgrade method** to add the new `POST_SEARCH_ID` index (it is added automatically; there is nothing else to do).
+- **Run the installer's Upgrade method** (see the first point). It adds the `TID_PID` index to `POST_SEARCH_ID` (keeping every existing comment id, so old `c=` links stay valid), creates the new `LOGON_THROTTLE` and `USER_ACTION_TOKEN` tables, and makes `USER.LOGON` unique; if two accounts already share a username it lists them on its last page and leaves that one step undone until you rename them. Until Upgrade has run, logons work but are not rate-limited, and password-reset and confirmation emails are not sent. The Advanced Options box has an optional *delete attachments that nothing uses any more* step (back up first).
+- **Everybody is logged out of "remember me" once**, and any password-reset or confirmation link mailed before the update stops working: both now use new random tokens.
 - **Internet-facing installs: don't keep the default database password.** The bundled engine files still use the password `password` and publish port 3306 on the host. The installer lock closes the one-request wipe, but on a public server stop publishing 3306 and use your own password (it is set in the engine file you picked and must match `config.inc.php`).
 
 ### Fixes

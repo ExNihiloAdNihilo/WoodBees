@@ -22,7 +22,7 @@ USA
 ======================================================================*/
 
 // WoodBees Version
-define('WOODBEES_VERSION', "Alpha 0.3");
+define('WOODBEES_VERSION', "Alpha 0.3.1");
 
 // Beehive Version (the underlying engine WoodBees is built on)
 define('BEEHIVE_VERSION', "1.5.2");

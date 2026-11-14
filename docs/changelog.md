@@ -1,6 +1,6 @@
 # Beehive Forum Change Log (Generated: Tue, 23 Aug 2016 20:25:51)
 
-## Unreleased (WoodBees Alpha 0.3.1)
+## Date: Fri, 13 Nov 2026 (WoodBees Alpha 0.3.1)
 
 - Fixed: Changing the email address on the profile page: if the
          confirmation email could not be sent (mail server down, address

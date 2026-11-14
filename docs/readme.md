@@ -1,6 +1,6 @@
 # WoodBees Readme
 
-WoodBees Alpha 0.3 — a fork of Beehive Forum, maintained at
+WoodBees Alpha 0.3.1 — a fork of Beehive Forum, maintained at
 <https://github.com/ExNihiloAdNihilo/WoodBees>. See [release.md](release.md)
 for what's changed in WoodBees.
 

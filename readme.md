@@ -1,6 +1,10 @@
-# WoodBees Alpha 0.3
+# WoodBees Alpha 0.3.1
 
 A fork of Beehive Forum. See [docs/release.md](docs/release.md) for what's new in this release.
+
+**Upgrading from Alpha 0.3?** Read "Before you upgrade" in the Alpha 0.3.1 section of
+[docs/release.md](docs/release.md): create `forum/include/install.enable`, restart nginx
+and run the installer's Upgrade method (it is locked on an installed forum from this release on).
 
 **Upgrading from Alpha 0.2?** Read "Before you upgrade" in
 [docs/release.md](docs/release.md) first: back up
