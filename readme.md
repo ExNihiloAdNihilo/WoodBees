@@ -72,12 +72,12 @@ confirm before stopping the stack, ask separately whether to wipe `db_data`,
 then bring everything back up. Edit `.env` yourself first; the scripts don't
 touch it.
 
-[About](https://github.com/BeehiveForum/BeehiveForum/blob/master/docs/beehive.md)
+[About](https://github.com/ExNihiloAdNihilo/WoodBees/blob/master/docs/beehive.md)
 
-[Readme](https://github.com/BeehiveForum/BeehiveForum/blob/master/docs/readme.md)
+[Readme](https://github.com/ExNihiloAdNihilo/WoodBees/blob/master/docs/readme.md)
 
-[Release Notes](https://github.com/BeehiveForum/BeehiveForum/blob/master/docs/release.md)
+[Release Notes](https://github.com/ExNihiloAdNihilo/WoodBees/blob/master/docs/release.md)
 
-[FAQ](https://github.com/BeehiveForum/BeehiveForum/blob/master/docs/faq.md)
+[FAQ](https://github.com/ExNihiloAdNihilo/WoodBees/blob/master/docs/faq.md)
 
-[Change-Log](https://github.com/BeehiveForum/BeehiveForum/blob/master/docs/changelog.md)
+[Change-Log](https://github.com/ExNihiloAdNihilo/WoodBees/blob/master/docs/changelog.md)
