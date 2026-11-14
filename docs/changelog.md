@@ -2,6 +2,14 @@
 
 ## Unreleased (WoodBees Alpha 0.3.1)
 
+- Fixed: Two people commenting on a new address at the same moment
+         created two threads for that address (4 of 5 runs with five
+         people), splitting the first comments between them for good.
+         The look-up and creation of a thread at a new address, in post,
+         light post and poll creation, now run under a database lock
+         named after a hash of the address, so there is one thread and
+         everyone's comment lands in it. Threads that were already
+         duplicated are not merged by this.
 - Fixed: The installer's Upgrade method rebuilt POST_SEARCH_ID from
          scratch every time it ran, renumbering the stable comment ids
          ("c=" in comment links, and the Manticore document ids), so

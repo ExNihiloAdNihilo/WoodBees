@@ -591,9 +591,23 @@ if ($valid && isset($_POST['post'])) {
                 $poll_closes = false;
             }
 
-            if (($tid = post_create_thread($fid, $_SESSION['UID'], $thread_title, 'Y', 'N'))) {
+            // The address check above and the insert below must not be
+            // interleaved with another request creating the same address.
+            thread_address_lock($thread_title);
 
-                if (($new_pid = post_create($fid, $tid, 0, $_SESSION['UID'], array(), ''))) {
+            if (thread_get_tid_by_title($thread_title) !== false) {
+                html_draw_error(gettext("A thread already exists at that address. Please choose a different one for your poll."));
+            }
+
+            $tid = post_create_thread($fid, $_SESSION['UID'], $thread_title, 'Y', 'N');
+
+            $new_pid = $tid ? post_create($fid, $tid, 0, $_SESSION['UID'], array(), '') : false;
+
+            thread_address_unlock();
+
+            if ($tid) {
+
+                if ($new_pid) {
 
                     poll_create($tid, $poll_questions_array, $poll_closes, $change_vote, $poll_type, $show_results, $poll_vote_type, $option_type, $allow_guests);
 

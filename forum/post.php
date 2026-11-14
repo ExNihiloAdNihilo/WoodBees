@@ -512,6 +512,13 @@ if ($valid && isset($_POST['post'])) {
 
         if (post_check_ddkey($dedupe)) {
 
+            // Two people commenting on a new address at the same moment must end
+            // up in one thread: hold the address lock from the lookup until the
+            // first comment exists.
+            if ($new_thread) {
+                thread_address_lock($threadtitle);
+            }
+
             if ($new_thread && ($existing_tid = thread_get_tid_by_title($threadtitle)) !== false) {
 
                 // A thread already exists at this address anywhere in the forum.
@@ -583,7 +590,11 @@ if ($valid && isset($_POST['post'])) {
                     $content .= "<div class=\"sig\">$sig</div>";
                 }
 
-                if (($new_pid = post_create($fid, $tid, $reply_to_pid, $_SESSION['UID'], $to_logon_array, $content)) !== false) {
+                $new_pid = post_create($fid, $tid, $reply_to_pid, $_SESSION['UID'], $to_logon_array, $content);
+
+                thread_address_unlock();
+
+                if ($new_pid !== false) {
 
                     if ($high_interest == "Y") {
                         thread_set_high_interest($tid);

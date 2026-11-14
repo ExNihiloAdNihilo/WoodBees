@@ -63,6 +63,68 @@ function thread_get_tid_by_title($title)
     return $tid;
 }
 
+/**
+ * Serialise "look up the thread at this address, create it if there is none".
+ *
+ * Without it two people commenting on a new address at the same moment both
+ * find no thread and both create one. The lock is a database advisory lock
+ * (GET_LOCK) named after a hash of the forum and the normalised address:
+ * MySQL rejects lock names over 64 characters, and addresses are up to 250.
+ * It is held until thread_address_unlock() (call it once the first comment
+ * exists) or the end of the request, whichever comes first.
+ *
+ * If the lock cannot be had within $timeout seconds the post carries on
+ * unlocked: a rare duplicate thread is better than a failed post.
+ *
+ * @param string $title
+ * @param int    $timeout seconds to wait for another request's lock
+ * @return bool true if the lock is held
+ */
+function thread_address_lock($title, $timeout = 10)
+{
+    if (!$db = db::get()) return false;
+
+    if (!($table_prefix = get_table_prefix())) return false;
+
+    $title = thread_title_normalise($title);
+
+    if (strlen($title) == 0) return false;
+
+    $config = server_get_config();
+
+    $lock_name = 'wb_addr_' . md5($config['db_database'] . '|' . $table_prefix . '|' . $title);
+
+    $sql = "SELECT GET_LOCK('$lock_name', " . intval($timeout) . ")";
+
+    if (!($result = $db->query($sql))) return false;
+
+    list($got_lock) = $result->fetch_row();
+
+    if ($got_lock != 1) return false;
+
+    $GLOBALS['BH_THREAD_ADDRESS_LOCKS'][$lock_name] = true;
+
+    return true;
+}
+
+/**
+ * Release the address locks taken by thread_address_lock() in this request.
+ *
+ * @return void
+ */
+function thread_address_unlock()
+{
+    if (empty($GLOBALS['BH_THREAD_ADDRESS_LOCKS'])) return;
+
+    if (!$db = db::get()) return;
+
+    foreach (array_keys($GLOBALS['BH_THREAD_ADDRESS_LOCKS']) as $lock_name) {
+        @$db->query("SELECT RELEASE_LOCK('$lock_name')");
+    }
+
+    $GLOBALS['BH_THREAD_ADDRESS_LOCKS'] = array();
+}
+
 function thread_get_title($tid)
 {
     if (!$db = db::get()) return false;
