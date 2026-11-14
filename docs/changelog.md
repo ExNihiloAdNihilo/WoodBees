@@ -2,6 +2,13 @@
 
 ## Unreleased (WoodBees Alpha 0.3.1)
 
+- Fixed: The installer's Upgrade method rebuilt POST_SEARCH_ID from
+         scratch every time it ran, renumbering the stable comment ids
+         ("c=" in comment links, and the Manticore document ids), so
+         links made before an Upgrade could open a different comment
+         afterwards. Upgrade now keeps existing ids, adds the TID_PID
+         index if missing, and only gives ids to comments that have
+         none, so running it again changes nothing.
 - Fixed: Thread views slowed down as the forum grew: since Alpha 0.3
          every comment shown looked up its stable comment id with a
          full scan of POST_SEARCH_ID. New TID_PID index on

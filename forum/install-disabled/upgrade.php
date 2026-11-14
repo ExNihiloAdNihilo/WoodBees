@@ -475,26 +475,39 @@ foreach ($forum_prefix_array as $forum_fid => $table_data) {
         $db->query($sql);
     }
 
-    $sql = "DROP TABLE IF EXISTS `{$table_data['PREFIX']}POST_SEARCH_ID`";
+    // POST_SEARCH_ID.SID is the comment's stable id: it is the "c=" in comment
+    // links and the document id in the Manticore index. Upgrade must never
+    // renumber it, so an existing table is kept as it is and only topped up.
+    if (!install_table_exists($config['db_database'], "{$table_data['WEBTAG']}_POST_SEARCH_ID")
+        || !install_column_exists($config['db_database'], "{$table_data['WEBTAG']}_POST_SEARCH_ID", 'SID')) {
 
-    $db->query($sql);
+        $db->query("DROP TABLE IF EXISTS `{$table_data['PREFIX']}POST_SEARCH_ID`");
 
-    $sql = "CREATE TABLE `{$table_data['PREFIX']}POST_SEARCH_ID` (";
-    $sql .= "  SID MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT,";
-    $sql .= "  TID MEDIUMINT(8) UNSIGNED NOT NULL,";
-    $sql .= "  PID MEDIUMINT(8) UNSIGNED NOT NULL,";
-    $sql .= "  PRIMARY KEY  (SID,TID,PID),";
-    $sql .= "  KEY TID_PID (TID,PID)";
-    $sql .= ") ENGINE=MYISAM  DEFAULT CHARSET=UTF8";
+        $sql = "CREATE TABLE `{$table_data['PREFIX']}POST_SEARCH_ID` (";
+        $sql .= "  SID MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT,";
+        $sql .= "  TID MEDIUMINT(8) UNSIGNED NOT NULL,";
+        $sql .= "  PID MEDIUMINT(8) UNSIGNED NOT NULL,";
+        $sql .= "  PRIMARY KEY  (SID,TID,PID),";
+        $sql .= "  KEY TID_PID (TID,PID)";
+        $sql .= ") ENGINE=MYISAM  DEFAULT CHARSET=UTF8";
 
-    $db->query($sql);
+        $db->query($sql);
+    }
 
-    $sql = "TRUNCATE `{$table_data['PREFIX']}POST_SEARCH_ID`";
+    // The anti-join below looks rows up by (TID, PID).
+    if (!install_index_exists($config['db_database'], "{$table_data['WEBTAG']}_POST_SEARCH_ID", 'TID_PID')) {
+        $db->query("ALTER TABLE `{$table_data['PREFIX']}POST_SEARCH_ID` ADD KEY TID_PID (TID, PID)");
+    }
 
-    $db->query($sql);
-
+    // Give an id to every comment that has none (all of them on a new table),
+    // oldest first. Comments that already have one keep it, so running Upgrade
+    // again changes nothing.
     $sql = "INSERT INTO `{$table_data['PREFIX']}POST_SEARCH_ID` (TID, PID) ";
-    $sql .= "SELECT TID, PID FROM `{$table_data['PREFIX']}POST`";
+    $sql .= "SELECT POST.TID, POST.PID FROM `{$table_data['PREFIX']}POST` POST ";
+    $sql .= "LEFT JOIN `{$table_data['PREFIX']}POST_SEARCH_ID` POST_SEARCH_ID ";
+    $sql .= "ON (POST_SEARCH_ID.TID = POST.TID AND POST_SEARCH_ID.PID = POST.PID) ";
+    $sql .= "WHERE POST_SEARCH_ID.SID IS NULL ";
+    $sql .= "ORDER BY POST.CREATED, POST.TID, POST.PID";
 
     $db->query($sql);
 
@@ -941,14 +954,6 @@ foreach ($forum_prefix_array as $forum_fid => $table_data) {
 
     if (!install_index_exists($config['db_database'], "{$table_data['WEBTAG']}_THREAD", 'TITLE_LOOKUP')) {
         $db->query("ALTER TABLE `{$table_data['PREFIX']}THREAD` ADD KEY TITLE_LOOKUP (TITLE)");
-    }
-
-    // Lookup of a comment's stable id (SID) by thread and position, used by
-    // every thread view since Alpha 0.3. Without it each comment shown costs a
-    // full scan of POST_SEARCH_ID. (The table is rebuilt with the key above;
-    // this keeps the key in place if that rebuild is ever made conditional.)
-    if (!install_index_exists($config['db_database'], "{$table_data['WEBTAG']}_POST_SEARCH_ID", 'TID_PID')) {
-        $db->query("ALTER TABLE `{$table_data['PREFIX']}POST_SEARCH_ID` ADD KEY TID_PID (TID, PID)");
     }
 
     // Instance-of-origin marker for content imported from other forums.
