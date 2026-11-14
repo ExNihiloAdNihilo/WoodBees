@@ -475,7 +475,14 @@ if (isset($_POST['register'])) {
 
         } else {
 
-            $error_msg_array[] = gettext("Error creating user record");
+            // Another sign-up for the same name can land between the check
+            // above and the insert; the unique key then refuses this one.
+            if (user_exists($logon)) {
+                $error_msg_array[] = gettext("Sorry, a user with that name already exists");
+            } else {
+                $error_msg_array[] = gettext("Error creating user record");
+            }
+
             $valid = false;
         }
     }

@@ -97,10 +97,19 @@ function user_create($logon, $password, $nickname, $email)
     $sql .= "VALUES ('$logon', '$passhash', '$salt', '$nickname', '$email', CAST('$current_datetime' AS DATETIME), ";
     $sql .= "'$http_referer', '$ipaddress')";
 
-    if (($db->query($sql))) {
+    // The USER.LOGON unique key refuses a second account with the same
+    // name: report that as a plain failure, not a fatal error.
+    try {
 
-        $new_uid = $db->insert_id;
-        return $new_uid;
+        if (($db->query($sql))) {
+
+            $new_uid = $db->insert_id;
+            return $new_uid;
+        }
+
+    } catch (Exception $e) {
+
+        if ($e->getCode() != MYSQL_ERROR_DUPLICATE_ENTRY) throw $e;
     }
 
     return false;
@@ -160,7 +169,16 @@ function user_update($uid, $logon, $nickname, $email)
     $sql = "UPDATE LOW_PRIORITY USER SET LOGON = '$logon', NICKNAME = '$nickname', ";
     $sql .= "EMAIL = '$email' WHERE UID = '$uid'";
 
-    if (!$db->query($sql)) return false;
+    try {
+
+        if (!$db->query($sql)) return false;
+
+    } catch (Exception $e) {
+
+        if ($e->getCode() != MYSQL_ERROR_DUPLICATE_ENTRY) throw $e;
+
+        return false;
+    }
 
     return true;
 }
@@ -192,7 +210,16 @@ function user_change_logon($uid, $logon)
     $sql = "UPDATE LOW_PRIORITY USER SET LOGON = '$logon' ";
     $sql .= "WHERE UID = '$uid'";
 
-    if (!$db->query($sql)) return false;
+    try {
+
+        if (!$db->query($sql)) return false;
+
+    } catch (Exception $e) {
+
+        if ($e->getCode() != MYSQL_ERROR_DUPLICATE_ENTRY) throw $e;
+
+        return false;
+    }
 
     return true;
 }

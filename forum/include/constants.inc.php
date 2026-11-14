@@ -120,6 +120,9 @@ define('MYSQL_ERROR_NO_SUCH_TABLE', 1146);
 define('MYSQL_ERROR_WRONG_COLUMN_NAME', 1166);
 define('MYSQL_CONNECT_ERROR', 9999);
 
+// MySQL / MariaDB error number for a violated unique key.
+define('MYSQL_ERROR_DUPLICATE_ENTRY', 1062);
+
 // MySQL date, time and datetime formatting constants for PHP's date function
 define('MYSQL_DATE', 'Y-m-d');
 define('MYSQL_TIME', 'H:i:s');

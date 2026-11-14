@@ -2,6 +2,14 @@
 
 ## Unreleased (WoodBees Alpha 0.3.1)
 
+- Fixed: Usernames were not unique under concurrency: ten people
+         registering the same name at the same moment got up to four
+         accounts with it (impersonation, ban and moderation confusion).
+         USER.LOGON now has a UNIQUE index (new installs create it;
+         Upgrade adds it), and the second registration gets "a user with
+         that name already exists". If a forum already has duplicate
+         usernames, Upgrade lists them on its last page and leaves the
+         old index in place until they are renamed.
 - Fixed: Two people commenting on a new address at the same moment
          created two threads for that address (4 of 5 runs with five
          people), splitting the first comments between them for good.

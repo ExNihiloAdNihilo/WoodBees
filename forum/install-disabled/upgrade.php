@@ -448,6 +448,49 @@ $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
 
 $db->query($sql);
 
+// Usernames are unique. The check at registration is check-then-insert, so
+// several simultaneous sign-ups for one name all succeeded; a UNIQUE index
+// now makes the database refuse the second. A forum that already holds such
+// duplicates keeps the old index (and the installer says so on its last page)
+// until they are renamed, then the next Upgrade adds the unique one.
+$upgrade_warnings = isset($upgrade_warnings) ? $upgrade_warnings : array();
+
+$logon_key_unique = false;
+
+if (($result = $db->query("SHOW INDEXES FROM USER")) !== false) {
+
+    while (($key_data = $result->fetch_assoc()) !== null) {
+        if ($key_data['Key_name'] == 'LOGON' && $key_data['Non_unique'] == 0) $logon_key_unique = true;
+    }
+}
+
+if (!$logon_key_unique) {
+
+    $sql = "SELECT LOGON, COUNT(*) AS LOGON_COUNT FROM USER GROUP BY LOGON ";
+    $sql .= "HAVING COUNT(*) > 1 ORDER BY LOGON LIMIT 20";
+
+    $result = $db->query($sql);
+
+    if ($result->num_rows > 0) {
+
+        $duplicate_logons = array();
+
+        while (($duplicate = $result->fetch_assoc()) !== null) {
+            $duplicate_logons[] = htmlspecialchars($duplicate['LOGON'], ENT_QUOTES, 'UTF-8') . " (" . $duplicate['LOGON_COUNT'] . " accounts)";
+        }
+
+        $upgrade_warnings[] = "Several accounts share the same username, so usernames could not be made unique: " . implode(", ", $duplicate_logons) . ". Rename the extra accounts (Admin > Users), then run Upgrade again. Until then two people can still register the same name at the same moment.";
+
+    } else {
+
+        if (install_index_exists($config['db_database'], 'USER', 'LOGON')) {
+            $db->query("ALTER TABLE USER DROP KEY LOGON");
+        }
+
+        $db->query("ALTER TABLE USER ADD UNIQUE KEY LOGON (LOGON)");
+    }
+}
+
 foreach ($forum_prefix_array as $forum_fid => $table_data) {
 
     if (!install_column_exists($config['db_database'], "{$table_data['WEBTAG']}_THREAD", 'APPROVED')) {

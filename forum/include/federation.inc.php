@@ -211,7 +211,21 @@ function federation_placeholder_uid($origin)
     $sql .= "VALUES ('$logon_escaped', '$passwd', '', '$nickname', '', CAST('$current_datetime' AS DATETIME), ";
     $sql .= "'', NULL, CAST('$current_datetime' AS DATETIME))";
 
-    if (!$db->query($sql)) return false;
+    try {
+
+        if (!$db->query($sql)) return false;
+
+    } catch (Exception $e) {
+
+        if ($e->getCode() != MYSQL_ERROR_DUPLICATE_ENTRY) throw $e;
+
+        // Another request created this instance's placeholder first.
+        if (!($result = $db->query("SELECT UID FROM USER WHERE LOGON = '$logon_escaped' AND PASSWD = '$passwd'")) || $result->num_rows == 0) return false;
+
+        list($uid) = $result->fetch_row();
+
+        return $cache[$origin] = intval($uid);
+    }
 
     return $cache[$origin] = intval($db->insert_id);
 }

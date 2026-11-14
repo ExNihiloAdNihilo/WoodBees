@@ -325,6 +325,17 @@ if (isset($_POST['install_method'])) {
                     echo "                    <tr>\n";
                     echo "                      <td align=\"left\" class=\"postbody\">&nbsp;</td>\n";
                     echo "                    </tr>\n";
+
+                    if (isset($upgrade_warnings) && is_array($upgrade_warnings)) {
+
+                        foreach ($upgrade_warnings as $upgrade_warning) {
+
+                            echo "                    <tr>\n";
+                            echo "                      <td align=\"left\" class=\"postbody\"><b>Warning:</b> ", $upgrade_warning, "</td>\n";
+                            echo "                    </tr>\n";
+                        }
+                    }
+
                     echo "                  </table>\n";
                     echo "                </td>\n";
                     echo "              </tr>\n";
