@@ -79,6 +79,10 @@ if (isset($_POST['user_logon']) && isset($_POST['user_password'])) {
             header_redirect("lthread_list.php?webtag=$webtag");
         }
 
+    } else if (!empty($GLOBALS['BH_LOGON_THROTTLED'])) {
+
+        $error_msg_array[] = gettext("Too many failed logon attempts. Please wait a few minutes and try again.");
+
     } else {
 
         $error_msg_array[] = gettext("The username or password you supplied is not valid.");

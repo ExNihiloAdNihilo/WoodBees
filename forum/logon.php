@@ -91,14 +91,18 @@ if (isset($_GET['delete_cookie']) && ($_GET['delete_cookie'] == 'yes')) {
 
     } else {
 
+        // "logon_throttled" instead of "logon_failed" when the attempt was
+        // refused for too many recent failures.
+        $logon_error = !empty($GLOBALS['BH_LOGON_THROTTLED']) ? 'logon_throttled' : 'logon_failed';
+
         if (isset($final_uri)) {
 
-            $final_uri = rawurlencode(sprintf("logon.php?webtag=$webtag&logon_failed=true&final_uri=%s", rawurlencode($final_uri)));
+            $final_uri = rawurlencode(sprintf("logon.php?webtag=$webtag&$logon_error=true&final_uri=%s", rawurlencode($final_uri)));
             header_redirect("index.php?webtag=$webtag&final_uri=$final_uri");
 
         } else {
 
-            $final_uri = rawurlencode("logon.php?webtag=$webtag&logon_failed=true");
+            $final_uri = rawurlencode("logon.php?webtag=$webtag&$logon_error=true");
             header_redirect("index.php?webtag=$webtag&final_uri=$final_uri");
         }
     }

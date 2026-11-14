@@ -1785,13 +1785,9 @@ function admin_reset_user_password($uid, $password)
 
     if (!is_numeric($uid)) return false;
 
-    $salt = user_password_salt();
+    $salt = $db->escape(USER_PASSWORD_HASH_MARKER);
 
-    $passhash = user_password_encrypt($password, $salt);
-
-    $salt = $db->escape($salt);
-
-    $passhash = $db->escape($passhash);
+    $passhash = $db->escape(user_password_hash($password));
 
     $sql = "UPDATE USER SET PASSWD = '$passhash', SALT = '$salt' ";
     $sql .= "WHERE UID = '$uid'";

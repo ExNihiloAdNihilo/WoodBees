@@ -448,6 +448,20 @@ $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
 
 $db->query($sql);
 
+// Failed-logon counters for the logon throttle (see user_logon_throttle_reserve()).
+if (!install_table_exists($config['db_database'], 'LOGON_THROTTLE')) {
+
+    $sql = "CREATE TABLE LOGON_THROTTLE (";
+    $sql .= "  THROTTLE_KEY VARCHAR(80) COLLATE UTF8_BIN NOT NULL, ";
+    $sql .= "  ATTEMPTS MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT 0, ";
+    $sql .= "  WINDOW_START DATETIME NOT NULL, ";
+    $sql .= "  PRIMARY KEY (THROTTLE_KEY), ";
+    $sql .= "  KEY WINDOW_START (WINDOW_START)";
+    $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
+
+    $db->query($sql);
+}
+
 // Usernames are unique. The check at registration is check-then-insert, so
 // several simultaneous sign-ups for one name all succeeded; a UNIQUE index
 // now makes the database refuse the second. A forum that already holds such

@@ -87,9 +87,9 @@ function user_create($logon, $password, $nickname, $email)
         $http_referer = "";
     }
 
-    $salt = user_password_salt();
+    $salt = $db->escape(USER_PASSWORD_HASH_MARKER);
 
-    $passhash = user_password_encrypt($password, $salt);
+    $passhash = $db->escape(user_password_hash($password));
 
     $current_datetime = date(MYSQL_DATETIME, time());
 
@@ -288,19 +288,15 @@ function user_change_password($uid, $new_password, $old_password)
 
     list($passhash, $salt) = $result->fetch_row();
 
-    if ((md5($old_password) == $passhash) && (strlen(trim($salt))) == 0) {
+    if ((strlen(trim($salt)) == 0) && hash_equals(md5($old_password), (string) $passhash)) {
         return user_reset_password($uid, $new_password, $passhash);
     }
 
-    if (user_password_encrypt($old_password, $salt) != $passhash) return false;
+    if (!user_password_verify($old_password, $passhash, $salt)) return false;
 
-    $salt = user_password_salt();
+    $salt = $db->escape(USER_PASSWORD_HASH_MARKER);
 
-    $passhash = user_password_encrypt($new_password, $salt);
-
-    $salt = $db->escape($salt);
-
-    $passhash = $db->escape($passhash);
+    $passhash = $db->escape(user_password_hash($new_password));
 
     $sql = "UPDATE USER SET PASSWD = '$passhash', ";
     $sql .= "SALT = '$salt' WHERE UID = '$uid'";
@@ -318,13 +314,9 @@ function user_reset_password($uid, $new_password, $old_passhash)
 
     $old_passhash = $db->escape($old_passhash);
 
-    $salt = user_password_salt();
+    $salt = $db->escape(USER_PASSWORD_HASH_MARKER);
 
-    $passhash = user_password_encrypt($new_password, $salt);
-
-    $salt = $db->escape($salt);
-
-    $passhash = $db->escape($passhash);
+    $passhash = $db->escape(user_password_hash($new_password));
 
     $sql = "UPDATE USER SET PASSWD = '$passhash', SALT = '$salt' ";
     $sql .= "WHERE UID = '$uid' AND PASSWD = '$old_passhash'";
@@ -355,6 +347,12 @@ function user_logon($logon, $password)
 {
     if (!$db = db::get()) return false;
 
+    // Too many recent failures from this address or for this name: don't
+    // even look at the password.
+    if (!user_logon_throttle_reserve($logon)) return false;
+
+    $throttle_logon = $logon;
+
     $logon = $db->escape(mb_strtoupper($logon));
 
     $email = $db->escape($logon);
@@ -374,14 +372,25 @@ function user_logon($logon, $password)
     // Federation placeholder accounts can never log on.
     if ($passhash === USER_PLACEHOLDER_PASSWD) return false;
 
-    if ((md5($password) == $passhash) && (strlen(trim($salt))) == 0) {
+    if ((strlen(trim($salt)) == 0) && hash_equals(md5($password), (string) $passhash)) {
 
         if (!user_reset_password($uid, $password, $passhash)) return false;
+
+        user_logon_throttle_clear($throttle_logon);
 
         return $uid;
     }
 
-    if (user_password_encrypt($password, $salt) != $passhash) return false;
+    if (!user_password_verify($password, $passhash, $salt)) return false;
+
+    user_logon_throttle_clear($throttle_logon);
+
+    // Upgrade an old DES hash (or a bcrypt one with an outdated cost) now
+    // that the plain password is at hand. What the user just typed becomes
+    // the stored password, so a long password is finally kept in full.
+    if (!user_password_is_bcrypt($passhash) || password_needs_rehash($passhash, PASSWORD_BCRYPT, array('cost' => USER_PASSWORD_BCRYPT_COST))) {
+        user_password_rehash($uid, $password, $passhash);
+    }
 
     $sql = "UPDATE LOW_PRIORITY USER SET IPADDRESS = '$ipaddress' WHERE UID = '$uid'";
 
@@ -487,9 +496,201 @@ function user_password_salt()
     return substr(str_replace('+', '.', base64_encode(pack('N4', mt_rand(), mt_rand(), mt_rand(), mt_rand()))), 0, 22);
 }
 
+/**
+ * Legacy password hash: DES crypt() with a 2-character salt, which ignores
+ * everything after the 8th character of the password. Kept only to check the
+ * hashes of accounts that have not logged on since bcrypt was introduced.
+ *
+ * @param string $password
+ * @param string $salt
+ * @return string
+ */
 function user_password_encrypt($password, $salt)
 {
     return crypt($password, $salt);
+}
+
+/**
+ * Hash a new password (bcrypt, random salt included in the hash).
+ *
+ * @param string $password
+ * @return string
+ */
+function user_password_hash($password)
+{
+    return password_hash($password, PASSWORD_BCRYPT, array('cost' => USER_PASSWORD_BCRYPT_COST));
+}
+
+/**
+ * Is this stored hash a bcrypt one?
+ *
+ * @param string $passhash
+ * @return bool
+ */
+function user_password_is_bcrypt($passhash)
+{
+    return is_string($passhash) && preg_match('/^\$2y\$\d\d\$/D', $passhash) === 1;
+}
+
+/**
+ * Check a password against USER.PASSWD / USER.SALT (bcrypt or legacy DES).
+ *
+ * @param string $password
+ * @param string $passhash
+ * @param string $salt
+ * @return bool
+ */
+function user_password_verify($password, $passhash, $salt)
+{
+    if (!is_string($passhash) || strlen($passhash) < 13) return false;
+
+    if (user_password_is_bcrypt($passhash)) return password_verify($password, $passhash);
+
+    $legacy_hash = user_password_encrypt($password, $salt);
+
+    return is_string($legacy_hash) && strlen($legacy_hash) >= 13 && hash_equals($passhash, $legacy_hash);
+}
+
+/**
+ * Replace a stored hash with a current bcrypt one after a successful logon
+ * (only if the row still holds the hash that was just verified).
+ *
+ * @param int    $uid
+ * @param string $password
+ * @param string $old_passhash
+ * @return bool
+ */
+function user_password_rehash($uid, $password, $old_passhash)
+{
+    if (!$db = db::get()) return false;
+
+    if (!is_numeric($uid)) return false;
+
+    $passhash = $db->escape(user_password_hash($password));
+
+    $marker = $db->escape(USER_PASSWORD_HASH_MARKER);
+
+    $old_passhash = $db->escape($old_passhash);
+
+    $sql = "UPDATE USER SET PASSWD = '$passhash', SALT = '$marker' ";
+    $sql .= "WHERE UID = '$uid' AND PASSWD = '$old_passhash'";
+
+    if (!$db->query($sql)) return false;
+
+    return true;
+}
+
+/**
+ * Record a logon attempt for throttling and say whether it may go ahead.
+ *
+ * Each attempt first reserves a slot in two fixed windows
+ * (LOGON_THROTTLE_WINDOW seconds): one for the client address (an IPv6
+ * address counts as its /64) and one for the account name or email typed.
+ * The reservation is a single atomic INSERT ... ON DUPLICATE KEY UPDATE, so
+ * a burst of parallel guesses cannot all slip through; user_logon_throttle_clear()
+ * gives the slot back after a successful logon. Over the limit, the attempt
+ * is refused without checking the password and
+ * $GLOBALS['BH_LOGON_THROTTLED'] is set so the logon pages can say why.
+ *
+ * Fails open if the LOGON_THROTTLE table is missing (code pulled, Upgrade
+ * not run yet).
+ *
+ * @param string $logon
+ * @return bool true if the attempt may be checked
+ */
+function user_logon_throttle_reserve($logon)
+{
+    $GLOBALS['BH_LOGON_THROTTLED'] = false;
+
+    if (!$db = db::get()) return true;
+
+    $keys = user_logon_throttle_keys($logon);
+
+    $cutoff = date(MYSQL_DATETIME, time() - LOGON_THROTTLE_WINDOW);
+
+    $now = date(MYSQL_DATETIME, time());
+
+    try {
+
+        foreach ($keys as $key => $max_attempts) {
+
+            $key = $db->escape($key);
+
+            $sql = "INSERT INTO LOGON_THROTTLE (THROTTLE_KEY, ATTEMPTS, WINDOW_START) ";
+            $sql .= "VALUES ('$key', 1, CAST('$now' AS DATETIME)) ON DUPLICATE KEY UPDATE ";
+            $sql .= "ATTEMPTS = IF(WINDOW_START < CAST('$cutoff' AS DATETIME), 1, ATTEMPTS + 1), ";
+            $sql .= "WINDOW_START = IF(WINDOW_START < CAST('$cutoff' AS DATETIME), CAST('$now' AS DATETIME), WINDOW_START)";
+
+            $db->query($sql);
+
+            $result = $db->query("SELECT ATTEMPTS FROM LOGON_THROTTLE WHERE THROTTLE_KEY = '$key'");
+
+            list($attempts) = $result->fetch_row();
+
+            // Over the limit: refuse, and don't spend the next key's budget
+            // (one client address must not be able to lock out an account).
+            if ($attempts > $max_attempts) {
+
+                $GLOBALS['BH_LOGON_THROTTLED'] = true;
+
+                return false;
+            }
+        }
+
+    } catch (Exception $e) {
+
+        if ($e->getCode() != MYSQL_ERROR_NO_SUCH_TABLE) throw $e;
+    }
+
+    return true;
+}
+
+/**
+ * After a successful logon: forget the account's failures and hand back the
+ * client address's slot.
+ *
+ * @param string $logon
+ * @return void
+ */
+function user_logon_throttle_clear($logon)
+{
+    if (!$db = db::get()) return;
+
+    $keys = array_keys(user_logon_throttle_keys($logon));
+
+    try {
+
+        $db->query("UPDATE LOGON_THROTTLE SET ATTEMPTS = IF(ATTEMPTS > 0, ATTEMPTS - 1, 0) WHERE THROTTLE_KEY = '" . $db->escape($keys[0]) . "'");
+
+        $db->query("DELETE FROM LOGON_THROTTLE WHERE THROTTLE_KEY = '" . $db->escape($keys[1]) . "'");
+
+        // Housekeeping: expired windows.
+        $cutoff = date(MYSQL_DATETIME, time() - LOGON_THROTTLE_WINDOW);
+
+        $db->query("DELETE FROM LOGON_THROTTLE WHERE WINDOW_START < CAST('$cutoff' AS DATETIME)");
+
+    } catch (Exception $e) {
+
+        if ($e->getCode() != MYSQL_ERROR_NO_SUCH_TABLE) throw $e;
+    }
+}
+
+/**
+ * @param string $logon
+ * @return array throttle key => failures allowed per window (address first)
+ */
+function user_logon_throttle_keys($logon)
+{
+    $ipaddress = get_ip_address();
+
+    if (strpos($ipaddress, ':') !== false && ($packed = @inet_pton($ipaddress)) !== false) {
+        $ipaddress = 'v6:' . bin2hex(substr($packed, 0, 8));
+    }
+
+    return array(
+        'IP:' . substr($ipaddress, 0, 60) => LOGON_THROTTLE_MAX_PER_IP,
+        'USER:' . md5(mb_strtoupper(trim($logon))) => LOGON_THROTTLE_MAX_PER_USER
+    );
 }
 
 function user_get($uid)

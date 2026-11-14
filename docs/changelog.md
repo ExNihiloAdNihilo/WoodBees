@@ -2,6 +2,17 @@
 
 ## Unreleased (WoodBees Alpha 0.3.1)
 
+- Fixed: Passwords were hashed with DES crypt(), so only the first 8
+         characters counted ("Passw0rdZ" logged in as "Passw0rd10"), and
+         there was no limit on logon attempts. New and changed passwords
+         are now bcrypt; an existing account is converted at its next
+         successful logon (what was typed becomes the stored password, so
+         a long password is kept in full from then on). Failed logons are
+         counted per client address (10) and per account name (20) in a
+         15-minute window in the new LOGON_THROTTLE table (created by
+         Upgrade, and without it logons still work, unthrottled); over the
+         limit the password is not checked and the user is told to wait.
+         A successful logon gives its address slot back.
 - Fixed: Usernames were not unique under concurrency: ten people
          registering the same name at the same moment got up to four
          accounts with it (impersonation, ban and moderation confusion).

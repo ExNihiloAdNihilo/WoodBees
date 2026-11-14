@@ -113,6 +113,8 @@ function logon_draw_form($logon_options)
     // Check for previously failed logon.
     if (isset($_GET['logout_success']) && $_GET['logout_success'] == 'true') {
         html_display_success_msg(gettext("You have successfully logged out."), '500', 'center');
+    } else if (isset($_GET['logon_throttled']) && !($logon_options & LOGON_FORM_SESSION_EXPIRED)) {
+        html_display_error_msg(gettext("Too many failed logon attempts. Please wait a few minutes and try again."), '500', 'center');
     } else if (isset($_GET['logon_failed']) && !($logon_options & LOGON_FORM_SESSION_EXPIRED)) {
         html_display_error_msg(gettext("The username or password you supplied is not valid."), '500', 'center');
     }

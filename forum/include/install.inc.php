@@ -495,6 +495,7 @@ function install_get_table_names(&$global_tables, &$forum_tables)
             'GROUP_INFO',
             'GROUP_PERMS',
             'GROUP_USERS',
+            'LOGON_THROTTLE',
             'PM',
             'PM_ATTACHMENT_IDS',
             'PM_CONTENT',

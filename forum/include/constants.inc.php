@@ -120,6 +120,18 @@ define('MYSQL_ERROR_NO_SUCH_TABLE', 1146);
 define('MYSQL_ERROR_WRONG_COLUMN_NAME', 1166);
 define('MYSQL_CONNECT_ERROR', 9999);
 
+// Password hashing: new passwords are bcrypt ("$2y$"); the SALT column holds
+// this marker for them. Older accounts keep a DES crypt() hash (only the first
+// 8 characters of the password count) until their next successful logon.
+define('USER_PASSWORD_HASH_MARKER', 'bcrypt');
+define('USER_PASSWORD_BCRYPT_COST', 10);
+
+// Logon throttling (see user_logon_throttle_reserve()): failed logons allowed
+// per window, per client address and per account name.
+define('LOGON_THROTTLE_WINDOW', 900);
+define('LOGON_THROTTLE_MAX_PER_IP', 10);
+define('LOGON_THROTTLE_MAX_PER_USER', 20);
+
 // MySQL / MariaDB error number for a violated unique key.
 define('MYSQL_ERROR_DUPLICATE_ENTRY', 1062);
 
