@@ -13,7 +13,8 @@
          received, or as someone's avatar or profile picture; anything
          else gets the "Missing or invalid attachment hash" page.
          docker/nginx.conf no longer serves /attachments/, and the
-         attachment directory gets a .htaccess for Apache.
+         attachment directory gets a .htaccess for Apache (effective only
+         where AllowOverride permits it).
 - Fixed: Deleting a comment, rejecting one in the Post Approval Queue,
          or permanently deleting a thread never deleted its attachments:
          the file stayed on disk, downloadable, and kept counting against
