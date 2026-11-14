@@ -4,11 +4,15 @@ WoodBees Alpha 0.3.2 — a fork of Beehive Forum, maintained at
 <https://github.com/ExNihiloAdNihilo/WoodBees>. See [release.md](release.md)
 for what's changed in WoodBees.
 
-Below is the inherited Beehive Forum manual. It still accurately describes
-installing, configuring and customising a WoodBees installation, since
-WoodBees is built directly on this codebase. References to specific
-historical Beehive Forum version numbers (e.g. "as of Beehive Forum 1.0")
-describe the underlying engine's own release history and are left as-is.
+Below is the inherited Beehive Forum manual. WoodBees is built directly
+on this codebase, so it still describes configuring and customising a
+WoodBees forum. The requirements and the installer and upgrade steps
+(1.1, 1.2.1.5, 1.3.1 and 1.4.1.4) carry WoodBees notes where WoodBees
+differs. For the Docker setup see the top-level [readme.md](../readme.md),
+and before upgrading between WoodBees releases always read "Before you
+upgrade" in [release.md](release.md). References to specific historical
+Beehive Forum version numbers (e.g. "as of Beehive Forum 1.0") describe
+the underlying engine's own release history and are left as-is.
 
 <http://www.beehiveforum.co.uk/>
 
@@ -73,6 +77,11 @@ in release.txt.
 ### 1. Installation
 
 #### 1.1 Requirements
+
+**WoodBees:** MySQL 8.4 or MariaDB 11.4 or newer (the installer and the
+forum itself refuse older servers). WoodBees is developed and tested on
+PHP 7.4, the version in the bundled Docker image. The Beehive Forum
+minimums below are the engine's historical ones.
 
 You need web hosting which provides:
 
@@ -235,11 +244,19 @@ root of your web space or into another folder of your choosing.
 ###### 1.2.1.5 Installing the forum
 
 Once everything is uploaded, you will need to run the forum's install
-script. This is located in the /install subdirectory of your forum.
-To access it, you will need to load the file in your browser from
-the web space you just uploaded to, e.g.:
+script. In WoodBees this is located in the /install-disabled
+subdirectory of your forum. To access it, you will need to load the
+file in your browser from the web space you just uploaded to, e.g.:
 
-http://www.mysite.com/forum/install/index.php
+http://www.mysite.com/forum/install-disabled/index.php
+
+On a fresh copy (no include/config.inc.php yet) the installer opens
+straight away. Once the forum is installed it is locked: to run it
+again (Upgrade, Reinstall or Reconnect) first create an empty file
+named install.enable in the forum's include folder (with Docker:
+`docker compose exec web touch /var/www/html/include/install.enable`).
+The installer deletes that file when it has finished, and while the
+file exists the forum shows a reminder instead of its pages.
 
 This will then walk you through the creation of your new forum. Note
 that you will need your MySQL database's host address, username and
@@ -262,9 +279,11 @@ manual steps above.
 
 ###### 1.3.1 First use
 
-If all went well, you should now have a working forum! After deleting
-the /install subdirectory (as is described by the install script) you
-can then log in to your newly created administrator account, using
+If all went well, you should now have a working forum! (WoodBees
+locks its installer by itself once include/config.inc.php exists, so
+you do not need to delete the install-disabled folder, whatever the
+install script's last page says; docker/nginx.conf enforces the same
+lock.) You can then log in to your newly created administrator account, using
 the details you specified at install. This account gives you access
 to everything, so you can create folders, set user permissions and
 so forth.
@@ -545,13 +564,23 @@ can simply overwrite all of the files with the new ones.
 ###### 1.4.1.4 Run the upgrade script
 
 Once you've backed up your database/files and uploaded the new files,
-you will need to run the upgrade script, located at install/index.php
-in your forum directory:
+you will need to run the upgrade script, located at
+install-disabled/index.php in your forum directory. It is locked on an
+installed forum, so first create an empty file named install.enable
+in the forum's include folder (with Docker:
+`docker compose exec web touch /var/www/html/include/install.enable`);
+the installer deletes it when the upgrade has finished. Then open:
 
-http://www.mysite.com/forum/install/index.php
+http://www.mysite.com/forum/install-disabled/index.php
 
 Make sure you select the correct 'Upgrade' proceedure from the
 installation method drop-down list, and then follow the instructions.
+For WoodBees the entry reads "Upgrade 1.3.1 to 1.5.2", which is the
+right one for every WoodBees Alpha upgrade. The Upgrade rewrites
+include/config.inc.php from the details you enter, so copy any
+changes you made to that file by hand back afterwards. The exact
+steps for each WoodBees release (including restarting nginx) are
+under "Before you upgrade" in [release.md](release.md).
 
 ##### 1.4.2 Skipping a version during upgrade
 
