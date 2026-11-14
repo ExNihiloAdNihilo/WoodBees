@@ -68,6 +68,14 @@
          and federation imports, on both engines. Password fields are
          left as typed. Real emoji support needs the utf8mb4 migration
          (docs/utf8mb4-migration.md).
+- Fixed: With the bundled MySQL 8.4, an unclean database stop (OOM
+         kill, power cut, docker kill) could take the forum down until
+         someone ran REPAIR TABLE by hand: MySQL never repairs MyISAM
+         tables by default, so damaged tables were served until a query
+         noticed, then failed every page that used them ("Table ... is
+         marked as crashed"). docker-compose.mysql.yml now starts MySQL
+         with --myisam-recover-options=BACKUP,FORCE, which checks and
+         repairs such tables when they are first opened.
 
 ## Date: Fri, 13 Nov 2026 (WoodBees Alpha 0.3)
 

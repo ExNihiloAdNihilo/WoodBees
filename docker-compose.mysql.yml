@@ -10,6 +10,17 @@ services:
     # Service name stays "mysql" for both engines: it is the hostname
     # config.inc.php and Manticore connect to.
     image: mysql:8.4
+    # Nearly all forum tables are MyISAM. After an unclean stop (OOM kill,
+    # power cut, docker kill) MySQL 8.4's default (myisam_recover_options=OFF)
+    # never repairs them: it serves damaged tables until a query finds the
+    # damage, then marks the table crashed and every page using it fails
+    # until someone runs REPAIR TABLE by hand. With BACKUP,FORCE a table that
+    # wasn't closed cleanly is fully checked when it is first opened and
+    # repaired if needed, keeping a copy of the old data file as
+    # <table>-<timestamp>.BAK in the data directory. (MariaDB repairs by
+    # default, with BACKUP,QUICK; QUICK was tested here and missed damaged
+    # row counts until a later CHECK TABLE.)
+    command: ["--myisam-recover-options=BACKUP,FORCE"]
     ports:
       - "3306:3306"
     volumes:
