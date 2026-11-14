@@ -2,6 +2,10 @@
 
 ## Date: Sat, 14 Nov 2026 (WoodBees Alpha 0.3.2)
 
+- Fixed: llogout.php (light mode) did not end the "remember me" token or
+         clear the user_token cookie; it now does, like logout.php.
+- Added: "Log out all devices" in the light-mode menu (llogout.php?all=1
+         asks for confirmation, the POST does it).
 - Added: "Log out all devices" button on the Change Password page
          (edit_password.php): deletes every SESSIONS row and every
          USER_TOKEN of the user (user_logout_everywhere()), including the

@@ -29,6 +29,7 @@ require_once BH_INCLUDE_PATH . 'constants.inc.php';
 require_once BH_INCLUDE_PATH . 'format.inc.php';
 require_once BH_INCLUDE_PATH . 'header.inc.php';
 require_once BH_INCLUDE_PATH . 'html.inc.php';
+require_once BH_INCLUDE_PATH . 'light.inc.php';
 require_once BH_INCLUDE_PATH . 'server.inc.php';
 require_once BH_INCLUDE_PATH . 'session.inc.php';
 require_once BH_INCLUDE_PATH . 'user.inc.php';
@@ -46,8 +47,43 @@ if (isset($_REQUEST['final_uri']) && strlen(trim($_REQUEST['final_uri'])) > 0) {
     }
 }
 
+// "Log out all devices": ask first (llogout.php?all=1), then end every
+// session and "remember me" token of this user, this browser included.
+if (isset($_POST['logout_all']) && session::logged_in()) {
+
+    user_logout_everywhere($_SESSION['UID']);
+
+    session::end();
+
+    html_set_cookie("user_logon", "", time() - YEAR_IN_SECONDS);
+    html_set_cookie("user_token", "", time() - YEAR_IN_SECONDS);
+
+    header_redirect("llogon.php?webtag=$webtag");
+    exit;
+}
+
+if (isset($_GET['all']) && session::logged_in()) {
+
+    light_html_draw_top();
+
+    light_navigation_bar();
+
+    light_html_display_msg(gettext("Log out all devices"), gettext("Ends your session on every browser and device you are logged on with, including this one, and cancels all \"remember me\" logons. You will have to log on again everywhere. Use this if you lost a device or think somebody else has your session."), 'llogout.php', 'post', array('logout_all' => gettext("Log out all devices")));
+
+    light_html_draw_bottom();
+
+    exit;
+}
+
+// Forget this device's "remember me" token, not just the session: a copy of
+// the cookie must not keep working after logging out (same as logout.php).
+if (session::logged_in() && ($logout_token = html_get_cookie('user_token')) && is_string($logout_token)) {
+    user_delete_token($_SESSION['UID'], $logout_token);
+}
+
 session::end();
 
 html_set_cookie("user_logon", "", time() - YEAR_IN_SECONDS);
+html_set_cookie("user_token", "", time() - YEAR_IN_SECONDS);
 
 header_redirect("llogon.php?webtag=$webtag$final_uri");

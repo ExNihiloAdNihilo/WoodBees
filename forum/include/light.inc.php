@@ -367,6 +367,7 @@ function light_navigation_bar(array $options = array())
         echo "    <li><a href=\"llogon.php?webtag=$webtag\">", gettext("Login"), "</a></li>\n";
     } else {
         echo "    <li><a href=\"llogout.php?webtag=$webtag\">", gettext("Logout"), "</a></li>\n";
+        echo "    <li><a href=\"llogout.php?webtag=$webtag&amp;all=1\">", gettext("Log out all devices"), "</a></li>\n";
     }
 
     echo "  </ul>\n";
