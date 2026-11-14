@@ -139,6 +139,12 @@ define('LOGON_THROTTLE_WINDOW', 900);
 define('LOGON_THROTTLE_MAX_PER_IP', 10);
 define('LOGON_THROTTLE_MAX_PER_USER', 20);
 
+// "Remember me" cookie logons are counted separately (so a flood of bad
+// cookies cannot lock people out of password logons), per client address
+// and per account name in the cookie.
+define('LOGON_THROTTLE_MAX_TOKEN_PER_IP', 30);
+define('LOGON_THROTTLE_MAX_TOKEN_PER_USER', 20);
+
 // MySQL / MariaDB error number for a violated unique key.
 define('MYSQL_ERROR_DUPLICATE_ENTRY', 1062);
 

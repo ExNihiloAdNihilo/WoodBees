@@ -2,6 +2,16 @@
 
 ## Unreleased (WoodBees Alpha 0.3.1)
 
+- Fixed: "Remember me" cookie logons used a guessable token
+         (md5 of the time and a 31-bit random number), stored it as it
+         was in USER_TOKEN, accepted unlimited guesses, survived a
+         logout and survived a password change. Tokens are now 128
+         random bits and only their SHA-256 is stored; cookie logons
+         are throttled (30 failed attempts per client address and 20 per
+         account name per 15 minutes, counted separately from password
+         logons, and a refused attempt no longer deletes the visitor's
+         cookies); logging out ends that device's token, and changing
+         or resetting a password ends all of the user's tokens.
 - Fixed: Password-reset and email-confirmation links contained the
          account's stored password hash as their secret, so the hash
          was mailed, ended up in mail and web server logs and Referer

@@ -305,6 +305,8 @@ function user_change_password($uid, $new_password, $old_password)
 
     user_action_token_clear($uid, USER_ACTION_TOKEN_PW_RESET);
 
+    user_delete_all_tokens($uid);
+
     return true;
 }
 
@@ -403,24 +405,44 @@ function user_logon($logon, $password)
     return $uid;
 }
 
+/**
+ * The value stored in USER_TOKEN.TOKEN for a "remember me" cookie token:
+ * only a SHA-256 of the secret is kept, so a copy of the database does not
+ * contain usable cookies.
+ *
+ * @param string $token
+ * @return string
+ */
+function user_token_hash($token)
+{
+    return hash('sha256', $token);
+}
+
 function user_logon_token($logon, $token)
 {
     if (!$db = db::get()) return false;
 
     $ipaddress = get_ip_address();
 
-    if (!is_md5($token)) return false;
+    if (!is_string($logon) || !is_md5($token)) return false;
+
+    // Guessing cookies is limited like guessing passwords (own counters).
+    if (!user_logon_throttle_reserve($logon, 'token')) return false;
+
+    $throttle_logon = $logon;
 
     $logon = $db->escape(mb_strtoupper($logon));
 
     $token = $db->escape($token);
+
+    $token_hash = user_token_hash($token);
 
     $ipaddress = $db->escape($ipaddress);
 
     $current_datetime = date(MYSQL_DATETIME, time());
 
     $sql = "SELECT USER.UID FROM USER INNER JOIN USER_TOKEN ON (USER_TOKEN.UID = USER.UID) ";
-    $sql .= "WHERE USER.LOGON = '$logon' AND USER_TOKEN.TOKEN = '$token' ";
+    $sql .= "WHERE USER.LOGON = '$logon' AND USER_TOKEN.TOKEN = '$token_hash' ";
     $sql .= "AND USER_TOKEN.EXPIRES > '$current_datetime'";
 
     if (!($result = $db->query($sql))) return false;
@@ -428,6 +450,8 @@ function user_logon_token($logon, $token)
     if ($result->num_rows == 0) return false;
 
     list($uid) = $result->fetch_row();
+
+    user_logon_throttle_clear($throttle_logon, 'token');
 
     $sql = "UPDATE USER SET IPADDRESS = '$ipaddress' WHERE UID = '$uid'";
 
@@ -448,16 +472,54 @@ function user_generate_token($uid)
 
     user_prune_expired_tokens();
 
-    $token = md5(uniqid(mt_rand()));
+    // 128 random bits (the cookie keeps the 32 hex character format);
+    // only a hash of it is stored.
+    $token = bin2hex(random_bytes(16));
+
+    $token_hash = user_token_hash($token);
 
     $current_datetime = date(MYSQL_DATETIME, time());
 
     $sql = "INSERT INTO USER_TOKEN (UID, TOKEN, EXPIRES) VALUES ('$uid', ";
-    $sql .= "'$token',  DATE_ADD('$current_datetime', INTERVAL 1 MONTH))";
+    $sql .= "'$token_hash',  DATE_ADD('$current_datetime', INTERVAL 1 MONTH))";
 
     if (!($db->query($sql))) return false;
 
     return $token;
+}
+
+/**
+ * End one "remember me" token (logout on this device).
+ *
+ * @param int    $uid
+ * @param string $token the raw cookie value
+ * @return bool
+ */
+function user_delete_token($uid, $token)
+{
+    if (!is_numeric($uid) || !is_string($token) || !is_md5($token)) return false;
+
+    if (!$db = db::get()) return false;
+
+    $token_hash = user_token_hash($token);
+
+    return (bool) $db->query("DELETE QUICK FROM USER_TOKEN WHERE UID = '" . intval($uid) . "' AND TOKEN = '$token_hash'");
+}
+
+/**
+ * End every "remember me" token of a user (their password was changed or
+ * reset, so cookies stolen before that stop working).
+ *
+ * @param int $uid
+ * @return bool
+ */
+function user_delete_all_tokens($uid)
+{
+    if (!is_numeric($uid)) return false;
+
+    if (!$db = db::get()) return false;
+
+    return (bool) $db->query("DELETE QUICK FROM USER_TOKEN WHERE UID = '" . intval($uid) . "'");
 }
 
 function user_prune_expired_tokens()
@@ -479,12 +541,12 @@ function user_renew_token($uid, $token)
 
     if (!$db = db::get()) return false;
 
-    $token = $db->escape($token);
+    $token_hash = user_token_hash($token);
 
     $current_datetime = date(MYSQL_DATETIME, time());
 
     $sql = "UPDATE USER_TOKEN SET EXPIRES = DATE_ADD('$current_datetime', INTERVAL 1 MONTH) ";
-    $sql .= "WHERE UID = '$uid' AND TOKEN = '$token'";
+    $sql .= "WHERE UID = '$uid' AND TOKEN = '$token_hash'";
 
     if (!($db->query($sql))) return false;
 
@@ -600,13 +662,13 @@ function user_password_rehash($uid, $password, $old_passhash)
  * @param string $logon
  * @return bool true if the attempt may be checked
  */
-function user_logon_throttle_reserve($logon)
+function user_logon_throttle_reserve($logon, $scope = 'logon')
 {
     $GLOBALS['BH_LOGON_THROTTLED'] = false;
 
     if (!$db = db::get()) return true;
 
-    $keys = user_logon_throttle_keys($logon);
+    $keys = user_logon_throttle_keys($logon, $scope);
 
     $cutoff = date(MYSQL_DATETIME, time() - LOGON_THROTTLE_WINDOW);
 
@@ -654,11 +716,11 @@ function user_logon_throttle_reserve($logon)
  * @param string $logon
  * @return void
  */
-function user_logon_throttle_clear($logon)
+function user_logon_throttle_clear($logon, $scope = 'logon')
 {
     if (!$db = db::get()) return;
 
-    $keys = array_keys(user_logon_throttle_keys($logon));
+    $keys = array_keys(user_logon_throttle_keys($logon, $scope));
 
     try {
 
@@ -679,14 +741,23 @@ function user_logon_throttle_clear($logon)
 
 /**
  * @param string $logon
+ * @param string $scope 'logon' (password) or 'token' (remember-me cookie)
  * @return array throttle key => failures allowed per window (address first)
  */
-function user_logon_throttle_keys($logon)
+function user_logon_throttle_keys($logon, $scope = 'logon')
 {
     $ipaddress = get_ip_address();
 
     if (strpos($ipaddress, ':') !== false && ($packed = @inet_pton($ipaddress)) !== false) {
         $ipaddress = 'v6:' . bin2hex(substr($packed, 0, 8));
+    }
+
+    if ($scope == 'token') {
+
+        return array(
+            'IPT:' . substr($ipaddress, 0, 59) => LOGON_THROTTLE_MAX_TOKEN_PER_IP,
+            'TOK:' . md5(mb_strtoupper(trim($logon))) => LOGON_THROTTLE_MAX_TOKEN_PER_USER
+        );
     }
 
     return array(
@@ -877,6 +948,8 @@ function user_set_password($uid, $new_password)
     if (!$db->query($sql)) return false;
 
     user_action_token_clear($uid, USER_ACTION_TOKEN_PW_RESET);
+
+    user_delete_all_tokens($uid);
 
     return true;
 }

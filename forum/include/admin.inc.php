@@ -1796,6 +1796,8 @@ function admin_reset_user_password($uid, $password)
 
     user_action_token_clear($uid, USER_ACTION_TOKEN_PW_RESET);
 
+    user_delete_all_tokens($uid);
+
     return true;
 }
 

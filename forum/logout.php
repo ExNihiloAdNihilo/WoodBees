@@ -46,6 +46,12 @@ if (isset($_REQUEST['final_uri']) && strlen(trim($_REQUEST['final_uri'])) > 0) {
     }
 }
 
+// Forget this device's "remember me" token, not just the session: a copy of
+// the cookie must not keep working after logging out.
+if (session::logged_in() && ($logout_token = html_get_cookie('user_token')) && is_string($logout_token)) {
+    user_delete_token($_SESSION['UID'], $logout_token);
+}
+
 session::end();
 
 if (isset($_REQUEST['register'])) {
@@ -56,5 +62,6 @@ if (isset($_REQUEST['register'])) {
 }
 
 html_set_cookie("user_logon", "", time() - YEAR_IN_SECONDS);
+html_set_cookie("user_token", "", time() - YEAR_IN_SECONDS);
 
 header_redirect("index.php?webtag=$webtag$final_uri");

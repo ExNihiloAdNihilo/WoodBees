@@ -69,8 +69,10 @@ abstract class session
 
                 session_id($hash);
 
-            } else {
+            } else if (empty($GLOBALS['BH_LOGON_THROTTLED'])) {
 
+                // (Not when the attempt was merely refused for too many
+                // recent failures: that must not cost visitors their cookies.)
                 html_set_cookie('user_logon', '', time() - YEAR_IN_SECONDS);
                 html_set_cookie('user_token', '', time() - YEAR_IN_SECONDS);
             }
@@ -99,11 +101,13 @@ abstract class session
 
         $user_token = session::$db->escape($user_token);
 
+        $user_token_hash = user_token_hash($user_token);
+
         $current_datetime = date(MYSQL_DATETIME, time());
 
         $sql = "SELECT SESSIONS.ID FROM USER_TOKEN INNER JOIN USER ON (USER.UID = USER_TOKEN.UID) ";
         $sql .= "LEFT JOIN SESSIONS ON (SESSIONS.UID = USER_TOKEN.UID) WHERE USER.LOGON = '$user_logon'";
-        $sql .= "AND USER_TOKEN.TOKEN = '$user_token' AND USER_TOKEN.EXPIRES > '$current_datetime' ";
+        $sql .= "AND USER_TOKEN.TOKEN = '$user_token_hash' AND USER_TOKEN.EXPIRES > '$current_datetime' ";
         $sql .= "AND USER.UID = '$uid' GROUP BY USER.UID";
 
         if (!($result = session::$db->query($sql))) return false;
