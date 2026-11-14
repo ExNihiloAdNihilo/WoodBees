@@ -2,6 +2,22 @@
 
 ## Unreleased (WoodBees Alpha 0.3.1)
 
+- Fixed: Changing the email address on the profile page: if the
+         confirmation email could not be sent (mail server down, address
+         that cannot be mailed) the account was left confirmed, so a
+         failing mail server was a way round the email confirmation; the
+         account is now marked unconfirmed before the email is sent. A
+         password-reset link mailed to the old address also stops working
+         once the address changes.
+- Fixed: A mail server that is down or refuses connections turned every
+         post to a subscribed thread, registration and profile save into
+         an error page (the comment was stored, then the page failed).
+         Sending an email now just reports "not sent".
+- Fixed: The logon limit counted IPv6 clients by their full address, so
+         one client could rotate through its own /64 to get a fresh
+         budget; IPv6 addresses are now counted by /64, spelling variants
+         are one address, and an IPv4-mapped IPv6 address counts as its
+         IPv4 address.
 - Fixed: "Remember me" cookie logons used a guessable token
          (md5 of the time and a 31-bit random number), stored it as it
          was in USER_TOKEN, accepted unlimited guesses, survived a

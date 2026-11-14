@@ -37,6 +37,30 @@ function email_address_valid($email)
     return preg_match('/^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*$/u', $email) > 0;
 }
 
+/**
+ * Send one message; a mail server that is down, refuses the connection or
+ * rejects the message gives 0 (not sent) instead of an exception, which the
+ * error handler would turn into an error page in the middle of posting,
+ * registering or changing a profile.
+ *
+ * @param Swift_Mailer  $mailer
+ * @param Swift_Message $message
+ * @return int number of recipients accepted
+ */
+function email_deliver($mailer, $message)
+{
+    try {
+
+        return $mailer->send($message);
+
+    } catch (Exception $e) {
+
+        @error_log('WoodBees: email could not be sent: ' . $e->getMessage());
+
+        return 0;
+    }
+}
+
 function email_send_notification($tid, $pid)
 {
     if (!is_numeric($tid)) return false;
@@ -132,7 +156,7 @@ function email_send_notification($tid, $pid)
             'text/html'
         );
 
-        $count += $mailer->send($message);
+        $count += email_deliver($mailer, $message);
     }
 
     return $count;
@@ -235,7 +259,7 @@ function email_send_thread_subscription($tid, $pid)
             'text/html'
         );
 
-        $count += $mailer->send($message);
+        $count += email_deliver($mailer, $message);
     }
 
     return $count;
@@ -343,7 +367,7 @@ function email_send_folder_subscription($tid, $pid)
             'text/html'
         );
 
-        $count += $mailer->send($message);
+        $count += email_deliver($mailer, $message);
     }
 
     return $count;
@@ -431,7 +455,7 @@ function email_send_pm_notification($mid)
             'text/html'
         );
 
-        $count += $mailer->send($message);
+        $count += email_deliver($mailer, $message);
     }
 
     return $count;
@@ -495,7 +519,7 @@ function email_send_pw_reminder($logon)
         'text/html'
     );
 
-    return $mailer->send($message);
+    return email_deliver($mailer, $message);
 }
 
 function email_send_new_pw_notification($to_uid, $from_uid, $new_password)
@@ -557,7 +581,7 @@ function email_send_new_pw_notification($to_uid, $from_uid, $new_password)
         'text/html'
     );
 
-    return $mailer->send($message);
+    return email_deliver($mailer, $message);
 }
 
 function email_send_user_confirmation($to_uid)
@@ -621,7 +645,7 @@ function email_send_user_confirmation($to_uid)
         'text/html'
     );
 
-    return $mailer->send($message);
+    return email_deliver($mailer, $message);
 }
 
 function email_send_changed_email_confirmation($to_uid)
@@ -685,7 +709,7 @@ function email_send_changed_email_confirmation($to_uid)
         'text/html'
     );
 
-    return $mailer->send($message);
+    return email_deliver($mailer, $message);
 }
 
 function email_send_user_approval_notification($to_uid, $new_user_uid)
@@ -749,7 +773,7 @@ function email_send_user_approval_notification($to_uid, $new_user_uid)
         'text/html'
     );
 
-    return $mailer->send($message);
+    return email_deliver($mailer, $message);
 }
 
 function email_send_new_user_notification($to_uid, $new_user_uid)
@@ -815,7 +839,7 @@ function email_send_new_user_notification($to_uid, $new_user_uid)
         'text/html'
     );
 
-    return $mailer->send($message);
+    return email_deliver($mailer, $message);
 }
 
 function email_send_user_approved_notification($to_uid)
@@ -875,7 +899,7 @@ function email_send_user_approved_notification($to_uid)
         'text/html'
     );
 
-    return $mailer->send($message);
+    return email_deliver($mailer, $message);
 }
 
 function email_send_post_approval_notification($to_uid)
@@ -933,7 +957,7 @@ function email_send_post_approval_notification($to_uid)
         'text/html'
     );
 
-    return $mailer->send($message);
+    return email_deliver($mailer, $message);
 }
 
 function email_send_link_approval_notification($to_uid)
@@ -991,7 +1015,7 @@ function email_send_link_approval_notification($to_uid)
         'text/html'
     );
 
-    return $mailer->send($message);
+    return email_deliver($mailer, $message);
 }
 
 function email_send_message_to_user($to_uid, $from_uid, $subject, $message_body, $use_email_addr)
@@ -1055,7 +1079,7 @@ function email_send_message_to_user($to_uid, $from_uid, $subject, $message_body,
         'text/part'
     );
 
-    return $mailer->send($message);
+    return email_deliver($mailer, $message);
 }
 
 function email_is_unique($email_address, $user_uid = 0)

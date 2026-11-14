@@ -386,6 +386,12 @@ if (isset($_POST['save'])) {
             // Update basic settings in USER table
             if (user_update($profile_uid, $user_info_new['LOGON'], $user_info_new['NICKNAME'], $user_info_new['EMAIL'])) {
 
+                // A password reset link that was mailed to the previous
+                // address must not keep working once the address has changed.
+                if ($user_info_new['EMAIL'] != $user_info['EMAIL']) {
+                    user_action_token_clear($profile_uid, USER_ACTION_TOKEN_PW_RESET);
+                }
+
                 // If email confirmation is requied and the user has changed
                 // their email address we need to get them to confirm the
                 // change by sending them another email.
@@ -393,9 +399,13 @@ if (isset($_POST['save'])) {
 
                     if (forum_get_setting('require_email_confirmation', 'Y') && ($user_info_new['EMAIL'] != $user_info['EMAIL'])) {
 
-                        if (email_send_changed_email_confirmation($profile_uid)) {
+                        // The new address counts as unconfirmed from now on, whether
+                        // or not the email below can be sent: a failing mail server
+                        // (or an address that can't be mailed) must not turn into a
+                        // way round the confirmation.
+                        perm_user_apply_email_confirmation($profile_uid);
 
-                            perm_user_apply_email_confirmation($profile_uid);
+                        if (email_send_changed_email_confirmation($profile_uid)) {
 
                             html_draw_top(
                                 array(
