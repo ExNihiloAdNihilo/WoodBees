@@ -458,11 +458,9 @@ if ($valid && isset($_POST['post'])) {
                         thread_set_high_interest($tid);
                     }
 
-                    email_send_notification($tid, $new_pid);
-
-                    email_send_thread_subscription($tid, $new_pid);
-
-                    email_send_folder_subscription($tid, $new_pid);
+                    // Nothing is mailed for a comment awaiting approval; the
+                    // approval sends it (see admin_post_approve.php).
+                    post_send_notifications($tid, $new_pid);
 
                     if (perm_check_folder_permissions($fid, USER_PERM_POST_APPROVAL, $_SESSION['UID']) && !perm_is_moderator($_SESSION['UID'], $fid)) {
                         admin_send_post_approval_notification($fid);

@@ -419,6 +419,119 @@ function install_prefix_webtag($table_name, $webtag)
     return sprintf('%s_%s', $webtag, $table_name);
 }
 
+/**
+ * Optional Upgrade step: remove attachments that nothing uses.
+ *
+ *  - link rows pointing at an attachment that no longer exists, or at a
+ *    comment that is gone or whose content was deleted or rejected;
+ *  - attachment files (and rows) that no comment or private message links to
+ *    and that are nobody's avatar or profile picture, unless the file is
+ *    less than a day old (an upload that is still being posted).
+ *
+ * @param array       $forum_prefix_array install_get_table_data()
+ * @param string|null $attachment_real_path real path of the attachment directory
+ * @return array report lines (HTML)
+ */
+function install_cleanup_attachments(array $forum_prefix_array, $attachment_real_path)
+{
+    $report = array();
+
+    if (!$db = db::get()) return $report;
+
+    $dangling_links = 0;
+
+    foreach (array('POST_ATTACHMENT_IDS', 'PM_ATTACHMENT_IDS') as $link_table) {
+
+        $db->query("DELETE LINKS FROM $link_table LINKS LEFT JOIN POST_ATTACHMENT_FILES PAF ON (PAF.AID = LINKS.AID) WHERE PAF.AID IS NULL");
+
+        $dangling_links += $db->affected_rows;
+    }
+
+    $dead_post_links = 0;
+
+    $referenced_aids = array();
+
+    $result = $db->query("SELECT AVATAR_AID, PIC_AID FROM USER_PREFS WHERE AVATAR_AID IS NOT NULL OR PIC_AID IS NOT NULL");
+
+    while (($row = $result->fetch_row()) !== null) {
+
+        foreach ($row as $aid) {
+            if (is_numeric($aid)) $referenced_aids[intval($aid)] = true;
+        }
+    }
+
+    foreach ($forum_prefix_array as $forum_fid => $table_data) {
+
+        $sql = "DELETE LINKS FROM POST_ATTACHMENT_IDS LINKS LEFT JOIN `{$table_data['PREFIX']}POST_CONTENT` PC ";
+        $sql .= "ON (PC.TID = LINKS.TID AND PC.PID = LINKS.PID) WHERE LINKS.FID = '" . intval($forum_fid) . "' ";
+        $sql .= "AND (PC.TID IS NULL OR PC.CONTENT IS NULL)";
+
+        $db->query($sql);
+
+        $dead_post_links += $db->affected_rows;
+
+        if (install_column_exists($table_data['DATABASE_NAME'], "{$table_data['WEBTAG']}_USER_PREFS", 'AVATAR_AID')) {
+
+            $result = $db->query("SELECT AVATAR_AID, PIC_AID FROM `{$table_data['PREFIX']}USER_PREFS` WHERE AVATAR_AID IS NOT NULL OR PIC_AID IS NOT NULL");
+
+            while (($row = $result->fetch_row()) !== null) {
+
+                foreach ($row as $aid) {
+                    if (is_numeric($aid)) $referenced_aids[intval($aid)] = true;
+                }
+            }
+        }
+    }
+
+    $report[] = sprintf("Attachment cleanup: removed %d link(s) to attachments that no longer exist and %d link(s) from deleted or rejected comments.", $dangling_links, $dead_post_links);
+
+    if (!$attachment_real_path) {
+
+        $report[] = "Attachment cleanup: no attachment directory is configured, so no files were deleted.";
+
+        return $report;
+    }
+
+    $sql = "SELECT PAF.AID, PAF.HASH FROM POST_ATTACHMENT_FILES PAF ";
+    $sql .= "LEFT JOIN POST_ATTACHMENT_IDS PAI ON (PAI.AID = PAF.AID) ";
+    $sql .= "LEFT JOIN PM_ATTACHMENT_IDS PMI ON (PMI.AID = PAF.AID) ";
+    $sql .= "WHERE PAI.AID IS NULL AND PMI.AID IS NULL";
+
+    $result = $db->query($sql);
+
+    $files_removed = 0;
+    $bytes_removed = 0;
+
+    while (($row = $result->fetch_assoc()) !== null) {
+
+        $aid = intval($row['AID']);
+
+        if (isset($referenced_aids[$aid]) || !preg_match('/^[0-9a-f]{32}$/D', $row['HASH'])) continue;
+
+        $file_path = $attachment_real_path . DIRECTORY_SEPARATOR . $row['HASH'];
+
+        if (@file_exists($file_path)) {
+
+            // Possibly still being attached to a comment that is being written.
+            if (@filemtime($file_path) > (time() - 86400)) continue;
+
+            $bytes_removed += intval(@filesize($file_path));
+        }
+
+        $db->query("DELETE QUICK FROM POST_ATTACHMENT_FILES WHERE AID = '$aid'");
+
+        @unlink($file_path);
+
+        @unlink($file_path . '.thumb');
+
+        $files_removed++;
+    }
+
+    $report[] = sprintf("Attachment cleanup: deleted %d unused attachment file(s), %s KB.", $files_removed, number_format($bytes_removed / 1024, 1));
+
+    return $report;
+}
+
 function install_table_exists($database_name, $table_name)
 {
     if (!$db = db::get()) return false;

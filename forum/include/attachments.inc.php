@@ -23,6 +23,7 @@ USA
 
 // Required includes
 require_once BH_INCLUDE_PATH . 'admin.inc.php';
+require_once BH_INCLUDE_PATH . 'folder.inc.php';
 require_once BH_INCLUDE_PATH . 'constants.inc.php';
 require_once BH_INCLUDE_PATH . 'db.inc.php';
 require_once BH_INCLUDE_PATH . 'format.inc.php';
@@ -58,6 +59,13 @@ function attachments_check_dir()
     @mkdir($attachment_dir, 0755, true);
 
     if (!@is_writable($attachment_dir)) return false;
+
+    // Downloads must go through get_attachment.php, which checks who may see
+    // the file. Keep Apache from serving the directory directly (nginx is
+    // told the same in docker/nginx.conf).
+    if (!@file_exists("$attachment_dir/.htaccess")) {
+        @file_put_contents("$attachment_dir/.htaccess", "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\nDeny from all\n</IfModule>\n");
+    }
 
     return $attachment_dir;
 }
@@ -177,6 +185,7 @@ function attachments_get_by_aid($aid, $uid = null)
 
     return array(
         "aid" => $attachment_data['AID'],
+        "uid" => $attachment_data['UID'],
         "downloads" => $attachment_data['DOWNLOADS'],
         "filename" => rawurldecode($attachment_data['FILENAME']),
         "filesize" => $attachment_data['FILESIZE'],
@@ -212,6 +221,7 @@ function attachments_get_by_hash($hash, $uid = null)
 
     return array(
         "aid" => $attachment_data['AID'],
+        "uid" => $attachment_data['UID'],
         "downloads" => $attachment_data['DOWNLOADS'],
         "filename" => rawurldecode($attachment_data['FILENAME']),
         "filesize" => $attachment_data['FILESIZE'],
@@ -267,7 +277,7 @@ function attachments_delete($hash)
     if (!($attachment_dir = attachments_check_dir())) return false;
 
     $sql = "SELECT PAF.AID, PAF.UID, PAF.FILENAME, PAI.TID, ";
-    $sql .= "PAI.PID FROM POST_ATTACHMENT_FILES PAF ";
+    $sql .= "PAI.PID, PAI.FID AS FORUM_FID FROM POST_ATTACHMENT_FILES PAF ";
     $sql .= "LEFT JOIN POST_ATTACHMENT_IDS PAI ON (PAI.AID = PAF.AID) ";
     $sql .= "WHERE PAF.HASH = '$hash'";
 
@@ -277,7 +287,8 @@ function attachments_delete($hash)
 
     $attachment_data = $result->fetch_assoc();
 
-    if (!isset($attachment_data['FID'])) $attachment_data['FID'] = 0;
+    // The folder the attachment's post is in (for the moderator check).
+    $attachment_data['FID'] = attachments_get_folder_fid($attachment_data);
 
     if (!(($attachment_data['UID'] == $_SESSION['UID']) || session::check_perm(USER_PERM_FOLDER_MODERATE, $attachment_data['FID']))) return false;
 
@@ -302,6 +313,14 @@ function attachments_delete($hash)
 
     if (!$db->query($sql)) return false;
 
+    // And every post or message that linked to it, so no link is left
+    // pointing at a file that is gone.
+    $aid = intval($attachment_data['AID']);
+
+    $db->query("DELETE QUICK FROM POST_ATTACHMENT_IDS WHERE AID = '$aid'");
+
+    $db->query("DELETE QUICK FROM PM_ATTACHMENT_IDS WHERE AID = '$aid'");
+
     @unlink("$attachment_dir/$hash");
 
     @unlink("$attachment_dir/$hash.thumb");
@@ -320,7 +339,7 @@ function attachments_delete_thumbnail($hash)
     if (!($attachment_dir = attachments_check_dir())) return false;
 
     $sql = "SELECT PAF.AID, PAF.UID, PAF.FILENAME, PAI.TID, ";
-    $sql .= "PAI.PID FROM POST_ATTACHMENT_FILES PAF ";
+    $sql .= "PAI.PID, PAI.FID AS FORUM_FID FROM POST_ATTACHMENT_FILES PAF ";
     $sql .= "LEFT JOIN POST_ATTACHMENT_IDS PAI ON (PAI.AID = PAF.AID) ";
     $sql .= "WHERE PAF.HASH = '$hash'";
 
@@ -330,7 +349,8 @@ function attachments_delete_thumbnail($hash)
 
     $attachment_data = $result->fetch_assoc();
 
-    if (!isset($attachment_data['FID'])) $attachment_data['FID'] = 0;
+    // The folder the attachment's post is in (for the moderator check).
+    $attachment_data['FID'] = attachments_get_folder_fid($attachment_data);
 
     if (!(($attachment_data['UID'] == $_SESSION['UID']) || session::check_perm(USER_PERM_FOLDER_MODERATE, $attachment_data['FID']))) return false;
 
@@ -351,6 +371,269 @@ function attachments_delete_thumbnail($hash)
     }
 
     @unlink("$attachment_dir/$hash.thumb");
+
+    return true;
+}
+
+/**
+ * The folder of the post an attachment is linked to (0 if none, or if the
+ * link belongs to another forum than the current one).
+ *
+ * @param array $attachment_data row with TID, PID and FORUM_FID
+ * @return int
+ */
+function attachments_get_folder_fid($attachment_data)
+{
+    if (!isset($attachment_data['TID'], $attachment_data['FORUM_FID'])) return 0;
+
+    if (!is_numeric($attachment_data['TID']) || $attachment_data['FORUM_FID'] != get_forum_fid()) return 0;
+
+    if (!$db = db::get()) return 0;
+
+    if (!($table_prefix = get_table_prefix())) return 0;
+
+    $sql = "SELECT FID FROM `{$table_prefix}THREAD` WHERE TID = '" . intval($attachment_data['TID']) . "'";
+
+    if (!($result = $db->query($sql)) || $result->num_rows == 0) return 0;
+
+    list($fid) = $result->fetch_row();
+
+    return intval($fid);
+}
+
+/**
+ * May the current user download this attachment?
+ *
+ * Yes if they uploaded it, or if it is linked to
+ *  - a post in this forum that they can read: its folder is readable, the
+ *    thread and the post are approved, and the post has not been deleted or
+ *    rejected (moderators of the folder also see unapproved posts and
+ *    deleted threads);
+ *  - a private message they sent or received;
+ *  - someone's avatar or profile picture.
+ * An attachment that is linked to nothing is only for its uploader.
+ *
+ * @param array $attachment as returned by attachments_get_by_hash()
+ * @return bool
+ */
+function attachments_user_can_read($attachment)
+{
+    if (!is_array($attachment) || !isset($attachment['aid']) || !is_numeric($attachment['aid'])) return false;
+
+    if (!$db = db::get()) return false;
+
+    $aid = intval($attachment['aid']);
+
+    $uid = (isset($_SESSION['UID']) && is_numeric($_SESSION['UID'])) ? intval($_SESSION['UID']) : 0;
+
+    if ($uid > 0 && isset($attachment['uid']) && intval($attachment['uid']) == $uid) return true;
+
+    // Linked to a post of this forum.
+    if (($table_prefix = get_table_prefix()) && ($forum_fid = get_forum_fid())) {
+
+        $readable_folders = folder_get_available_array();
+
+        $readable_folders = is_array($readable_folders) ? array_map('intval', $readable_folders) : array();
+
+        $sql = "SELECT THREAD.FID, THREAD.DELETED, THREAD.APPROVED AS THREAD_APPROVED, ";
+        $sql .= "POST.APPROVED AS POST_APPROVED, POST_CONTENT.CONTENT ";
+        $sql .= "FROM POST_ATTACHMENT_IDS PAI INNER JOIN `{$table_prefix}POST` POST ";
+        $sql .= "ON (POST.TID = PAI.TID AND POST.PID = PAI.PID) ";
+        $sql .= "INNER JOIN `{$table_prefix}THREAD` THREAD ON (THREAD.TID = POST.TID) ";
+        $sql .= "LEFT JOIN `{$table_prefix}POST_CONTENT` POST_CONTENT ";
+        $sql .= "ON (POST_CONTENT.TID = POST.TID AND POST_CONTENT.PID = POST.PID) ";
+        $sql .= "WHERE PAI.AID = '$aid' AND PAI.FID = '$forum_fid'";
+
+        if ($result = $db->query($sql)) {
+
+            while (($link = $result->fetch_assoc()) !== null) {
+
+                $folder_fid = intval($link['FID']);
+
+                if (!in_array($folder_fid, $readable_folders, true)) continue;
+
+                // Deleted by its author, or rejected by a moderator.
+                if (!isset($link['CONTENT'])) continue;
+
+                if (!session::check_perm(USER_PERM_FOLDER_MODERATE, $folder_fid)) {
+
+                    if ($link['DELETED'] == 'Y') continue;
+                    if (!isset($link['THREAD_APPROVED']) || !isset($link['POST_APPROVED'])) continue;
+                }
+
+                return true;
+            }
+        }
+    }
+
+    // Attached to a private message the user is part of.
+    if ($uid > 0) {
+
+        $sql = "SELECT PMI.MID FROM PM_ATTACHMENT_IDS PMI INNER JOIN PM ON (PM.MID = PMI.MID) ";
+        $sql .= "LEFT JOIN PM_RECIPIENT ON (PM_RECIPIENT.MID = PMI.MID AND PM_RECIPIENT.TO_UID = '$uid') ";
+        $sql .= "WHERE PMI.AID = '$aid' AND (PM.FROM_UID = '$uid' OR PM_RECIPIENT.TO_UID IS NOT NULL) LIMIT 1";
+
+        if (($result = $db->query($sql)) && $result->num_rows > 0) return true;
+    }
+
+    // Somebody's avatar or profile picture.
+    return attachments_is_profile_picture($aid);
+}
+
+/**
+ * Is the attachment used as an avatar or profile picture, in the global
+ * preferences or in any forum's?
+ *
+ * @param int $aid
+ * @return bool
+ */
+function attachments_is_profile_picture($aid)
+{
+    if (!$db = db::get()) return false;
+
+    $aid = intval($aid);
+
+    $sql = "SELECT UID FROM USER_PREFS WHERE AVATAR_AID = '$aid' OR PIC_AID = '$aid' LIMIT 1";
+
+    if (($result = $db->query($sql)) && $result->num_rows > 0) return true;
+
+    if (!($forums = $db->query("SELECT DATABASE_NAME, WEBTAG FROM FORUMS"))) return false;
+
+    while (($forum = $forums->fetch_assoc()) !== null) {
+
+        $sql = "SELECT UID FROM `{$forum['DATABASE_NAME']}`.`{$forum['WEBTAG']}_USER_PREFS` ";
+        $sql .= "WHERE AVATAR_AID = '$aid' OR PIC_AID = '$aid' LIMIT 1";
+
+        try {
+
+            if (($result = $db->query($sql)) && $result->num_rows > 0) return true;
+
+        } catch (Exception $e) {
+
+            if ($e->getCode() != MYSQL_ERROR_NO_SUCH_TABLE && $e->getCode() != MYSQL_ERROR_WRONG_COLUMN_NAME) throw $e;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Delete an attachment's file, thumbnail and database row if nothing uses it
+ * any more (no post or message links to it and it is nobody's avatar).
+ *
+ * @param int $aid
+ * @return bool true if it was deleted
+ */
+function attachments_reap_unused($aid)
+{
+    if (!is_numeric($aid)) return false;
+
+    if (!$db = db::get()) return false;
+
+    if (!($attachment_dir = attachments_check_dir())) return false;
+
+    $aid = intval($aid);
+
+    foreach (array('POST_ATTACHMENT_IDS', 'PM_ATTACHMENT_IDS') as $link_table) {
+
+        if (($result = $db->query("SELECT AID FROM $link_table WHERE AID = '$aid' LIMIT 1")) && $result->num_rows > 0) return false;
+    }
+
+    if (attachments_is_profile_picture($aid)) return false;
+
+    if (!($result = $db->query("SELECT HASH FROM POST_ATTACHMENT_FILES WHERE AID = '$aid'")) || $result->num_rows == 0) return false;
+
+    list($hash) = $result->fetch_row();
+
+    if (!$db->query("DELETE QUICK FROM POST_ATTACHMENT_FILES WHERE AID = '$aid'")) return false;
+
+    if (is_md5($hash)) {
+
+        @unlink("$attachment_dir/$hash");
+
+        @unlink("$attachment_dir/$hash.thumb");
+    }
+
+    return true;
+}
+
+/**
+ * Unlink the attachments of one comment (it was deleted or rejected), and
+ * delete the ones that no other comment or message uses.
+ *
+ * @param int $tid
+ * @param int $pid
+ * @return bool
+ */
+function attachments_delete_for_post($tid, $pid)
+{
+    if (!is_numeric($tid) || !is_numeric($pid)) return false;
+
+    if (!$db = db::get()) return false;
+
+    if (!($forum_fid = get_forum_fid())) return false;
+
+    $tid = intval($tid);
+    $pid = intval($pid);
+
+    $sql = "SELECT AID FROM POST_ATTACHMENT_IDS WHERE FID = '$forum_fid' ";
+    $sql .= "AND TID = '$tid' AND PID = '$pid'";
+
+    if (!($result = $db->query($sql))) return false;
+
+    $aid_array = array();
+
+    while (($row = $result->fetch_row()) !== null) {
+        $aid_array[] = intval($row[0]);
+    }
+
+    if (sizeof($aid_array) == 0) return true;
+
+    $sql = "DELETE QUICK FROM POST_ATTACHMENT_IDS WHERE FID = '$forum_fid' ";
+    $sql .= "AND TID = '$tid' AND PID = '$pid'";
+
+    if (!$db->query($sql)) return false;
+
+    foreach ($aid_array as $aid) {
+        attachments_reap_unused($aid);
+    }
+
+    return true;
+}
+
+/**
+ * Same for a thread that is being permanently deleted.
+ *
+ * @param int $tid
+ * @return bool
+ */
+function attachments_delete_for_thread($tid)
+{
+    if (!is_numeric($tid)) return false;
+
+    if (!$db = db::get()) return false;
+
+    if (!($forum_fid = get_forum_fid())) return false;
+
+    $tid = intval($tid);
+
+    $sql = "SELECT DISTINCT AID FROM POST_ATTACHMENT_IDS WHERE FID = '$forum_fid' AND TID = '$tid'";
+
+    if (!($result = $db->query($sql))) return false;
+
+    $aid_array = array();
+
+    while (($row = $result->fetch_row()) !== null) {
+        $aid_array[] = intval($row[0]);
+    }
+
+    if (sizeof($aid_array) == 0) return true;
+
+    if (!$db->query("DELETE QUICK FROM POST_ATTACHMENT_IDS WHERE FID = '$forum_fid' AND TID = '$tid'")) return false;
+
+    foreach ($aid_array as $aid) {
+        attachments_reap_unused($aid);
+    }
 
     return true;
 }

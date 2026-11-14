@@ -22,6 +22,7 @@ USA
 ======================================================================*/
 
 // Required includes
+require_once BH_INCLUDE_PATH . 'attachments.inc.php';
 require_once BH_INCLUDE_PATH . 'constants.inc.php';
 require_once BH_INCLUDE_PATH . 'db.inc.php';
 require_once BH_INCLUDE_PATH . 'folder.inc.php';
@@ -659,6 +660,8 @@ function thread_delete($tid, $delete_type)
     $modified_cutoff_datetime = forum_get_unread_cutoff_datetime();
 
     if ($delete_type == THREAD_DELETE_PERMENANT) {
+
+        attachments_delete_for_thread($tid);
 
         $sql = "DELETE QUICK FROM `{$table_prefix}POST_CONTENT` WHERE TID = '$tid'";
 

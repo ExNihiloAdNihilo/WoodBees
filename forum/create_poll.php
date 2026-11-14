@@ -611,11 +611,9 @@ if ($valid && isset($_POST['post'])) {
 
                     poll_create($tid, $poll_questions_array, $poll_closes, $change_vote, $poll_type, $show_results, $poll_vote_type, $option_type, $allow_guests);
 
-                    email_send_notification($tid, $new_pid);
-
-                    email_send_thread_subscription($tid, $new_pid);
-
-                    email_send_folder_subscription($tid, $new_pid);
+                    // Nothing is mailed for a comment awaiting approval; the
+                    // approval sends it (see admin_post_approve.php).
+                    post_send_notifications($tid, $new_pid);
 
                     if (perm_check_folder_permissions($fid, USER_PERM_POST_APPROVAL, $_SESSION['UID']) && !perm_is_moderator($_SESSION['UID'], $fid)) {
                         admin_send_post_approval_notification($fid);

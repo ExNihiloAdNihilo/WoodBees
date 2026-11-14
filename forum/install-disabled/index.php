@@ -217,6 +217,8 @@ if (isset($_POST['install_method'])) {
         $valid = false;
     }
 
+    $cleanup_attachments = (isset($_POST['cleanup_attachments']) && $_POST['cleanup_attachments'] == 'Y');
+
     if (isset($_POST['remove_conflicts']) && $_POST['remove_conflicts'] == 'Y') {
         $remove_conflicts = true;
     } else {
@@ -331,7 +333,7 @@ if (isset($_POST['install_method'])) {
                         foreach ($upgrade_warnings as $upgrade_warning) {
 
                             echo "                    <tr>\n";
-                            echo "                      <td align=\"left\" class=\"postbody\"><b>Warning:</b> ", $upgrade_warning, "</td>\n";
+                            echo "                      <td align=\"left\" class=\"postbody\">", $upgrade_warning, "</td>\n";
                             echo "                    </tr>\n";
                         }
                     }
@@ -811,12 +813,16 @@ echo "                      <tr>\n";
 echo "                        <td align=\"left\" class=\"postbody\"><span class=\"install_checkbox\"><input type=\"checkbox\" name=\"remove_conflicts\" id=\"remove_conflicts\" value=\"Y\" tabindex=\"12\"", (isset($remove_conflicts) && $remove_conflicts == 'Y' ? " checked=\"checked\"" : ''), " /><label for=\"remove_conflicts\">Automatically remove tables that conflict with WoodBees' own.</label></span></td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
+echo "                        <td align=\"left\" class=\"postbody\"><span class=\"install_checkbox\"><input type=\"checkbox\" name=\"cleanup_attachments\" id=\"cleanup_attachments\" value=\"Y\" tabindex=\"13\"", (!empty($cleanup_attachments) ? " checked=\"checked\"" : ''), " /><label for=\"cleanup_attachments\">Upgrade only: delete attachments that nothing uses any more.</label></span></td>\n";
+echo "                      </tr>\n";
+echo "                      <tr>\n";
 echo "                        <td align=\"left\" class=\"postbody\"><span class=\"install_checkbox\"><input type=\"checkbox\" name=\"enable_error_reports\" id=\"enable_error_reports\" value=\"Y\" tabindex=\"14\"", (isset($enable_error_reports) && $enable_error_reports == 'Y' ? " checked=\"checked\"" : ''), " /><label for=\"enable_error_reports\">Send error reports to Admin email address.</label></span></td>\n";
 echo "                      </tr>\n";
 echo "                      <tr>\n";
 echo "                        <td colspan=\"2\">\n";
 echo "                          <p>", gettext("<b>Caution!</b> These options are recommended for advanced users only. There use can have a detrimental effect on the functionality of your WoodBees forum AND other software you may have installed."), "</p>\n";
 echo "                          <p>", gettext("<b>Automatically remove tables</b> permanently removes tables that would have conflicted with those used by WoodBees. If other tables exist which conflict with those used by the WoodBees software then enabling this option may cause any other scripts or software which rely on them to fail."), "</p>\n";
+echo "                          <p>", gettext("<b>Delete attachments that nothing uses any more</b> (Upgrade only) permanently deletes attachment files, and their database rows, that no comment or private message links to: leftovers of deleted and rejected comments, of deleted threads and of uploads that were never posted (files younger than a day are kept). Avatars and profile pictures are kept. Before this release deleting a comment never deleted its attachment, so an older forum may have a lot of them. Make a backup first; this cannot be undone."), "</p>\n";
 echo "                          <p>", gettext("<b>Enable error reports</b> enables verbose error reporting for your WoodBees forum and sends these reports to the Admin User's Email Address. This option is only available when performing a new installation. To enable post-install please see readme.txt for instructions."), "</p>\n";
 echo "                        </td>\n";
 echo "                      </tr>\n";

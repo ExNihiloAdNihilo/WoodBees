@@ -22,6 +22,7 @@ USA
 ======================================================================*/
 
 // Required includes
+require_once BH_INCLUDE_PATH . 'attachments.inc.php';
 require_once BH_INCLUDE_PATH . 'constants.inc.php';
 require_once BH_INCLUDE_PATH . 'db.inc.php';
 require_once BH_INCLUDE_PATH . 'fixhtml.inc.php';
@@ -729,6 +730,60 @@ function post_delete($tid, $pid)
     if (!$db->query($sql)) return false;
 
     post_delete_tags($tid, $pid);
+
+    // The comment's content is gone for good (deleted by its author or
+    // rejected by a moderator): its attachments go with it.
+    attachments_delete_for_post($tid, $pid);
+
+    return true;
+}
+
+/**
+ * Has the comment been approved (or never needed approval)?
+ *
+ * @param int $tid
+ * @param int $pid
+ * @return bool
+ */
+function post_is_approved($tid, $pid)
+{
+    if (!is_numeric($tid) || !is_numeric($pid)) return false;
+
+    if (!$db = db::get()) return false;
+
+    if (!($table_prefix = get_table_prefix())) return false;
+
+    $sql = "SELECT TID FROM `{$table_prefix}POST` WHERE TID = '" . intval($tid) . "' ";
+    $sql .= "AND PID = '" . intval($pid) . "' AND APPROVED IS NOT NULL";
+
+    if (!($result = $db->query($sql))) return false;
+
+    return ($result->num_rows > 0);
+}
+
+/**
+ * Send the emails about a new comment: the notification to the people it
+ * was addressed to and the thread and folder subscription emails.
+ *
+ * Nothing is sent for a comment that is still awaiting approval, which
+ * would show its content to people who may not see it yet. Call this again
+ * when a moderator approves it; a rejected comment is never mailed.
+ *
+ * @param int $tid
+ * @param int $pid
+ * @return bool true if the emails were sent
+ */
+function post_send_notifications($tid, $pid)
+{
+    if (!post_is_approved($tid, $pid)) return false;
+
+    require_once BH_INCLUDE_PATH . 'email.inc.php';
+
+    email_send_notification($tid, $pid);
+
+    email_send_thread_subscription($tid, $pid);
+
+    email_send_folder_subscription($tid, $pid);
 
     return true;
 }

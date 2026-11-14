@@ -2,6 +2,38 @@
 
 ## Unreleased (WoodBees Alpha 0.3.1)
 
+- Fixed: Attachments could be downloaded by anyone who knew the hash,
+         whatever folder the comment was in: get_attachment.php only
+         checked that the user was logged in, and nginx served
+         /attachments/<hash> as a static file with no check at all. A
+         download is now allowed only for the uploader, or if the file is
+         linked to an approved comment (in an approved thread that is not
+         deleted) in a folder the user can read (folder moderators also
+         see unapproved comments), to a private message the user sent or
+         received, or as someone's avatar or profile picture; anything
+         else gets the "Missing or invalid attachment hash" page.
+         docker/nginx.conf no longer serves /attachments/, and the
+         attachment directory gets a .htaccess for Apache.
+- Fixed: Deleting a comment, rejecting one in the Post Approval Queue,
+         or permanently deleting a thread never deleted its attachments:
+         the file stayed on disk, downloadable, and kept counting against
+         the uploader's quota. They are now deleted with the comment
+         (a file shared by several comments goes with the last one).
+         Deleting an attachment also removes the links from comments and
+         private messages that pointed at it, and a moderator deleting
+         someone else's attachment is now checked against the comment's
+         real folder.
+- Fixed: Comments awaiting moderator approval triggered the
+         reply-notification and thread/folder subscription emails,
+         showing their content (and a link) to people who were not meant
+         to see them yet. These emails are now sent when a moderator
+         approves the comment (single or bulk), and never for a
+         rejected one.
+- Added: Upgrade offers "delete attachments that nothing uses any more"
+         (Advanced Options): it removes attachment files and links left
+         by comments deleted or rejected before this fix, deleted
+         threads and abandoned uploads (files under a day old, avatars
+         and profile pictures are kept).
 - Fixed: Passwords were hashed with DES crypt(), so only the first 8
          characters counted ("Passw0rdZ" logged in as "Passw0rd10"), and
          there was no limit on logon attempts. New and changed passwords

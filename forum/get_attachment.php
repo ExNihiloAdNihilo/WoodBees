@@ -56,8 +56,9 @@ $hash = $_GET['hash'];
 // Get the array of allowed attachment mime-types
 $attachment_mime_types = attachments_get_mime_types();
 
-// Get the attachment details.
-if (!($attachment_details = attachments_get_by_hash($hash))) {
+// Get the attachment details. A file the user may not see gets the same
+// answer as one that does not exist.
+if (!($attachment_details = attachments_get_by_hash($hash)) || !attachments_user_can_read($attachment_details)) {
     html_draw_error(gettext('Missing or invalid attachment hash'));
 }
 
@@ -115,6 +116,7 @@ cache_check_last_modified(filemtime($file_path), md5_file($file_path));
 // Send remaining headers for length and filename.
 header("Content-length: $file_size");
 header("Content-type: {$attachment_details['mimetype']}");
+header("X-Content-Type-Options: nosniff");
 header("Content-disposition: inline; filename=\"$file_name\"");
 
 // Output the file directly to the browser.

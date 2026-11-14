@@ -448,6 +448,12 @@ $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
 
 $db->query($sql);
 
+// Optional (checkbox on the installer page): delete attachments nothing uses.
+if (!empty($cleanup_attachments)) {
+
+    $upgrade_warnings = array_merge(isset($upgrade_warnings) ? $upgrade_warnings : array(), install_cleanup_attachments($forum_prefix_array, $attachment_real_path));
+}
+
 // Failed-logon counters for the logon throttle (see user_logon_throttle_reserve()).
 if (!install_table_exists($config['db_database'], 'LOGON_THROTTLE')) {
 
@@ -493,7 +499,7 @@ if (!$logon_key_unique) {
             $duplicate_logons[] = htmlspecialchars($duplicate['LOGON'], ENT_QUOTES, 'UTF-8') . " (" . $duplicate['LOGON_COUNT'] . " accounts)";
         }
 
-        $upgrade_warnings[] = "Several accounts share the same username, so usernames could not be made unique: " . implode(", ", $duplicate_logons) . ". Rename the extra accounts (Admin > Users), then run Upgrade again. Until then two people can still register the same name at the same moment.";
+        $upgrade_warnings[] = "<b>Warning:</b> Several accounts share the same username, so usernames could not be made unique: " . implode(", ", $duplicate_logons) . ". Rename the extra accounts (Admin > Users), then run Upgrade again. Until then two people can still register the same name at the same moment.";
 
     } else {
 

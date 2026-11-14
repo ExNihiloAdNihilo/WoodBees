@@ -154,6 +154,9 @@ if (isset($tid) && is_numeric($tid) && isset($pid) && is_numeric($pid)) {
 
             admin_add_log_entry(APPROVED_POST, array($t_fid, $tid, $pid));
 
+            // Now that it is visible, send the emails held back until approval.
+            post_send_notifications($tid, $pid);
+
             if (preg_match("/^messages.php/u", basename($ret)) > 0) {
 
                 header_redirect("messages.php?webtag=$webtag&msg=$msg&post_approve_success=$msg");
@@ -246,6 +249,7 @@ if (isset($_POST['approve_messages'])) {
 
                 if ($process_valid && post_approve($approve_tid, $approve_pid)) {
                     admin_add_log_entry(APPROVED_POST, array($approve_fid, $approve_tid, $approve_pid));
+                    post_send_notifications($approve_tid, $approve_pid);
                 } else {
                     $valid = false;
                 }
