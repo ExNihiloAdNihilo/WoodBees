@@ -454,6 +454,21 @@ if (!empty($cleanup_attachments)) {
     $upgrade_warnings = array_merge(isset($upgrade_warnings) ? $upgrade_warnings : array(), install_cleanup_attachments($forum_prefix_array, $attachment_real_path));
 }
 
+// One-time secrets for password-reset and email-confirmation links.
+if (!install_table_exists($config['db_database'], 'USER_ACTION_TOKEN')) {
+
+    $sql = "CREATE TABLE USER_ACTION_TOKEN (";
+    $sql .= "  UID MEDIUMINT(8) UNSIGNED NOT NULL, ";
+    $sql .= "  PURPOSE VARCHAR(16) NOT NULL, ";
+    $sql .= "  TOKEN_HASH CHAR(64) NOT NULL, ";
+    $sql .= "  EXPIRES DATETIME NOT NULL, ";
+    $sql .= "  PRIMARY KEY (UID, PURPOSE), ";
+    $sql .= "  KEY EXPIRES (EXPIRES)";
+    $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
+
+    $db->query($sql);
+}
+
 // Failed-logon counters for the logon throttle (see user_logon_throttle_reserve()).
 if (!install_table_exists($config['db_database'], 'LOGON_THROTTLE')) {
 

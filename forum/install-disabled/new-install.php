@@ -298,6 +298,17 @@ $sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
 
 $db->query($sql);
 
+$sql = "CREATE TABLE USER_ACTION_TOKEN (";
+$sql .= "  UID MEDIUMINT(8) UNSIGNED NOT NULL, ";
+$sql .= "  PURPOSE VARCHAR(16) NOT NULL, ";
+$sql .= "  TOKEN_HASH CHAR(64) NOT NULL, ";
+$sql .= "  EXPIRES DATETIME NOT NULL, ";
+$sql .= "  PRIMARY KEY (UID, PURPOSE), ";
+$sql .= "  KEY EXPIRES (EXPIRES)";
+$sql .= ") ENGINE=MYISAM DEFAULT CHARSET=UTF8";
+
+$db->query($sql);
+
 $sql = "CREATE TABLE USER_TOKEN (";
 $sql .= "  UID MEDIUMINT(8) UNSIGNED NOT NULL,";
 $sql .= "  TOKEN varchar(64) NOT NULL,";

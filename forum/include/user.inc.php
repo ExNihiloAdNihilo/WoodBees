@@ -303,6 +303,8 @@ function user_change_password($uid, $new_password, $old_password)
 
     if (!$db->query($sql)) return false;
 
+    user_action_token_clear($uid, USER_ACTION_TOKEN_PW_RESET);
+
     return true;
 }
 
@@ -735,25 +737,148 @@ function user_get($uid)
     return $user_get;
 }
 
-function user_get_by_passhash($uid, $passhash)
+/**
+ * Create the secret for an emailed one-time link (password reset or email
+ * confirmation). 160 random bits, valid for $ttl seconds, one per user and
+ * purpose (a new one replaces the old). Only a SHA-256 of it is stored, so a
+ * copy of the database does not contain usable links.
+ *
+ * @param int    $uid
+ * @param string $purpose USER_ACTION_TOKEN_PW_RESET or USER_ACTION_TOKEN_EMAIL
+ * @param int    $ttl     seconds
+ * @return string|false the token to put in the link
+ */
+function user_action_token_create($uid, $purpose, $ttl)
+{
+    if (!is_numeric($uid) || !is_numeric($ttl)) return false;
+
+    if (!in_array($purpose, array(USER_ACTION_TOKEN_PW_RESET, USER_ACTION_TOKEN_EMAIL), true)) return false;
+
+    if (!$db = db::get()) return false;
+
+    $token = bin2hex(random_bytes(20));
+
+    $token_hash = hash('sha256', $token);
+
+    $expires = date(MYSQL_DATETIME, time() + intval($ttl));
+
+    $sql = "REPLACE INTO USER_ACTION_TOKEN (UID, PURPOSE, TOKEN_HASH, EXPIRES) ";
+    $sql .= "VALUES ('" . intval($uid) . "', '$purpose', '$token_hash', CAST('$expires' AS DATETIME))";
+
+    try {
+
+        if (!$db->query($sql)) return false;
+
+    } catch (Exception $e) {
+
+        // Table missing: the installer's Upgrade has not been run.
+        if ($e->getCode() != MYSQL_ERROR_NO_SUCH_TABLE) throw $e;
+
+        return false;
+    }
+
+    return $token;
+}
+
+/**
+ * Is $token the current, unexpired secret for this user and purpose?
+ *
+ * @param int    $uid
+ * @param string $purpose
+ * @param mixed  $token
+ * @return bool
+ */
+function user_action_token_valid($uid, $purpose, $token)
+{
+    if (!is_numeric($uid) || !is_string($token) || !preg_match('/^[0-9a-f]{40}$/D', $token)) return false;
+
+    if (!in_array($purpose, array(USER_ACTION_TOKEN_PW_RESET, USER_ACTION_TOKEN_EMAIL), true)) return false;
+
+    if (!$db = db::get()) return false;
+
+    $token_hash = hash('sha256', $token);
+
+    $now = date(MYSQL_DATETIME, time());
+
+    $sql = "SELECT UID FROM USER_ACTION_TOKEN WHERE UID = '" . intval($uid) . "' ";
+    $sql .= "AND PURPOSE = '$purpose' AND TOKEN_HASH = '$token_hash' ";
+    $sql .= "AND EXPIRES > CAST('$now' AS DATETIME)";
+
+    try {
+
+        if (!($result = $db->query($sql))) return false;
+
+    } catch (Exception $e) {
+
+        if ($e->getCode() != MYSQL_ERROR_NO_SUCH_TABLE) throw $e;
+
+        return false;
+    }
+
+    return ($result->num_rows > 0);
+}
+
+/**
+ * Forget a user's emailed secret(s): after use, and whenever the password
+ * changes. Expired ones of every user are swept up at the same time.
+ *
+ * @param int         $uid
+ * @param string|null $purpose null for all purposes
+ * @return void
+ */
+function user_action_token_clear($uid, $purpose = null)
+{
+    if (!is_numeric($uid)) return;
+
+    if (!$db = db::get()) return;
+
+    $now = date(MYSQL_DATETIME, time());
+
+    $sql = "DELETE FROM USER_ACTION_TOKEN WHERE EXPIRES <= CAST('$now' AS DATETIME) ";
+    $sql .= "OR (UID = '" . intval($uid) . "'";
+
+    if (in_array($purpose, array(USER_ACTION_TOKEN_PW_RESET, USER_ACTION_TOKEN_EMAIL), true)) {
+        $sql .= " AND PURPOSE = '$purpose'";
+    }
+
+    $sql .= ")";
+
+    try {
+
+        $db->query($sql);
+
+    } catch (Exception $e) {
+
+        if ($e->getCode() != MYSQL_ERROR_NO_SUCH_TABLE) throw $e;
+    }
+}
+
+/**
+ * Set a new password without knowing the old one (the caller has checked an
+ * emailed token).
+ *
+ * @param int    $uid
+ * @param string $new_password
+ * @return bool
+ */
+function user_set_password($uid, $new_password)
 {
     if (!$db = db::get()) return false;
 
     if (!is_numeric($uid)) return false;
 
-    $passhash = $db->escape($passhash);
+    $salt = $db->escape(USER_PASSWORD_HASH_MARKER);
 
-    $sql = "SELECT UID, LOGON, PASSWD, NICKNAME, EMAIL, REGISTERED, ";
-    $sql .= "IPADDRESS, REFERER, APPROVED FROM USER WHERE UID = '$uid' ";
-    $sql .= "AND PASSWD = '$passhash'";
+    $passhash = $db->escape(user_password_hash($new_password));
 
-    if (!($result = $db->query($sql))) return false;
+    $sql = "UPDATE USER SET PASSWD = '$passhash', SALT = '$salt' ";
+    $sql .= "WHERE UID = '" . intval($uid) . "' AND PASSWD <> '" . USER_PLACEHOLDER_PASSWD . "'";
 
-    if ($result->num_rows == 0) return false;
+    if (!$db->query($sql)) return false;
 
-    $user_get = $result->fetch_assoc();
+    user_action_token_clear($uid, USER_ACTION_TOKEN_PW_RESET);
 
-    return $user_get;
+    return true;
 }
 
 function user_get_logon($uid)

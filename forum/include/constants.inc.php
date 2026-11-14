@@ -126,6 +126,13 @@ define('MYSQL_CONNECT_ERROR', 9999);
 define('USER_PASSWORD_HASH_MARKER', 'bcrypt');
 define('USER_PASSWORD_BCRYPT_COST', 10);
 
+// One-time links in emails (password reset, email confirmation): a random
+// token, stored hashed in USER_ACTION_TOKEN, valid for this long.
+define('USER_ACTION_TOKEN_PW_RESET', 'pw_reset');
+define('USER_ACTION_TOKEN_EMAIL', 'email');
+define('USER_ACTION_TOKEN_PW_RESET_TTL', 7200);
+define('USER_ACTION_TOKEN_EMAIL_TTL', 604800);
+
 // Logon throttling (see user_logon_throttle_reserve()): failed logons allowed
 // per window, per client address and per account name.
 define('LOGON_THROTTLE_WINDOW', 900);

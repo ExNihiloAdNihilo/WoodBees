@@ -106,7 +106,7 @@ if (isset($_POST['save'])) {
 
     if ($valid) {
 
-        if (user_reset_password($uid, $pw, $key)) {
+        if (user_action_token_valid($uid, USER_ACTION_TOKEN_PW_RESET, $key) && user_set_password($uid, $pw)) {
 
             html_draw_top(
                 array(
@@ -137,8 +137,8 @@ if (isset($_REQUEST['u']) && isset($_REQUEST['h'])) {
     html_draw_error(gettext("Required information not found"));
 }
 
-if (!$user = user_get_by_passhash($uid, $key)) {
-    html_draw_error(gettext("Required information not found"));
+if (!user_action_token_valid($uid, USER_ACTION_TOKEN_PW_RESET, $key)) {
+    html_draw_error(gettext("This password reset link is not valid or has expired. Please request a new one."));
 }
 
 html_draw_top(

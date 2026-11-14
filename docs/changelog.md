@@ -2,6 +2,16 @@
 
 ## Unreleased (WoodBees Alpha 0.3.1)
 
+- Fixed: Password-reset and email-confirmation links contained the
+         account's stored password hash as their secret, so the hash
+         was mailed, ended up in mail and web server logs and Referer
+         headers, and a reset link never expired (an unused reminder
+         email stayed a working key to the account indefinitely). The
+         links now carry a random one-time token (stored only as a
+         SHA-256 in the new USER_ACTION_TOKEN table, created by Upgrade):
+         password reset links last 2 hours, email confirmation links 7
+         days, a new request replaces the old link, and using the link
+         or changing the password ends it.
 - Fixed: Attachments could be downloaded by anyone who knew the hash,
          whatever folder the comment was in: get_attachment.php only
          checked that the user was logged in, and nginx served

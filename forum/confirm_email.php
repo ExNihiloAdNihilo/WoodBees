@@ -69,9 +69,11 @@ if (!isset($uid) || !isset($key)) {
 
 $frame_top_target = html_get_top_frame_name();
 
-if (($user = user_get_by_passhash($uid, $key)) !== false) {
+if (user_action_token_valid($uid, USER_ACTION_TOKEN_EMAIL, $key)) {
 
     if (perm_user_cancel_email_confirmation($uid)) {
+
+        user_action_token_clear($uid, USER_ACTION_TOKEN_EMAIL);
 
         html_draw_top(
             array(
@@ -99,5 +101,5 @@ if (($user = user_get_by_passhash($uid, $key)) !== false) {
 
 } else {
 
-    html_draw_error(gettext("Required information not found"));
+    html_draw_error(gettext("This confirmation link is not valid or has expired. Log in and request a new confirmation email."));
 }

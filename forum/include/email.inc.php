@@ -461,7 +461,10 @@ function email_send_pw_reminder($logon)
 
     $recipient = word_filter_apply(format_user_name($to_user['LOGON'], $to_user['NICKNAME']), $to_user['UID'], true);
 
-    $change_pw_link = rawurlencode(sprintf('change_pw.php?webtag=%s&u=%d&h=%s', $webtag, $to_user['UID'], rawurlencode($to_user['PASSWD'])));
+    // One-time secret, valid for a couple of hours (never the password hash).
+    if (($reset_token = user_action_token_create($to_user['UID'], USER_ACTION_TOKEN_PW_RESET, USER_ACTION_TOKEN_PW_RESET_TTL)) === false) return false;
+
+    $change_pw_link = rawurlencode(sprintf('change_pw.php?webtag=%s&u=%d&h=%s', $webtag, $to_user['UID'], $reset_token));
 
     $change_pw_link = htmlentities_array(html_get_forum_uri("index.php?webtag=$webtag&final_uri=$change_pw_link"));
 
@@ -583,7 +586,9 @@ function email_send_user_confirmation($to_uid)
 
     $recipient = word_filter_apply(format_user_name($to_user['LOGON'], $to_user['NICKNAME']), $to_uid, true);
 
-    $confirm_link = rawurlencode("confirm_email.php?webtag=$webtag&u={$to_user['UID']}&h={$to_user['PASSWD']}");
+    if (($confirm_token = user_action_token_create($to_user['UID'], USER_ACTION_TOKEN_EMAIL, USER_ACTION_TOKEN_EMAIL_TTL)) === false) return false;
+
+    $confirm_link = rawurlencode("confirm_email.php?webtag=$webtag&u={$to_user['UID']}&h=$confirm_token");
 
     $confirm_link = htmlentities_array(html_get_forum_uri("index.php?webtag=$webtag&final_uri=$confirm_link"));
 
@@ -645,7 +650,9 @@ function email_send_changed_email_confirmation($to_uid)
 
     $recipient = word_filter_apply(format_user_name($to_user['LOGON'], $to_user['NICKNAME']), $to_uid, true);
 
-    $confirm_link = rawurlencode("confirm_email.php?webtag=$webtag&u={$to_user['UID']}&h={$to_user['PASSWD']}");
+    if (($confirm_token = user_action_token_create($to_user['UID'], USER_ACTION_TOKEN_EMAIL, USER_ACTION_TOKEN_EMAIL_TTL)) === false) return false;
+
+    $confirm_link = rawurlencode("confirm_email.php?webtag=$webtag&u={$to_user['UID']}&h=$confirm_token");
 
     $confirm_link = htmlentities_array(html_get_forum_uri("index.php?webtag=$webtag&final_uri=$confirm_link"));
 
