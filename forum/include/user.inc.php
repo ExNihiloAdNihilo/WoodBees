@@ -746,11 +746,7 @@ function user_logon_throttle_clear($logon, $scope = 'logon')
  */
 function user_logon_throttle_keys($logon, $scope = 'logon')
 {
-    $ipaddress = get_ip_address();
-
-    if (strpos($ipaddress, ':') !== false && ($packed = @inet_pton($ipaddress)) !== false) {
-        $ipaddress = 'v6:' . bin2hex(substr($packed, 0, 8));
-    }
+    $ipaddress = ip_get_throttle_address(get_ip_address());
 
     if ($scope == 'token') {
 

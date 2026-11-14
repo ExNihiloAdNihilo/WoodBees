@@ -34,6 +34,35 @@ function get_ip_address()
     return '';
 }
 
+/**
+ * The client address as the logon throttle counts it.
+ *
+ * IPv4 is used as it is. An IPv6 address is reduced to its /64 prefix (one
+ * subscriber or site normally holds a whole /64, so counting single addresses
+ * would let a client simply rotate through its own range), after dropping a
+ * zone id ("fe80::1%eth0") and normalising the spelling ("2001:DB8::1" and
+ * "2001:db8:0:0:0:0:0:1" are the same). An IPv4-mapped IPv6 address
+ * ("::ffff:192.0.2.1", as dual-stack sockets report IPv4 clients) is counted
+ * as the IPv4 address it carries.
+ *
+ * @param string $ipaddress
+ * @return string
+ */
+function ip_get_throttle_address($ipaddress)
+{
+    $ipaddress = preg_replace('/%.*$/', '', trim((string) $ipaddress));
+
+    if (strpos($ipaddress, ':') === false) return substr($ipaddress, 0, 45);
+
+    $packed = @inet_pton($ipaddress);
+
+    if ($packed === false || strlen($packed) != 16) return substr($ipaddress, 0, 45);
+
+    if (substr($packed, 0, 12) === str_repeat("\0", 10) . "\xff\xff") return inet_ntop(substr($packed, 12));
+
+    return 'v6:' . bin2hex(substr($packed, 0, 8));
+}
+
 function check_ip_address($ip)
 {
     return filter_var($ip, FILTER_VALIDATE_IP);
