@@ -1,7 +1,33 @@
 # Beehive Forum Change Log (Generated: Tue, 23 Aug 2016 20:25:51)
 
-## Date: Fri, 13 Nov 2026 (WoodBees Alpha 0.3.1)
+## Date: Sat, 14 Nov 2026 (WoodBees Alpha 0.3.2)
 
+- Fixed: The installer's Upgrade method stopped with "Could not locate
+         attachment directory" on a forum that had never used
+         attachments (forum/attachments is not in the checkout and is
+         only created once attachments are enabled and used). It now
+         carries on without it.
+- Fixed: The installer's Reconnect method tried to install a new forum
+         and stopped with "tables which conflict" on any existing
+         database. It now checks that the selected database holds a
+         WoodBees forum (FORUMS table) and only rewrites config.inc.php.
+- Fixed: With email confirmation required, a new account was only
+         marked unconfirmed when the confirmation email was sent; a
+         mail server that was down or refused the address left a fully
+         active account. Normal and light registration now mark the
+         account unconfirmed before the email is sent.
+- Fixed: Every attachment or avatar download scanned POST_ATTACHMENT_IDS,
+         PM_ATTACHMENT_IDS and USER_PREFS (global and per forum) because
+         AID, AVATAR_AID and PIC_AID were not indexed. New indexes in
+         new installs, new forums and the installer's Upgrade; the
+         permission check also no longer loads the folder list when no
+         comment links the file.
+- Fixed: Release notes wrongly said "remember me" logons are not
+         rate limited.
+- Changed: Release notes: "Before you upgrade" is now an ordered list
+         (back up, check the database server, pull and restart nginx,
+         unlock the installer, run Upgrade); it warns that Upgrade
+         rewrites config.inc.php.
 - Fixed: Changing the email address on the profile page: if the
          confirmation email could not be sent (mail server down, address
          that cannot be mailed) the account was left confirmed, so a

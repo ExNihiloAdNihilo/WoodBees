@@ -499,7 +499,7 @@ function post_draw_to_dropdown_in_thread($tid, $default_uid, $show_all = true, $
  *
  * Every rendered form carries its own random key in a hidden field, and the
  * key is carried over while the same form is previewed or re-shown with an
- * error. Forms rendered before Alpha 0.3.1 carried a numeric time() value;
+ * error. Forms rendered before Alpha 0.3.2 carried a numeric time() value;
  * those still pass the format check and work the same way.
  */
 function post_get_ddkey()
@@ -548,7 +548,7 @@ function post_check_ddkey($ddkey)
 
     $expired_datetime = date(MYSQL_DATETIME, time() - DAY_IN_SECONDS);
 
-    // Forget old keys, and the single 'DDKEY' row used before Alpha 0.3.1.
+    // Forget old keys, and the single 'DDKEY' row used before Alpha 0.3.2.
     $sql = "DELETE FROM `{$table_prefix}USER_TRACK` WHERE UID = '$uid' ";
     $sql .= "AND (USER_KEY = 'DDKEY' OR (USER_KEY LIKE 'DDKEY:%' AND USER_VALUE < '$expired_datetime'))";
 

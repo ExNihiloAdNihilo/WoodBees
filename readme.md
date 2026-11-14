@@ -1,16 +1,19 @@
-# WoodBees Alpha 0.3.1
+# WoodBees Alpha 0.3.2
 
 A fork of Beehive Forum. See [docs/release.md](docs/release.md) for what's new in this release.
 
-**Upgrading from Alpha 0.3?** Read "Before you upgrade" in the Alpha 0.3.1 section of
-[docs/release.md](docs/release.md): create `forum/include/install.enable`, restart nginx
-and run the installer's Upgrade method (it is locked on an installed forum from this release on).
+**Upgrading from Alpha 0.3?** Read "Before you upgrade" in the Alpha 0.3.2 section of
+[docs/release.md](docs/release.md): back up `forum/include/config.inc.php` (Upgrade rewrites it),
+restart nginx, create `forum/include/install.enable` and run the installer's Upgrade method
+(it is locked on an installed forum from this release on).
 
 **Upgrading from Alpha 0.2?** Read "Before you upgrade" in
 [docs/release.md](docs/release.md) first: back up
 `forum/include/config.inc.php` before pulling, update `.env` for the
 per-engine Compose files, then `docker compose up -d --build` and run the
-installer's Upgrade method.
+installer's Upgrade method. Since Alpha 0.3.2 the installer is locked on an
+installed forum: create `forum/include/install.enable` first (see the Alpha
+0.3.2 "Before you upgrade" steps in [docs/release.md](docs/release.md)).
 
 ## Instance federation
 
